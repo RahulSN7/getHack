@@ -1,18 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
 
 function Header() {
   // --------------------------------------------------
-  // DARK / LIGHT MODE
+  // DARK / LIGHT MODE (from global context)
   // --------------------------------------------------
 
-  const [darkMode, setDarkMode] = useState(() => {
-    // Check if class was already applied by the inline script in index.html
-    if (document.documentElement.classList.contains("dark")) return true;
-    const stored = localStorage.getItem("theme");
-    if (stored) return stored === "dark";
-    // Fallback: system preference
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
+  const { theme, toggleTheme } = useTheme();
+  const darkMode = theme === "dark";
 
   // --------------------------------------------------
   // SCROLL STATE
@@ -28,22 +23,6 @@ function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const notificationRef = useRef(null);
-
-  // --------------------------------------------------
-  // APPLY THEME
-  // --------------------------------------------------
-
-  useEffect(() => {
-    const root = document.documentElement;
-
-    if (darkMode) {
-      root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [darkMode]);
 
   // --------------------------------------------------
   // SCROLL LISTENER
@@ -63,6 +42,7 @@ function Header() {
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
+
 
   // --------------------------------------------------
   // CLOSE NOTIFICATION WHEN CLICKING OUTSIDE
@@ -104,9 +84,6 @@ function Header() {
   // FUNCTIONS
   // --------------------------------------------------
 
-  const toggleTheme = () => {
-    setDarkMode((previous) => !previous);
-  };
 
   const toggleNotifications = () => {
     setNotificationOpen((previous) => !previous);

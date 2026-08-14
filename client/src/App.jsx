@@ -1,80 +1,65 @@
-import Header from "./components/Header";
+import Header from "./components/Header/Header";
+import HeroCTA from "./components/pages/landing/HeroCTA";
+import FeaturedHackathons from "./components/pages/landing/FeaturedHackathons";
+import FindTeammates from "./components/pages/landing/FindTeammates";
+import HowItWorks from "./components/pages/landing/HowItWorks";
+import WhyGetHack from "./components/pages/landing/WhyGetHack";
+import FAQ from "./components/pages/landing/FAQ";
+import Footer from "./components/pages/landing/Footer";
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-neutral-950">
+    <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
       <Header />
 
-     <main className="relative overflow-hidden px-6 pt-16 pb-24">
-  {/* Subtle background shapes */}
-  <div
-    className="
-      pointer-events-none
-      absolute
-      left-[10%]
-      top-20
-      h-64
-      w-64
-      rounded-full
-      bg-indigo-200/40
-      blur-3xl
+      {/* Hero */}
+      <main className="px-6 pt-20 pb-16">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-4 text-sm font-semibold tracking-widest text-indigo-500">
+            DISCOVER · CONNECT · BUILD
+          </p>
 
-      dark:bg-indigo-900/20
-    "
-  />
+          <h1
+            className="
+              text-5xl
+              font-bold
+              tracking-[-2px]
+              text-neutral-950
+              sm:text-7xl
+              dark:text-white
+            "
+          >
+            Find your next
+            <br />
+            hackathon.
+          </h1>
 
-  <div
-    className="
-      pointer-events-none
-      absolute
-      right-[10%]
-      top-40
-      h-72
-      w-72
-      rounded-full
-      bg-blue-200/30
-      blur-3xl
+          <p
+            className="
+              mt-6
+              max-w-xl
+              text-lg
+              leading-8
+              text-neutral-500
+              dark:text-neutral-400
+            "
+          >
+            Discover hackathons, find people with the right
+            skills, build your team, and create something
+            meaningful.
+          </p>
 
-      dark:bg-blue-900/20
-    "
-  />
+          <HeroCTA />
+        </div>
+      </main>
 
-  <div className="relative mx-auto max-w-7xl">
-    <p className="mb-4 text-sm font-semibold tracking-widest text-indigo-500">
-      DISCOVER • CONNECT • BUILD
-    </p>
-
-    <h1
-      className="
-        text-5xl
-        font-bold
-        tracking-[-2px]
-        text-neutral-950
-        sm:text-7xl
-        dark:text-white
-      "
-    >
-      Find your next
-      <br />
-      hackathon.
-    </h1>
-
-    <p
-      className="
-        mt-6
-        max-w-xl
-        text-lg
-        leading-8
-        text-neutral-500
-        dark:text-neutral-400
-      "
-    >
-      Discover hackathons, find people with the right
-      skills, build your team, and create something
-      meaningful.
-    </p>
-  </div>
-</main>
+      {/* Landing sections */}
+      <FeaturedHackathons />
+      <HowItWorks />
+      <FindTeammates />
+       <WhyGetHack />
+      <FAQ />
+      <Footer />
     </div>
   );
 }
