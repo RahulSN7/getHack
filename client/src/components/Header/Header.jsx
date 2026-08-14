@@ -254,16 +254,16 @@ function Header() {
               md:flex
             "
           >
-            <a href="#hackathons" className={navLinkClass}>
+            <a href="/hackathons" className={navLinkClass}>
               Hackathons
             </a>
 
-            <a href="#teammates" className={navLinkClass}>
+            <a href="/teammates" className={navLinkClass}>
               Find Teammates
             </a>
 
-            <a href="#my-teams" className={navLinkClass}>
-              My Teams
+            <a href="/my-network" className={navLinkClass}>
+              My Network
             </a>
           </nav>
 
@@ -619,7 +619,7 @@ function Header() {
                 ================================================== */}
 
             <a
-              href="#login"
+              href="/login"
               className="
                 hidden
                 h-8
@@ -738,7 +738,7 @@ function Header() {
               "
             >
               <a
-                href="#hackathons"
+                href="/hackathons"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   block
@@ -763,7 +763,7 @@ function Header() {
               </a>
 
               <a
-                href="#teammates"
+                href="/teammates"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   block
@@ -788,7 +788,7 @@ function Header() {
               </a>
 
               <a
-                href="#my-teams"
+                href="/my-network"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   block
@@ -809,11 +809,11 @@ function Header() {
                   dark:hover:bg-white/5
                 "
               >
-                My Teams
+                My Network
               </a>
 
               <a
-                href="#login"
+                href="/login"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   mt-2
