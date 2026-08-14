@@ -6,8 +6,19 @@ function Header() {
   // --------------------------------------------------
 
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
+    // Check if class was already applied by the inline script in index.html
+    if (document.documentElement.classList.contains("dark")) return true;
+    const stored = localStorage.getItem("theme");
+    if (stored) return stored === "dark";
+    // Fallback: system preference
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
+
+  // --------------------------------------------------
+  // SCROLL STATE
+  // --------------------------------------------------
+
+  const [scrolled, setScrolled] = useState(false);
 
   // --------------------------------------------------
   // OTHER STATES
@@ -35,6 +46,25 @@ function Header() {
   }, [darkMode]);
 
   // --------------------------------------------------
+  // SCROLL LISTENER
+  // --------------------------------------------------
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 8);
+    };
+
+    // Check initial position (e.g. if page loaded already scrolled)
+    onScroll();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  // --------------------------------------------------
   // CLOSE NOTIFICATION WHEN CLICKING OUTSIDE
   // --------------------------------------------------
 
@@ -55,6 +85,21 @@ function Header() {
     };
   }, []);
 
+  // Close mobile menu on resize to desktop
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", onResize, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
   // --------------------------------------------------
   // FUNCTIONS
   // --------------------------------------------------
@@ -71,55 +116,93 @@ function Header() {
     setMobileMenuOpen((previous) => !previous);
   };
 
+  // --------------------------------------------------
+  // NAV LINK STYLES (reusable)
+  // --------------------------------------------------
+
+  const navLinkClass = `
+    rounded-lg
+    px-3
+    py-1.5
+
+    text-sm
+    font-medium
+
+    text-neutral-600
+
+    transition-colors
+    duration-150
+
+    hover:text-neutral-950
+
+    dark:text-neutral-400
+    dark:hover:text-white
+  `;
+
+  const iconBtnClass = `
+    grid
+    h-9
+    w-9
+    place-items-center
+    rounded-lg
+
+    text-neutral-500
+
+    transition-colors
+    duration-150
+
+    hover:text-neutral-900
+
+    dark:text-neutral-400
+    dark:hover:text-white
+  `;
+
   return (
     <>
-     
-
-    
       {/* ==================================================
           HEADER
           ================================================== */}
 
       <header
-        className="
-          sticky
+        className={`
+          fixed
           top-0
+          left-0
           z-50
-          px-4
-          py-3
-          sm:px-6
-        "
+          w-full
+
+          transition-[background-color,backdrop-filter,box-shadow]
+          duration-300
+          ease-out
+
+          ${
+            scrolled
+              ? `
+                bg-white/80
+                backdrop-blur-lg
+                shadow-[0_1px_3px_rgba(0,0,0,0.04)]
+
+                dark:bg-neutral-950/75
+                dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)]
+              `
+              : `
+                bg-transparent
+              `
+          }
+        `}
       >
-      <div
-  className="
-    mx-auto
-    flex
-    min-h-16
-    max-w-7xl
-    items-center
-    rounded-2xl
-
-    bg-white/40
-    px-4
-
-    backdrop-blur-2xl
-    backdrop-saturate-150
-
-    ring-1
-    ring-white/30
-
-    shadow-[0_8px_32px_rgba(15,23,42,0.08)]
-
-    transition-all
-    duration-300
-
-    dark:bg-neutral-900/40
-    dark:ring-white/10
-    dark:shadow-[0_8px_32px_rgba(0,0,0,0.30)]
-
-    sm:px-5
-  "
->
+        <div
+          className="
+            mx-auto
+            flex
+            h-14
+            max-w-7xl
+            items-center
+            px-5
+            sm:px-6
+            lg:px-8
+          "
+        >
           {/* ==================================================
               LOGO
               ================================================== */}
@@ -131,7 +214,7 @@ function Header() {
               flex
               shrink-0
               items-center
-              gap-2.5
+              gap-2
             "
           >
             {/* Logo mark */}
@@ -139,24 +222,22 @@ function Header() {
             <span
               className="
                 grid
-                h-9
-                w-9
+                h-8
+                w-8
                 place-items-center
-                rounded-xl
+                rounded-lg
 
                 bg-neutral-950
 
-                text-lg
+                text-base
                 font-bold
+                leading-none
                 text-white
 
-                shadow-sm
-
-                transition
+                transition-transform
                 duration-200
 
                 group-hover:scale-105
-                group-hover:-rotate-2
 
                 dark:bg-white
                 dark:text-neutral-950
@@ -169,9 +250,9 @@ function Header() {
 
             <span
               className="
-                text-xl
+                text-lg
                 font-bold
-                tracking-[-0.7px]
+                tracking-tight
 
                 text-neutral-900
 
@@ -191,92 +272,20 @@ function Header() {
               ml-8
               hidden
               items-center
-              gap-1
+              gap-0.5
 
               md:flex
             "
           >
-            {/* Hackathons */}
-
-            <a
-              href="#hackathons"
-              className="
-                rounded-xl
-                px-3
-                py-2
-
-                text-sm
-                font-medium
-
-                text-neutral-600
-
-                transition
-                duration-200
-
-                hover:bg-neutral-100
-                hover:text-neutral-950
-
-                dark:text-neutral-400
-                dark:hover:bg-white/5
-                dark:hover:text-white
-              "
-            >
+            <a href="#hackathons" className={navLinkClass}>
               Hackathons
             </a>
 
-            {/* Find Teammates */}
-
-            <a
-              href="#teammates"
-              className="
-                rounded-xl
-                px-3
-                py-2
-
-                text-sm
-                font-medium
-
-                text-neutral-600
-
-                transition
-                duration-200
-
-                hover:bg-neutral-100
-                hover:text-neutral-950
-
-                dark:text-neutral-400
-                dark:hover:bg-white/5
-                dark:hover:text-white
-              "
-            >
+            <a href="#teammates" className={navLinkClass}>
               Find Teammates
             </a>
 
-            {/* My Teams */}
-
-            <a
-              href="#my-teams"
-              className="
-                rounded-xl
-                px-3
-                py-2
-
-                text-sm
-                font-medium
-
-                text-neutral-600
-
-                transition
-                duration-200
-
-                hover:bg-neutral-100
-                hover:text-neutral-950
-
-                dark:text-neutral-400
-                dark:hover:bg-white/5
-                dark:hover:text-white
-              "
-            >
+            <a href="#my-teams" className={navLinkClass}>
               My Teams
             </a>
           </nav>
@@ -290,7 +299,7 @@ function Header() {
               ml-auto
               flex
               items-center
-              gap-1
+              gap-0.5
             "
           >
             {/* ==================================================
@@ -305,31 +314,12 @@ function Header() {
                 type="button"
                 onClick={toggleNotifications}
                 aria-label="Notifications"
-                className="
-                  relative
-                  grid
-                  h-10
-                  w-10
-                  place-items-center
-                  rounded-xl
-
-                  text-neutral-500
-
-                  transition
-                  duration-200
-
-                  hover:bg-neutral-100
-                  hover:text-neutral-900
-
-                  dark:text-neutral-400
-                  dark:hover:bg-white/5
-                  dark:hover:text-white
-                "
+                className={iconBtnClass}
               >
                 {/* Bell icon */}
 
                 <svg
-                  className="h-5 w-5"
+                  className="h-[18px] w-[18px]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -344,10 +334,10 @@ function Header() {
                 {/* Notification count */}
 
                 <span
-                  className="
+                  className={`
                     absolute
-                    right-1
-                    top-1
+                    right-0.5
+                    top-0.5
 
                     grid
                     h-4
@@ -365,10 +355,14 @@ function Header() {
                     text-white
 
                     ring-2
-                    ring-white
+                    ${scrolled
+                      ? "ring-white/80 dark:ring-neutral-950/75"
+                      : "ring-slate-50 dark:ring-neutral-950"
+                    }
 
-                    dark:ring-neutral-950
-                  "
+                    transition-[box-shadow]
+                    duration-300
+                  `}
                 >
                   3
                 </span>
@@ -383,19 +377,20 @@ function Header() {
                   className="
                     absolute
                     right-0
-                    top-[calc(100%+10px)]
+                    top-[calc(100%+8px)]
 
-                    w-[350px]
+                    w-80
 
                     overflow-hidden
-                    rounded-2xl
+                    rounded-xl
 
                     bg-white
 
-                    shadow-[0_20px_60px_rgba(15,23,42,0.14)]
+                    shadow-lg
+                    shadow-neutral-950/8
 
                     dark:bg-neutral-900
-                    dark:shadow-[0_20px_60px_rgba(0,0,0,0.45)]
+                    dark:shadow-neutral-950/40
                   "
                 >
                   {/* Header */}
@@ -406,14 +401,14 @@ function Header() {
                       items-center
                       justify-between
                       px-4
-                      py-4
+                      py-3
                     "
                   >
                     <div>
                       <h3
                         className="
                           text-sm
-                          font-bold
+                          font-semibold
                           text-neutral-900
 
                           dark:text-white
@@ -424,7 +419,7 @@ function Header() {
 
                       <p
                         className="
-                          mt-1
+                          mt-0.5
                           text-xs
                           text-neutral-500
 
@@ -439,7 +434,7 @@ function Header() {
                       type="button"
                       className="
                         text-xs
-                        font-semibold
+                        font-medium
                         text-indigo-500
                         hover:text-indigo-600
                       "
@@ -448,256 +443,121 @@ function Header() {
                     </button>
                   </div>
 
-                  {/* Notification */}
+                  {/* Notification items */}
 
-                  <button
-                    type="button"
-                    className="
-                      flex
-                      w-full
-                      gap-3
-                      px-4
-                      py-3
-                      text-left
-
-                      transition
-
-                      hover:bg-neutral-50
-
-                      dark:hover:bg-white/5
-                    "
-                  >
-                    <div
+                  {[
+                    {
+                      icon: (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <line x1="19" y1="8" x2="19" y2="14" />
+                          <line x1="22" y1="11" x2="16" y2="11" />
+                        </svg>
+                      ),
+                      color: "bg-indigo-500/10 text-indigo-500",
+                      title: "New team invitation",
+                      desc: "You received a new team invitation.",
+                      time: "5 min ago",
+                    },
+                    {
+                      icon: (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                      ),
+                      color: "bg-emerald-500/10 text-emerald-500",
+                      title: "Team member joined",
+                      desc: "A new member joined your team.",
+                      time: "32 min ago",
+                    },
+                    {
+                      icon: (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7v5l3 2" />
+                        </svg>
+                      ),
+                      color: "bg-amber-500/10 text-amber-500",
+                      title: "Hackathon deadline",
+                      desc: "A saved hackathon closes soon.",
+                      time: "2 hrs ago",
+                    },
+                  ].map((n) => (
+                    <button
+                      key={n.title}
+                      type="button"
                       className="
-                        grid
-                        h-9
-                        w-9
-                        shrink-0
-                        place-items-center
-                        rounded-xl
+                        flex
+                        w-full
+                        gap-3
+                        px-4
+                        py-2.5
+                        text-left
 
-                        bg-indigo-500/10
-                        text-indigo-500
+                        transition-colors
+
+                        hover:bg-neutral-50
+
+                        dark:hover:bg-white/5
                       "
                     >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
+                      <div
+                        className={`
+                          grid
+                          h-8
+                          w-8
+                          shrink-0
+                          place-items-center
+                          rounded-lg
+                          ${n.color}
+                        `}
                       >
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <line x1="19" y1="8" x2="19" y2="14" />
-                        <line x1="22" y1="11" x2="16" y2="11" />
-                      </svg>
-                    </div>
+                        {n.icon}
+                      </div>
 
-                    <div>
-                      <p
-                        className="
-                          text-xs
-                          font-bold
-                          text-neutral-900
+                      <div className="min-w-0">
+                        <p
+                          className="
+                            text-xs
+                            font-semibold
+                            text-neutral-900
 
-                          dark:text-white
-                        "
-                      >
-                        New team invitation
-                      </p>
+                            dark:text-white
+                          "
+                        >
+                          {n.title}
+                        </p>
 
-                      <p
-                        className="
-                          mt-1
-                          text-xs
-                          leading-relaxed
-                          text-neutral-500
+                        <p
+                          className="
+                            mt-0.5
+                            text-xs
+                            leading-relaxed
+                            text-neutral-500
 
-                          dark:text-neutral-400
-                        "
-                      >
-                        You received a new team invitation.
-                      </p>
+                            dark:text-neutral-400
+                          "
+                        >
+                          {n.desc}
+                        </p>
 
-                      <span
-                        className="
-                          mt-1
-                          block
-                          text-[10px]
-                          text-neutral-400
-                        "
-                      >
-                        5 min ago
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* Notification */}
-
-                  <button
-                    type="button"
-                    className="
-                      flex
-                      w-full
-                      gap-3
-                      px-4
-                      py-3
-                      text-left
-
-                      transition
-
-                      hover:bg-neutral-50
-
-                      dark:hover:bg-white/5
-                    "
-                  >
-                    <div
-                      className="
-                        grid
-                        h-9
-                        w-9
-                        shrink-0
-                        place-items-center
-                        rounded-xl
-
-                        bg-emerald-500/10
-                        text-emerald-500
-                      "
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      >
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                      </svg>
-                    </div>
-
-                    <div>
-                      <p
-                        className="
-                          text-xs
-                          font-bold
-                          text-neutral-900
-
-                          dark:text-white
-                        "
-                      >
-                        Team member joined
-                      </p>
-
-                      <p
-                        className="
-                          mt-1
-                          text-xs
-                          text-neutral-500
-
-                          dark:text-neutral-400
-                        "
-                      >
-                        A new member joined your team.
-                      </p>
-
-                      <span
-                        className="
-                          mt-1
-                          block
-                          text-[10px]
-                          text-neutral-400
-                        "
-                      >
-                        32 min ago
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* Notification */}
-
-                  <button
-                    type="button"
-                    className="
-                      flex
-                      w-full
-                      gap-3
-                      px-4
-                      py-3
-                      text-left
-
-                      transition
-
-                      hover:bg-neutral-50
-
-                      dark:hover:bg-white/5
-                    "
-                  >
-                    <div
-                      className="
-                        grid
-                        h-9
-                        w-9
-                        shrink-0
-                        place-items-center
-                        rounded-xl
-
-                        bg-amber-500/10
-                        text-amber-500
-                      "
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      >
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 7v5l3 2" />
-                      </svg>
-                    </div>
-
-                    <div>
-                      <p
-                        className="
-                          text-xs
-                          font-bold
-                          text-neutral-900
-
-                          dark:text-white
-                        "
-                      >
-                        Hackathon deadline
-                      </p>
-
-                      <p
-                        className="
-                          mt-1
-                          text-xs
-                          text-neutral-500
-
-                          dark:text-neutral-400
-                        "
-                      >
-                        A saved hackathon closes soon.
-                      </p>
-
-                      <span
-                        className="
-                          mt-1
-                          block
-                          text-[10px]
-                          text-neutral-400
-                        "
-                      >
-                        2 hrs ago
-                      </span>
-                    </div>
-                  </button>
+                        <span
+                          className="
+                            mt-0.5
+                            block
+                            text-[10px]
+                            text-neutral-400
+                          "
+                        >
+                          {n.time}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
 
                   {/* View all */}
 
@@ -706,13 +566,13 @@ function Header() {
                     className="
                       w-full
                       px-4
-                      py-3
+                      py-2.5
 
                       text-xs
-                      font-bold
+                      font-semibold
                       text-indigo-500
 
-                      transition
+                      transition-colors
 
                       hover:bg-neutral-50
 
@@ -737,31 +597,13 @@ function Header() {
                   ? "Switch to light mode"
                   : "Switch to dark mode"
               }
-              className="
-                grid
-                h-10
-                w-10
-                place-items-center
-                rounded-xl
-
-                text-neutral-500
-
-                transition
-                duration-200
-
-                hover:bg-neutral-100
-                hover:text-neutral-900
-
-                dark:text-neutral-400
-                dark:hover:bg-white/5
-                dark:hover:text-white
-              "
+              className={iconBtnClass}
             >
               {darkMode ? (
                 /* SUN */
 
                 <svg
-                  className="h-5 w-5"
+                  className="h-[18px] w-[18px]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -783,7 +625,7 @@ function Header() {
                 /* MOON */
 
                 <svg
-                  className="h-5 w-5"
+                  className="h-[18px] w-[18px]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -803,22 +645,23 @@ function Header() {
               href="#login"
               className="
                 hidden
-                min-h-10
+                h-8
                 items-center
                 justify-center
 
-                rounded-xl
+                rounded-lg
 
                 bg-neutral-950
 
-                px-4
+                px-3.5
+                ml-1.5
 
                 text-sm
-                font-semibold
+                font-medium
                 text-white
 
-                transition
-                duration-200
+                transition-colors
+                duration-150
 
                 hover:bg-neutral-800
 
@@ -840,30 +683,16 @@ function Header() {
               type="button"
               onClick={toggleMobileMenu}
               aria-label="Toggle menu"
-              className="
-                grid
-                h-10
-                w-10
-                place-items-center
-                rounded-xl
-
-                text-neutral-600
-
-                transition
-
-                hover:bg-neutral-100
-
-                dark:text-neutral-300
-                dark:hover:bg-white/5
-
+              className={`
+                ${iconBtnClass}
                 md:hidden
-              "
+              `}
             >
               {mobileMenuOpen ? (
                 /* CLOSE */
 
                 <svg
-                  className="h-5 w-5"
+                  className="h-[18px] w-[18px]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -877,16 +706,16 @@ function Header() {
                 /* MENU */
 
                 <svg
-                  className="h-5 w-5"
+                  className="h-[18px] w-[18px]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                 >
-                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="7" x2="20" y2="7" />
                   <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="18" x2="20" y2="18" />
+                  <line x1="4" y1="17" x2="20" y2="17" />
                 </svg>
               )}
             </button>
@@ -897,125 +726,151 @@ function Header() {
             MOBILE NAVIGATION
             ================================================== */}
 
-        {mobileMenuOpen && (
+        <div
+          className={`
+            overflow-hidden
+            transition-[max-height,opacity]
+            duration-300
+            ease-out
+
+            md:hidden
+
+            ${mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0"}
+          `}
+        >
           <nav
             className="
               mx-auto
-              mt-2
               max-w-7xl
 
-              rounded-2xl
+              px-5
+              pb-4
 
-              bg-white/90
-
-              p-2
-
-              shadow-[0_12px_35px_rgba(15,23,42,0.08)]
-
-              backdrop-blur-xl
-
-              dark:bg-neutral-950/90
-              dark:shadow-[0_12px_35px_rgba(0,0,0,0.3)]
-
-              md:hidden
+              sm:px-6
+              lg:px-8
             "
           >
-            <a
-              href="#hackathons"
-              onClick={() => setMobileMenuOpen(false)}
+            <div
               className="
-                block
-                rounded-xl
-                px-4
-                py-3
+                space-y-0.5
+                border-t
+                border-neutral-200/60
+                pt-3
 
-                text-sm
-                font-medium
-
-                text-neutral-700
-
-                hover:bg-neutral-100
-
-                dark:text-neutral-300
-                dark:hover:bg-white/5
+                dark:border-white/8
               "
             >
-              Hackathons
-            </a>
+              <a
+                href="#hackathons"
+                onClick={() => setMobileMenuOpen(false)}
+                className="
+                  block
+                  rounded-lg
+                  px-3
+                  py-2.5
 
-            <a
-              href="#teammates"
-              onClick={() => setMobileMenuOpen(false)}
-              className="
-                block
-                rounded-xl
-                px-4
-                py-3
+                  text-sm
+                  font-medium
 
-                text-sm
-                font-medium
+                  text-neutral-700
 
-                text-neutral-700
+                  transition-colors
 
-                hover:bg-neutral-100
+                  hover:bg-neutral-100
 
-                dark:text-neutral-300
-                dark:hover:bg-white/5
-              "
-            >
-              Find Teammates
-            </a>
+                  dark:text-neutral-300
+                  dark:hover:bg-white/5
+                "
+              >
+                Hackathons
+              </a>
 
-            <a
-              href="#my-teams"
-              onClick={() => setMobileMenuOpen(false)}
-              className="
-                block
-                rounded-xl
-                px-4
-                py-3
+              <a
+                href="#teammates"
+                onClick={() => setMobileMenuOpen(false)}
+                className="
+                  block
+                  rounded-lg
+                  px-3
+                  py-2.5
 
-                text-sm
-                font-medium
+                  text-sm
+                  font-medium
 
-                text-neutral-700
+                  text-neutral-700
 
-                hover:bg-neutral-100
+                  transition-colors
 
-                dark:text-neutral-300
-                dark:hover:bg-white/5
-              "
-            >
-              My Teams
-            </a>
+                  hover:bg-neutral-100
 
-            <a
-              href="#login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="
-                mt-1
-                block
-                rounded-xl
+                  dark:text-neutral-300
+                  dark:hover:bg-white/5
+                "
+              >
+                Find Teammates
+              </a>
 
-                bg-neutral-950
+              <a
+                href="#my-teams"
+                onClick={() => setMobileMenuOpen(false)}
+                className="
+                  block
+                  rounded-lg
+                  px-3
+                  py-2.5
 
-                px-4
-                py-3
+                  text-sm
+                  font-medium
 
-                text-center
-                text-sm
-                font-semibold
-                text-white
+                  text-neutral-700
 
-                dark:bg-white
-                dark:text-neutral-950
-              "
-            >
-              Log in
-            </a>
+                  transition-colors
+
+                  hover:bg-neutral-100
+
+                  dark:text-neutral-300
+                  dark:hover:bg-white/5
+                "
+              >
+                My Teams
+              </a>
+
+              <a
+                href="#login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="
+                  mt-2
+                  block
+                  rounded-lg
+
+                  bg-neutral-950
+
+                  px-3
+                  py-2.5
+
+                  text-center
+                  text-sm
+                  font-medium
+                  text-white
+
+                  transition-colors
+
+                  hover:bg-neutral-800
+
+                  dark:bg-white
+                  dark:text-neutral-950
+                  dark:hover:bg-neutral-200
+                "
+              >
+                Log in
+              </a>
+            </div>
           </nav>
-        )}
+        </div>
       </header>
+
+      {/* Spacer so content is not hidden behind fixed header */}
+      <div className="h-14" />
     </>
   );
 }

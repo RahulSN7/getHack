@@ -5,7 +5,7 @@ function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-neutral-950">
       <Header />
 
-     <main className="relative overflow-hidden px-6 py-24">
+     <main className="relative overflow-hidden px-6 pt-16 pb-24">
   {/* Subtle background shapes */}
   <div
     className="

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Smooth theme transition */
+/* Color-scheme for native form controls */
 html {
   color-scheme: light;
 }
@@ -9,12 +9,27 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Smooth theme transitions — only bg and color, not everything */
+html,
+html body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  html body {
+    transition: none;
+  }
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 
   background: #f8fafc;
 }
