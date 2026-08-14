@@ -57,7 +57,7 @@ function App() {
       <FeaturedHackathons />
       <HowItWorks />
       <FindTeammates />
-       <WhyGetHack />
+      <WhyGetHack />
       <FAQ />
       <Footer />
     </div>
