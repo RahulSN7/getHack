@@ -30,6 +30,7 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");
+      root.style.colorScheme = "dark";
       try {
         localStorage.setItem("theme", "dark");
       } catch {
@@ -37,6 +38,7 @@ export function ThemeProvider({ children }) {
       }
     } else {
       root.classList.remove("dark");
+      root.style.colorScheme = "light";
       try {
         localStorage.setItem("theme", "light");
       } catch {

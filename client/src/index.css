@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-/* Color-scheme for native form controls */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Native color-scheme for form controls, scrollbars, etc. */
 html {
   color-scheme: light;
 }
@@ -9,10 +11,29 @@ html.dark {
   color-scheme: dark;
 }
 
-/* Smooth theme transitions — only bg and color, not everything */
+/* Theme Design Tokens */
+:root {
+  --color-bg-app: #f8fafc;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-subtle: #f1f5f9;
+  --color-text-main: #09090b;
+  --color-text-muted: #64748b;
+  --color-border-main: #e2e8f0;
+}
+
+html.dark {
+  --color-bg-app: #0a0a0a;
+  --color-bg-surface: #121212;
+  --color-bg-surface-subtle: #18181b;
+  --color-text-main: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-border-main: #27272a;
+}
+
+/* Smooth theme transitions for background and text */
 html,
 html body {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -31,9 +52,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  background: #f8fafc;
-}
-
-html.dark body {
-  background: #0a0a0a;
+  background-color: var(--color-bg-app);
+  color: var(--color-text-main);
 }

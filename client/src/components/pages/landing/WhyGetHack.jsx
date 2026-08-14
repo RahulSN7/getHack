@@ -1,61 +1,62 @@
 import { useState } from "react";
 
-const journeySteps = [
+const stages = [
   {
     id: "01",
     phase: "Discover",
-    title: "Find hackathons aligned with your stack",
+    title: "Find hackathons worth building for.",
+    subtitle: "Filter opportunities by skills, technology, interests, deadline, location, and domain.",
     description:
-      "Filter opportunities by specific technologies, domains, location, difficulty level, submission deadlines, and prize pools to find what fits you best.",
-    tags: ["Tech Stack", "Domain", "Format & Location", "Prizes"],
-    badge: "01 / Discover",
+      "Stop browsing endless lists. getHack surfaces curated hackathons matching your exact stack and interests, whether you're looking for AI sprints, Web3 challenges, or social impact hackathons.",
+    badge: "01 · DISCOVER",
   },
   {
     id: "02",
     phase: "Match",
-    title: "Skill-based teammate discovery",
+    title: "Find people who complete your team.",
+    subtitle: "Identify complementary skills, not just random user profiles.",
     description:
-      "Stop searching blindly. getHack maps required project capabilities against member skills to surface complementary teammates automatically.",
-    tags: ["Skill Gap Analysis", "Role Matching", "Compatibility"],
-    badge: "02 / Match",
+      "Great teams are built on complementary strengths. getHack helps you see what capabilities your team already has and connects you directly with builders who bring the missing pieces.",
+    badge: "02 · MATCH",
   },
   {
     id: "03",
     phase: "Analyze",
     isAiSpotlight: true,
-    title: "AI-Powered Hackathon & Team Intelligence",
+    title: "Understand what your team is missing.",
+    subtitle: "Intelligent AI analysis of hackathon rules and team skill gaps.",
     description:
-      "Our built-in AI Assistant analyzes complex hackathon rules, evaluates team composition, pinpoints missing skill roles, and recommends ideal team matches.",
-    tags: ["Rule Parsing", "Skill Gap Detection", "Smart Recommendations"],
-    badge: "03 / AI Intelligence",
+      "Our AI Assistant evaluates team composition against hackathon requirements, pinpoints missing skill roles, and recommends ideal candidate matches automatically.",
+    badge: "03 · ANALYZE (AI INTELLIGENCE)",
   },
   {
     id: "04",
     phase: "Build",
-    title: "Structured team formation",
+    title: "Turn the right people into a team.",
+    subtitle: "Lock in roles, confirm rosters, and prepare for execution.",
     description:
-      "Form official project teams, lock in member commitments, assign roles, and align on technical goals before the hackathon clock starts.",
-    tags: ["Team Roster", "Role Assignment", "Goal Alignment"],
-    badge: "04 / Build",
+      "Transition from individual developers into a structured team. Define project goals, assign responsibilities, and confirm your roster before the hackathon clock starts.",
+    badge: "04 · BUILD",
   },
   {
     id: "05",
     phase: "Collaborate",
-    title: "Seamless project coordination",
+    title: "Build, communicate, and ship together.",
+    subtitle: "Centralized communication and sprint coordination.",
     description:
-      "Keep all hackathon communication, resource sharing, and execution updates centralized with dedicated team chat and task spaces.",
-    tags: ["Team Workspace", "Live Chat", "Resource Hub"],
-    badge: "05 / Collaborate",
+      "Keep all hackathon discussion, resource sharing, and task progress in one place with dedicated team chat and real-time coordination tools.",
+    badge: "05 · COLLABORATE",
   },
 ];
 
 function WhyGetHack() {
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const currentStage = stages[activeIdx];
 
   return (
-    <section id="why-gethack" className="px-6 py-24">
+    <section id="why-gethack" className="px-6 py-24 bg-slate-50/50 dark:bg-neutral-950/60 transition-colors">
       <div className="mx-auto max-w-7xl">
-        {/* Header section */}
+        {/* Section Header */}
         <div className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">
             WHY GETHACK
@@ -64,94 +65,104 @@ function WhyGetHack() {
             More than a hackathon directory.
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
-            Find the right opportunity, build the right team, and turn your idea into something worth shipping.
+            Find the right opportunity, connect with the right people, and build something meaningful together.
           </p>
         </div>
 
-        {/* Journey Progress Bar */}
+        {/* Journey Progress Track */}
         <div className="mt-12 overflow-x-auto pb-4 pt-2 no-scrollbar">
-          <div className="flex items-center gap-2 min-w-max border-b border-neutral-200 pb-4 dark:border-neutral-800">
-            {journeySteps.map((step, idx) => (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => setActiveStep(idx)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                  ${
-                    activeStep === idx
-                      ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm"
-                      : "text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-900"
-                  }
-                `}
-              >
-                <span className="text-xs opacity-70">{step.id}</span>
-                <span>{step.phase}</span>
-                {idx < journeySteps.length - 1 && (
-                  <span className="ml-2 text-neutral-300 dark:text-neutral-700">→</span>
-                )}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 min-w-max border-b border-neutral-200/80 pb-4 dark:border-neutral-800">
+            {stages.map((stage, idx) => {
+              const isActive = activeIdx === idx;
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  onClick={() => setActiveIdx(idx)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                    ${
+                      isActive
+                        ? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs"
+                        : "text-neutral-600 hover:text-neutral-950 hover:bg-neutral-200/60 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-900"
+                    }
+                  `}
+                >
+                  <span className="text-xs font-bold opacity-60">{stage.id}</span>
+                  <span>{stage.phase}</span>
+                  {idx < stages.length - 1 && (
+                    <span className="ml-2 text-neutral-300 dark:text-neutral-700">→</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Product Storytelling Layout */}
+        {/* Asymmetrical Editorial Product Layout */}
         <div className="mt-10 grid gap-8 lg:grid-cols-12 lg:items-stretch">
-          {/* Left Column: Interactive Steps List */}
-          <div className="space-y-4 lg:col-span-5">
-            {journeySteps.map((step, idx) => (
-              <div
-                key={step.id}
-                onClick={() => setActiveStep(idx)}
-                className={`
-                  group cursor-pointer rounded-xl border p-5 transition-all duration-200
-                  ${
-                    activeStep === idx
-                      ? step.isAiSpotlight
-                        ? "border-indigo-500/50 bg-indigo-500/5 dark:bg-indigo-500/10 shadow-sm"
-                        : "border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900 shadow-sm"
-                      : "border-neutral-200/80 bg-neutral-50/50 hover:border-neutral-300 dark:border-neutral-800/80 dark:bg-neutral-950/40 dark:hover:border-neutral-700"
-                  }
-                `}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-bold uppercase tracking-wider ${step.isAiSpotlight ? "text-indigo-500" : "text-neutral-400 dark:text-neutral-500"}`}>
-                    {step.badge}
-                  </span>
-                  {activeStep === idx && (
-                    <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                  )}
+          {/* Left Column (5 Cols): Stage Selector Timeline List */}
+          <div className="space-y-3.5 lg:col-span-5">
+            {stages.map((stage, idx) => {
+              const isActive = activeIdx === idx;
+              return (
+                <div
+                  key={stage.id}
+                  onClick={() => setActiveIdx(idx)}
+                  className={`
+                    group cursor-pointer rounded-xl border p-5 transition-all duration-200
+                    ${
+                      isActive
+                        ? stage.isAiSpotlight
+                          ? "border-indigo-500/60 bg-indigo-500/5 dark:bg-indigo-500/10 shadow-xs"
+                          : "border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900 shadow-xs"
+                        : "border-neutral-200/70 bg-white/50 hover:border-neutral-300 dark:border-neutral-800/80 dark:bg-neutral-900/30 dark:hover:border-neutral-700"
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-[11px] font-bold uppercase tracking-wider ${
+                        stage.isAiSpotlight ? "text-indigo-500" : "text-neutral-400 dark:text-neutral-500"
+                      }`}
+                    >
+                      {stage.badge}
+                    </span>
+                    {isActive && (
+                      <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                    )}
+                  </div>
+                  <h3 className="mt-2 text-base font-semibold text-neutral-900 dark:text-white">
+                    {stage.title}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+                    {stage.subtitle}
+                  </p>
                 </div>
-                <h3 className="mt-2 text-base font-semibold text-neutral-900 dark:text-white">
-                  {step.title}
-                </h3>
-                <p className="mt-1.5 line-clamp-2 text-sm text-neutral-500 dark:text-neutral-400">
-                  {step.description}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Right Column: Active Feature Detail Box */}
+          {/* Right Column (7 Cols): Product Story UI Display */}
           <div className="lg:col-span-7">
             <div
               className={`
-                h-full rounded-2xl border p-8 flex flex-col justify-between transition-all duration-300
+                h-full rounded-2xl border p-7 sm:p-8 flex flex-col justify-between transition-all duration-300
                 ${
-                  journeySteps[activeStep].isAiSpotlight
-                    ? "border-indigo-500/30 bg-gradient-to-br from-indigo-50/40 via-white to-indigo-500/5 dark:from-indigo-950/20 dark:via-neutral-900 dark:to-neutral-900"
+                  currentStage.isAiSpotlight
+                    ? "border-indigo-500/40 bg-gradient-to-b from-indigo-500/5 via-white to-white dark:from-indigo-950/20 dark:via-neutral-900 dark:to-neutral-900"
                     : "border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
                 }
               `}
             >
               <div>
-                {/* Header Badge */}
-                <div className="flex items-center gap-3">
-                  <span className="rounded-md bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                    {journeySteps[activeStep].badge}
+                {/* Stage Header Badge */}
+                <div className="flex items-center gap-2.5">
+                  <span className="rounded-md bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                    STAGE {currentStage.id}
                   </span>
-                  {journeySteps[activeStep].isAiSpotlight && (
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-bold text-indigo-500 dark:bg-indigo-500/20 dark:text-indigo-400">
+                  {currentStage.isAiSpotlight && (
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                       </svg>
@@ -160,78 +171,203 @@ function WhyGetHack() {
                   )}
                 </div>
 
-                {/* Feature Title & Detail Text */}
-                <h3 className="mt-6 text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl dark:text-white">
-                  {journeySteps[activeStep].title}
+                {/* Stage Title & Copy */}
+                <h3 className="mt-5 text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl dark:text-white">
+                  {currentStage.title}
                 </h3>
-                <p className="mt-4 text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
-                  {journeySteps[activeStep].description}
+                <p className="mt-3 text-sm sm:text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
+                  {currentStage.description}
                 </p>
 
-                {/* Tags preview */}
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {journeySteps[activeStep].tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-lg bg-neutral-100 dark:bg-neutral-800/80 px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-300"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                {/* DYNAMIC PRODUCT INTERACTION MOCKUP PER STAGE */}
+                <div className="mt-7">
+                  {/* STAGE 01: DISCOVER MOCKUP */}
+                  {activeIdx === 0 && (
+                    <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/80 p-5 dark:border-neutral-800 dark:bg-neutral-950/60">
+                      <div className="flex items-center justify-between text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-3">
+                        <span>Active Filter Signals</span>
+                        <span className="text-indigo-500">42 Hackathons Found</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 text-xs">
+                        <span className="rounded-md bg-indigo-500/10 px-2.5 py-1 font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                          Tech: React & Node.js ✕
+                        </span>
+                        <span className="rounded-md bg-neutral-200/70 dark:bg-neutral-800 px-2.5 py-1 font-medium text-neutral-700 dark:text-neutral-300">
+                          Format: Online
+                        </span>
+                        <span className="rounded-md bg-neutral-200/70 dark:bg-neutral-800 px-2.5 py-1 font-medium text-neutral-700 dark:text-neutral-300">
+                          Deadline: &lt; 14 Days
+                        </span>
+                        <span className="rounded-md bg-neutral-200/70 dark:bg-neutral-800 px-2.5 py-1 font-medium text-neutral-700 dark:text-neutral-300">
+                          Domain: AI & Web3
+                        </span>
+                      </div>
 
-                {/* AI Assistant Spotlight Interactive Graphic / Teaser */}
-                {journeySteps[activeStep].isAiSpotlight && (
-                  <div className="mt-8 rounded-xl border border-indigo-200/60 bg-white/80 p-5 shadow-xs dark:border-indigo-900/50 dark:bg-neutral-950/60">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      </svg>
-                      getHack AI Analysis Summary
-                    </div>
-                    <div className="mt-3 space-y-2 text-xs text-neutral-600 dark:text-neutral-300 font-mono">
-                      <div className="flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold">✓</span>
-                        <span>Hackathon Fit: High match for Web3 & React developers</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-amber-500 font-bold">!</span>
-                        <span>Team Skill Gap Identified: Needs 1 Backend (Node.js/Go) engineer</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <span className="text-indigo-500 font-bold">★</span>
-                        <span>Recommended Teammate: 2 compatible candidates available</span>
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+                          <div>
+                            <p className="font-semibold text-neutral-900 dark:text-white">BuildWithAI 2025</p>
+                            <p className="text-neutral-500 dark:text-neutral-400">Google Developer Groups · Online</p>
+                          </div>
+                          <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
+                            $2,500 Prize
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* STAGE 02: MATCH MOCKUP (COMPLEMENTARY SKILLS) */}
+                  {activeIdx === 1 && (
+                    <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/80 p-5 dark:border-neutral-800 dark:bg-neutral-950/60">
+                      <div className="text-xs font-semibold text-neutral-900 dark:text-white mb-3">
+                        Complementary Skill Matrix
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 text-xs">
+                        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 dark:bg-emerald-500/10">
+                          <p className="font-bold text-emerald-700 dark:text-emerald-400">Current Team Skills</p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            <span className="rounded bg-white px-2 py-0.5 font-medium text-neutral-800 shadow-xs dark:bg-neutral-800 dark:text-neutral-200">React ✓</span>
+                            <span className="rounded bg-white px-2 py-0.5 font-medium text-neutral-800 shadow-xs dark:bg-neutral-800 dark:text-neutral-200">Node.js ✓</span>
+                            <span className="rounded bg-white px-2 py-0.5 font-medium text-neutral-800 shadow-xs dark:bg-neutral-800 dark:text-neutral-200">UI/UX ✓</span>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 dark:bg-amber-500/10">
+                          <p className="font-bold text-amber-700 dark:text-amber-400">Needed Complementary Skills</p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            <span className="rounded bg-amber-100 px-2 py-0.5 font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">AI/ML Engineer</span>
+                            <span className="rounded bg-amber-100 px-2 py-0.5 font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">Backend Architect</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-3 text-xs dark:bg-indigo-500/10">
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-full bg-indigo-500 text-white font-bold grid place-items-center text-[10px]">AP</div>
+                          <div>
+                            <p className="font-semibold text-neutral-900 dark:text-white">Arjun Patel (PyTorch / FastAPI)</p>
+                            <p className="text-neutral-500 dark:text-neutral-400">Matches 100% of needed AI/ML role</p>
+                          </div>
+                        </div>
+                        <span className="rounded bg-indigo-500 text-white px-2.5 py-1 font-bold text-[11px]">Connect</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STAGE 03: ANALYZE MOCKUP (EXACT AI TEAM SKILL ANALYSIS REQUIREMENT) */}
+                  {activeIdx === 2 && (
+                    <div className="rounded-xl border border-indigo-500/40 bg-white p-5 shadow-xs dark:border-indigo-900/60 dark:bg-neutral-950/80">
+                      <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-white">
+                          <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                          Team Skill Analysis
+                        </div>
+                        <span className="text-[10px] font-mono text-indigo-500">getHack Intelligence Engine</span>
+                      </div>
+
+                      {/* User Requested UI Format */}
+                      <div className="mt-4 space-y-2 text-xs font-mono">
+                        <div className="flex items-center justify-between rounded bg-neutral-50 px-3 py-1.5 dark:bg-neutral-900">
+                          <span className="text-neutral-700 dark:text-neutral-300 font-medium">Frontend</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">✓ Covered</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded bg-neutral-50 px-3 py-1.5 dark:bg-neutral-900">
+                          <span className="text-neutral-700 dark:text-neutral-300 font-medium">Backend</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">✓ Covered</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded bg-neutral-50 px-3 py-1.5 dark:bg-neutral-900">
+                          <span className="text-neutral-700 dark:text-neutral-300 font-medium">UI/UX</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">✓ Covered</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 dark:bg-amber-500/10">
+                          <span className="font-bold text-amber-800 dark:text-amber-300">Missing</span>
+                          <span className="font-bold text-amber-700 dark:text-amber-400">AI/ML</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between rounded border border-indigo-200 bg-indigo-50/50 px-3 py-2 text-xs dark:border-indigo-900/60 dark:bg-indigo-950/40">
+                        <span className="text-neutral-700 dark:text-neutral-300">Suggested teammates:</span>
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">3 potential matches</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STAGE 04: BUILD MOCKUP */}
+                  {activeIdx === 3 && (
+                    <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/80 p-5 dark:border-neutral-800 dark:bg-neutral-950/60">
+                      <div className="flex items-center justify-between text-xs font-semibold text-neutral-900 dark:text-white mb-3">
+                        <span>Official Team Roster</span>
+                        <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Roster Locked (4/4)</span>
+                      </div>
+
+                      <div className="grid gap-2 text-xs">
+                        {[
+                          { name: "Priya Sharma", role: "Team Lead & Full Stack", status: "Confirmed" },
+                          { name: "Arjun Patel", role: "AI/ML Engineer", status: "Confirmed" },
+                          { name: "Sneha Reddy", role: "Backend Architect", status: "Confirmed" },
+                          { name: "Karthik Nair", role: "UI/UX Designer", status: "Confirmed" },
+                        ].map((member) => (
+                          <div key={member.name} className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-neutral-900">
+                            <div>
+                              <p className="font-semibold text-neutral-900 dark:text-white">{member.name}</p>
+                              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">{member.role}</p>
+                            </div>
+                            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">✓ {member.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STAGE 05: COLLABORATE MOCKUP */}
+                  {activeIdx === 4 && (
+                    <div className="rounded-xl border border-neutral-200/90 bg-neutral-50/80 p-5 dark:border-neutral-800 dark:bg-neutral-950/60">
+                      <div className="flex items-center justify-between text-xs font-semibold text-neutral-900 dark:text-white mb-3">
+                        <span>Sprint Coordination & Chat</span>
+                        <span className="text-indigo-500 font-mono text-[11px]">#team-workspace</span>
+                      </div>
+
+                      <div className="space-y-2 text-xs">
+                        <div className="rounded-lg border border-neutral-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-neutral-900">
+                          <p className="font-bold text-neutral-900 dark:text-white">Priya <span className="text-[10px] font-normal text-neutral-400">10:14 AM</span></p>
+                          <p className="mt-0.5 text-neutral-600 dark:text-neutral-300">Pushed initial UI components to GitHub repo. API endpoints ready for testing.</p>
+                        </div>
+                        <div className="rounded-lg border border-neutral-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-neutral-900">
+                          <p className="font-bold text-neutral-900 dark:text-white">Arjun <span className="text-[10px] font-normal text-neutral-400">10:16 AM</span></p>
+                          <p className="mt-0.5 text-neutral-600 dark:text-neutral-300">Model inference API deployed on FastAPI server. Testing response times now.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Step Navigation Controls */}
+              {/* Stage Stepper Footer Controls */}
               <div className="mt-8 flex items-center justify-between border-t border-neutral-100 dark:border-neutral-800 pt-5">
                 <button
                   type="button"
-                  disabled={activeStep === 0}
-                  onClick={() => setActiveStep((prev) => Math.max(0, prev - 1))}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-950 disabled:opacity-40 dark:text-neutral-400 dark:hover:text-white"
+                  disabled={activeIdx === 0}
+                  onClick={() => setActiveIdx((prev) => Math.max(0, prev - 1))}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-950 disabled:opacity-40 dark:text-neutral-400 dark:hover:text-white transition-colors"
                 >
-                  ← Previous Step
+                  ← Previous
                 </button>
                 <div className="flex gap-1.5">
-                  {journeySteps.map((_, i) => (
+                  {stages.map((_, i) => (
                     <span
                       key={i}
                       className={`h-1.5 rounded-full transition-all duration-200 ${
-                        activeStep === i ? "w-6 bg-indigo-500" : "w-1.5 bg-neutral-300 dark:bg-neutral-700"
+                        activeIdx === i ? "w-6 bg-indigo-500" : "w-1.5 bg-neutral-300 dark:bg-neutral-700"
                       }`}
                     />
                   ))}
                 </div>
                 <button
                   type="button"
-                  disabled={activeStep === journeySteps.length - 1}
-                  onClick={() => setActiveStep((prev) => Math.min(journeySteps.length - 1, prev + 1))}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-500 hover:text-indigo-600 disabled:opacity-40 dark:text-indigo-400 dark:hover:text-indigo-300"
+                  disabled={activeIdx === stages.length - 1}
+                  onClick={() => setActiveIdx((prev) => Math.min(stages.length - 1, prev + 1))}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-500 hover:text-indigo-600 disabled:opacity-40 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
                 >
                   Next Step →
                 </button>
@@ -240,10 +376,10 @@ function WhyGetHack() {
           </div>
         </div>
 
-        {/* Closing Callout Footer */}
-        <div className="mt-16 text-center border-t border-neutral-200 dark:border-neutral-800 pt-10">
-          <p className="text-sm font-semibold tracking-wide text-neutral-500 dark:text-neutral-400">
-            Find the opportunity. Find the people. Build together.
+        {/* Closing Core Journey Statement */}
+        <div className="mt-16 border-t border-neutral-200/80 dark:border-neutral-800 pt-10 text-center">
+          <p className="text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400">
+            Discover opportunities. Connect the people. Understand what&apos;s missing. Build the team. Collaborate.
           </p>
         </div>
       </div>
