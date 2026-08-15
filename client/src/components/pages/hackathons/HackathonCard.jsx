@@ -4,26 +4,7 @@
 
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
-
-// ---------------------------------------------------------------------------
-// Deadline calculation
-// ---------------------------------------------------------------------------
-
-function getDeadlineText(isoDate, isOpen) {
-  if (!isOpen) return "Registration closed";
-
-  const now = new Date();
-  const deadline = new Date(isoDate);
-  const msLeft = deadline - now;
-
-  if (msLeft <= 0) return "Registration closed";
-
-  const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-
-  if (daysLeft <= 0) return "Today";
-  if (daysLeft === 1) return "1 day left";
-  return `${daysLeft} days left`;
-}
+import DeadlineDisplay from "./DeadlineDisplay";
 
 // ---------------------------------------------------------------------------
 // Team size formatting helper
@@ -65,7 +46,7 @@ function ModeDisplay({ mode, location }) {
           <circle cx="12" cy="12" r="10" />
           <path d="M2 12h20" />
           <path
-            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"
           />
         </svg>
       ) : (
@@ -115,14 +96,15 @@ function HackathonCard({ hackathon }) {
   const { isSaved, toggleSave } = useSaved();
   const saved = id ? isSaved(id) : false;
 
-  // Calculate actual registration availability
+  // Calculate actual registration availability based on deadline and status flag
   const isOpen =
-    Boolean(registrationOpen) && new Date(registrationDeadline) > new Date();
+    Boolean(registrationOpen) &&
+    Boolean(registrationDeadline) &&
+    new Date(registrationDeadline) > new Date();
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
   const initial = name ? name.charAt(0).toUpperCase() : "H";
-  const deadlineText = getDeadlineText(registrationDeadline, isOpen);
   const teamSizeLabel = formatTeamSize(minTeamSize, maxTeamSize, teamSize);
 
   const handleSaveToggle = (e) => {
@@ -247,15 +229,10 @@ function HackathonCard({ hackathon }) {
         <div className="mt-4 flex items-center justify-between gap-2 text-xs">
           <ModeDisplay mode={mode} location={location} />
 
-          <span
-            className={`shrink-0 font-medium ${
-              isOpen
-                ? "text-neutral-600 dark:text-neutral-400"
-                : "text-neutral-400 dark:text-neutral-500"
-            }`}
-          >
-            {deadlineText}
-          </span>
+          <DeadlineDisplay
+            registrationDeadline={registrationDeadline}
+            registrationOpen={registrationOpen}
+          />
         </div>
 
         {/* ── 3. Team Size & Registration Fee ── */}

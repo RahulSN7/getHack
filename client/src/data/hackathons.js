@@ -2,13 +2,9 @@
 // Shared hackathon data
 // Used by FeaturedHackathons (landing page) and Hackathons (discovery page)
 // ---------------------------------------------------------------------------
-//
-// registrationDeadline: ISO 8601 date string — used for sorting and urgency display
-// registrationOpen: whether registration is currently accepting entries
-// mode: "Online" | "Offline" | "Hybrid"
-// location: city/venue string — relevant for Offline/Hybrid
-// prizeValue: numeric value in INR for sorting (₹1 = 1, $1 ≈ 83)
-//
+
+const now = Date.now();
+const relISO = (msFromNow) => new Date(now + msFromNow).toISOString();
 
 export const HACKATHONS = [
   {
@@ -17,7 +13,7 @@ export const HACKATHONS = [
     organizer: "TechCommunity India",
     mode: "Online",
     location: null,
-    registrationDeadline: "2026-08-18T23:59:00+05:30",
+    registrationDeadline: relISO((18 * 60 + 42) * 60 * 1000), // ~18h 42m remaining
     hackathonDate: "2026-08-25",
     registrationOpen: true,
     fee: "Free",
@@ -37,8 +33,8 @@ export const HACKATHONS = [
     organizer: "Google Developer Groups",
     mode: "Hybrid",
     location: "Bengaluru",
-    registrationDeadline: "2026-08-22T23:59:00+05:30",
-    hackathonDate: "2026-08-29",
+    registrationDeadline: "2026-09-20T23:59:00+05:30", // > 24 hours remaining
+    hackathonDate: "2026-09-29",
     registrationOpen: true,
     fee: "Free",
     minTeamSize: 1,
@@ -57,8 +53,8 @@ export const HACKATHONS = [
     organizer: "Startup Karnataka",
     mode: "Offline",
     location: "Bengaluru",
-    registrationDeadline: "2026-08-27T23:59:00+05:30",
-    hackathonDate: "2026-09-03",
+    registrationDeadline: "2026-09-27T23:59:00+05:30",
+    hackathonDate: "2026-10-03",
     registrationOpen: true,
     fee: "₹499",
     minTeamSize: 3,
@@ -77,7 +73,7 @@ export const HACKATHONS = [
     organizer: "MedTech Alliance",
     mode: "Online",
     location: null,
-    registrationDeadline: "2026-08-20T23:59:00+05:30",
+    registrationDeadline: relISO(42 * 60 * 1000), // ~42m remaining
     hackathonDate: "2026-08-27",
     registrationOpen: true,
     fee: "Free",
@@ -97,7 +93,7 @@ export const HACKATHONS = [
     organizer: "FOSS United",
     mode: "Online",
     location: null,
-    registrationDeadline: "2026-08-29T23:59:00+05:30",
+    registrationDeadline: relISO(38 * 1000), // ~38s remaining
     hackathonDate: "2026-09-05",
     registrationOpen: true,
     fee: "Free",
@@ -117,8 +113,8 @@ export const HACKATHONS = [
     organizer: "Razorpay Community",
     mode: "Hybrid",
     location: "Mumbai",
-    registrationDeadline: "2026-08-24T23:59:00+05:30",
-    hackathonDate: "2026-09-01",
+    registrationDeadline: "2026-09-24T23:59:00+05:30",
+    hackathonDate: "2026-10-01",
     registrationOpen: true,
     fee: "Free",
     minTeamSize: 2,
@@ -137,8 +133,8 @@ export const HACKATHONS = [
     organizer: "GreenTech Foundation",
     mode: "Online",
     location: null,
-    registrationDeadline: "2026-09-05T23:59:00+05:30",
-    hackathonDate: "2026-09-12",
+    registrationDeadline: "2026-10-05T23:59:00+05:30",
+    hackathonDate: "2026-10-12",
     registrationOpen: true,
     fee: "Free",
     minTeamSize: 1,
@@ -157,8 +153,8 @@ export const HACKATHONS = [
     organizer: "ETHIndia",
     mode: "Offline",
     location: "Delhi",
-    registrationDeadline: "2026-09-10T23:59:00+05:30",
-    hackathonDate: "2026-09-17",
+    registrationDeadline: "2026-10-10T23:59:00+05:30",
+    hackathonDate: "2026-10-17",
     registrationOpen: true,
     fee: "Free",
     minTeamSize: 2,
@@ -197,8 +193,8 @@ export const HACKATHONS = [
     organizer: "NullCon",
     mode: "Online",
     location: null,
-    registrationDeadline: "2026-09-15T23:59:00+05:30",
-    hackathonDate: "2026-09-20",
+    registrationDeadline: "2026-10-15T23:59:00+05:30",
+    hackathonDate: "2026-10-20",
     registrationOpen: true,
     fee: "Free",
     minTeamSize: 1,
@@ -217,8 +213,8 @@ export const HACKATHONS = [
     organizer: "Ola Future Factory",
     mode: "Offline",
     location: "Bengaluru",
-    registrationDeadline: "2026-09-01T23:59:00+05:30",
-    hackathonDate: "2026-09-08",
+    registrationDeadline: "2026-10-01T23:59:00+05:30",
+    hackathonDate: "2026-10-08",
     registrationOpen: true,
     fee: "₹299",
     minTeamSize: 2,
@@ -237,8 +233,8 @@ export const HACKATHONS = [
     organizer: "Postman",
     mode: "Online",
     location: null,
-    registrationDeadline: "2026-09-08T23:59:00+05:30",
-    hackathonDate: "2026-09-15",
+    registrationDeadline: "2026-10-08T23:59:00+05:30",
+    hackathonDate: "2026-10-15",
     registrationOpen: true,
     fee: "Free",
     minTeamSize: 1,
