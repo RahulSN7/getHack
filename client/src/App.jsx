@@ -1,6 +1,7 @@
 // App.jsx
 
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { SavedProvider } from "./context/SavedContext";
 import Header from "./components/Header/Header";
 import HeroCTA from "./components/pages/landing/HeroCTA";
 import FeaturedHackathons from "./components/pages/landing/FeaturedHackathons";
@@ -12,7 +13,20 @@ import Footer from "./components/pages/landing/Footer";
 import HackathonsPage from "./components/pages/hackathons/Hackathons";
 
 // ---------------------------------------------------------------------------
-// Landing page — unchanged
+// Root Layout — shared shell containing Header & page content
+// ---------------------------------------------------------------------------
+
+function RootLayout() {
+  return (
+    <>
+      <Header />
+      <Outlet />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Landing page
 // ---------------------------------------------------------------------------
 
 function LandingPage() {
@@ -71,20 +85,39 @@ function LandingPage() {
 }
 
 // ---------------------------------------------------------------------------
-// App — with routing
+// Router configuration using createBrowserRouter
+// ---------------------------------------------------------------------------
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      {
+        index: true,
+        element: <LandingPage />,
+      },
+      {
+        path: "hackathons",
+        element: <HackathonsPage />,
+      },
+      {
+        path: "*",
+        element: <LandingPage />,
+      },
+    ],
+  },
+]);
+
+// ---------------------------------------------------------------------------
+// App — router & provider wrapper
 // ---------------------------------------------------------------------------
 
 function App() {
   return (
-    <BrowserRouter>
-      <Header />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/hackathons" element={<HackathonsPage />} />
-        {/* Catch-all: redirect to landing */}
-        <Route path="*" element={<LandingPage />} />
-      </Routes>
-    </BrowserRouter>
+    <SavedProvider>
+      <RouterProvider router={router} />
+    </SavedProvider>
   );
 }
 

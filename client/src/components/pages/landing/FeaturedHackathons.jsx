@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { HACKATHONS } from "../../../data/hackathons";
 import HackathonCard from "../hackathons/HackathonCard";
 
@@ -42,8 +43,8 @@ function FeaturedHackathons() {
             </p>
           </div>
 
-          <a
-            href="/hackathons"
+          <Link
+            to="/hackathons"
             className="
               hidden
               shrink-0
@@ -61,7 +62,7 @@ function FeaturedHackathons() {
             "
           >
             View all →
-          </a>
+          </Link>
         </div>
 
         {/* Card grid */}
@@ -82,8 +83,8 @@ function FeaturedHackathons() {
 
         {/* Mobile "View all" */}
         <div className="mt-8 text-center sm:hidden">
-          <a
-            href="/hackathons"
+          <Link
+            to="/hackathons"
             className="
               text-sm
               font-medium
@@ -96,7 +97,7 @@ function FeaturedHackathons() {
             "
           >
             View all hackathons →
-          </a>
+          </Link>
         </div>
       </div>
     </section>

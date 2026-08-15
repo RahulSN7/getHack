@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 
 function Header() {
@@ -184,8 +185,8 @@ function Header() {
               LOGO
               ================================================== */}
 
-          <a
-            href="/"
+          <Link
+            to="/"
             className="
               group
               flex
@@ -238,7 +239,7 @@ function Header() {
             >
               get<span className="text-indigo-500">Hack</span>
             </span>
-          </a>
+          </Link>
 
           {/* ==================================================
               DESKTOP NAVIGATION
@@ -254,17 +255,44 @@ function Header() {
               md:flex
             "
           >
-            <a href="/hackathons" className={navLinkClass}>
+            <NavLink
+              to="/hackathons"
+              className={({ isActive }) =>
+                `${navLinkClass} ${
+                  isActive
+                    ? "font-semibold text-neutral-950 dark:text-white"
+                    : ""
+                }`
+              }
+            >
               Hackathons
-            </a>
+            </NavLink>
 
-            <a href="/teammates" className={navLinkClass}>
+            <NavLink
+              to="/teammates"
+              className={({ isActive }) =>
+                `${navLinkClass} ${
+                  isActive
+                    ? "font-semibold text-neutral-950 dark:text-white"
+                    : ""
+                }`
+              }
+            >
               Find Teammates
-            </a>
+            </NavLink>
 
-            <a href="/my-network" className={navLinkClass}>
+            <NavLink
+              to="/my-network"
+              className={({ isActive }) =>
+                `${navLinkClass} ${
+                  isActive
+                    ? "font-semibold text-neutral-950 dark:text-white"
+                    : ""
+                }`
+              }
+            >
               My Network
-            </a>
+            </NavLink>
           </nav>
 
           {/* ==================================================
@@ -618,8 +646,8 @@ function Header() {
                 LOGIN
                 ================================================== */}
 
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="
                 hidden
                 h-8
@@ -650,7 +678,7 @@ function Header() {
               "
             >
               Log in
-            </a>
+            </Link>
 
             {/* ==================================================
                 MOBILE MENU BUTTON
@@ -737,8 +765,8 @@ function Header() {
                 dark:border-white/8
               "
             >
-              <a
-                href="/hackathons"
+              <Link
+                to="/hackathons"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   block
@@ -760,10 +788,10 @@ function Header() {
                 "
               >
                 Hackathons
-              </a>
+              </Link>
 
-              <a
-                href="/teammates"
+              <Link
+                to="/teammates"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   block
@@ -785,10 +813,10 @@ function Header() {
                 "
               >
                 Find Teammates
-              </a>
+              </Link>
 
-              <a
-                href="/my-network"
+              <Link
+                to="/my-network"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   block
@@ -810,10 +838,10 @@ function Header() {
                 "
               >
                 My Network
-              </a>
+              </Link>
 
-              <a
-                href="/login"
+              <Link
+                to="/login"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   mt-2
@@ -840,7 +868,7 @@ function Header() {
                 "
               >
                 Log in
-              </a>
+              </Link>
             </div>
           </nav>
         </div>

@@ -1,24 +1,9 @@
 // ---------------------------------------------------------------------------
-// HackathonCard — compact, information-first card design
+// HackathonCard — compact, information-first card design with Save / Bookmark
 // ---------------------------------------------------------------------------
 
-const ACCENT_TEXT = {
-  indigo:  "text-indigo-500",
-  emerald: "text-emerald-500",
-  amber:   "text-amber-500",
-  rose:    "text-rose-500",
-  sky:     "text-sky-500",
-  violet:  "text-violet-500",
-};
-
-const ACCENT_BG_SOFT = {
-  indigo:  "bg-indigo-500/10",
-  emerald: "bg-emerald-500/10",
-  amber:   "bg-amber-500/10",
-  rose:    "bg-rose-500/10",
-  sky:     "bg-sky-500/10",
-  violet:  "bg-violet-500/10",
-};
+import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
+import { useSaved } from "../../../context/SavedContext";
 
 // ---------------------------------------------------------------------------
 // Deadline calculation
@@ -66,20 +51,41 @@ function ModeDisplay({ mode, location }) {
   const isOnline = mode === "Online";
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
       {isOnline ? (
-        <svg className="h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          className="h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M2 12h20" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          <path
+            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+          />
         </svg>
       ) : (
-        <svg className="h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          className="h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
           <circle cx="12" cy="10" r="3" />
         </svg>
       )}
-      <span>{mode}{location ? ` · ${location}` : ""}</span>
+      <span>
+        {mode}
+        {location ? ` · ${location}` : ""}
+      </span>
     </span>
   );
 }
@@ -90,6 +96,7 @@ function ModeDisplay({ mode, location }) {
 
 function HackathonCard({ hackathon }) {
   const {
+    id,
     name,
     organizer,
     mode,
@@ -105,14 +112,26 @@ function HackathonCard({ hackathon }) {
     url = "#",
   } = hackathon;
 
+  const { isSaved, toggleSave } = useSaved();
+  const saved = id ? isSaved(id) : false;
+
   // Calculate actual registration availability
-  const isOpen = Boolean(registrationOpen) && new Date(registrationDeadline) > new Date();
+  const isOpen =
+    Boolean(registrationOpen) && new Date(registrationDeadline) > new Date();
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
   const initial = name ? name.charAt(0).toUpperCase() : "H";
   const deadlineText = getDeadlineText(registrationDeadline, isOpen);
   const teamSizeLabel = formatTeamSize(minTeamSize, maxTeamSize, teamSize);
+
+  const handleSaveToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (id) {
+      toggleSave(id);
+    }
+  };
 
   return (
     <article
@@ -138,9 +157,9 @@ function HackathonCard({ hackathon }) {
       "
     >
       <div>
-        {/* ── 1. Header: Logo + Name + Organizer (Left) & Status (Right) ── */}
+        {/* ── 1. Header: Logo + Name + Organizer & Status + Save Button ── */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
             {/* Logo / Avatar fallback */}
             <div
               className={`
@@ -170,18 +189,58 @@ function HackathonCard({ hackathon }) {
             </div>
           </div>
 
-          {/* Registration Status Badge */}
-          {isOpen ? (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              OPEN
-            </span>
-          ) : (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
-              CLOSED
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Registration Status Badge */}
+            {isOpen ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                OPEN
+              </span>
+            ) : (
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
+                CLOSED
+              </span>
+            )}
+
+            {/* Save / Bookmark Button */}
+            <button
+              type="button"
+              onClick={handleSaveToggle}
+              aria-label={saved ? `Remove ${name} from saved` : `Save ${name}`}
+              aria-pressed={saved}
+              className={`
+                grid
+                h-7
+                w-7
+                place-items-center
+                rounded-lg
+                border
+                transition-all
+                duration-150
+                focus-visible:outline
+                focus-visible:outline-2
+                focus-visible:outline-indigo-500
+                ${
+                  saved
+                    ? `${accentBgSoft} ${accentText} border-transparent`
+                    : "border-neutral-200 bg-neutral-50/50 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-500 dark:hover:border-neutral-700 dark:hover:text-neutral-300"
+                }
+              `}
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill={saved ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* ── 2. Meta row: Online/Offline (Left) & Deadline (Right) ── */}

@@ -1,12 +1,14 @@
 // ---------------------------------------------------------------------------
-// Hackathons — discovery page
+// Hackathons — discovery page with Filter popover, Search, Sort & Saved view
 //
-// Pipeline: data → search → filter → sort → display
+// Pipeline: data → search → status filter → format filter → saved filter → sort → grid
 // All operations are pure and non-mutating.
 // ---------------------------------------------------------------------------
 
 import { useMemo, useState } from "react";
 import { HACKATHONS } from "../../../data/hackathons";
+import { useSaved } from "../../../context/SavedContext";
+import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import HackathonSearch from "./HackathonSearch";
 import HackathonFilters from "./HackathonFilters";
 import HackathonSort from "./HackathonSort";
@@ -31,13 +33,13 @@ function applySearch(hackathons, query) {
 }
 
 // ---------------------------------------------------------------------------
-// Filter
+// Status Filter
 // ---------------------------------------------------------------------------
 
-function applyFilter(hackathons, filterId) {
+function applyStatusFilter(hackathons, statusId) {
   const now = new Date();
 
-  switch (filterId) {
+  switch (statusId) {
     case "registration-open":
       return hackathons.filter(
         (h) => h.registrationOpen && new Date(h.registrationDeadline) > now
@@ -46,6 +48,18 @@ function applyFilter(hackathons, filterId) {
       return hackathons.filter(
         (h) => !h.registrationOpen || new Date(h.registrationDeadline) <= now
       );
+    case "all":
+    default:
+      return hackathons;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Format Filter
+// ---------------------------------------------------------------------------
+
+function applyFormatFilter(hackathons, formatId) {
+  switch (formatId) {
     case "online":
       return hackathons.filter((h) => h.mode === "Online");
     case "offline":
@@ -54,6 +68,15 @@ function applyFilter(hackathons, filterId) {
     default:
       return hackathons;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Saved Filter
+// ---------------------------------------------------------------------------
+
+function applySavedFilter(hackathons, showSavedOnly, isSaved) {
+  if (!showSavedOnly) return hackathons;
+  return hackathons.filter((h) => isSaved(h.id));
 }
 
 // ---------------------------------------------------------------------------
@@ -85,22 +108,42 @@ function applySort(hackathons, sortId) {
 
 function Hackathons() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [formatFilter, setFormatFilter] = useState("all");
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("deadline-asc");
 
-  const hasFilters = searchQuery.trim() !== "" || activeFilter !== "all";
+  const { isSaved, savedCount } = useSaved();
+
+  const hasFilters =
+    searchQuery.trim() !== "" ||
+    statusFilter !== "all" ||
+    formatFilter !== "all" ||
+    showSavedOnly;
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setActiveFilter("all");
+    setStatusFilter("all");
+    setFormatFilter("all");
+    setShowSavedOnly(false);
   };
 
-  // Pipeline: search → filter → sort (never mutates source)
+  const handleApplyFilterPopover = ({ statusFilter: nextStatus, formatFilter: nextFormat }) => {
+    setStatusFilter(nextStatus);
+    setFormatFilter(nextFormat);
+  };
+
+  // Pipeline: search → status filter → format filter → saved filter → sort
   const results = useMemo(() => {
     const searched = applySearch(HACKATHONS, searchQuery);
-    const filtered = applyFilter(searched, activeFilter);
-    return applySort(filtered, sortBy);
-  }, [searchQuery, activeFilter, sortBy]);
+    const statusFiltered = applyStatusFilter(searched, statusFilter);
+    const formatFiltered = applyFormatFilter(statusFiltered, formatFilter);
+    const savedFiltered = applySavedFilter(formatFiltered, showSavedOnly, isSaved);
+    return applySort(savedFiltered, sortBy);
+  }, [searchQuery, statusFilter, formatFilter, showSavedOnly, isSaved, sortBy]);
+
+  const accentText = ACCENT_TEXT.indigo;
+  const accentBgSoft = ACCENT_BG_SOFT.indigo;
 
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
@@ -117,7 +160,7 @@ function Hackathons() {
             Hackathons
           </h1>
           <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
-            Find competitions worth building for — matched to your skills and interests.
+            Discover hackathons worth building for — matched to your skills and interests.
           </p>
 
           {/* Search bar */}
@@ -125,9 +168,99 @@ function Hackathons() {
             <HackathonSearch value={searchQuery} onChange={setSearchQuery} />
           </div>
 
-          {/* Filters */}
-          <div className="mt-4">
-            <HackathonFilters active={activeFilter} onChange={setActiveFilter} />
+          {/* Toolbar: View Tabs, Filter Popover, Saved Toggle & Sort */}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* All / Saved View Tabs */}
+              <div className="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
+                <button
+                  type="button"
+                  onClick={() => setShowSavedOnly(false)}
+                  className={`
+                    rounded-md
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-150
+                    ${
+                      !showSavedOnly
+                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    }
+                  `}
+                >
+                  All Hackathons
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSavedOnly(true)}
+                  aria-label={`View saved hackathons (${savedCount})`}
+                  className={`
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-md
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-150
+                    ${
+                      showSavedOnly
+                        ? `${accentBgSoft} ${accentText} shadow-xs`
+                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    }
+                  `}
+                >
+                  <svg
+                    className="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill={showSavedOnly ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span>Saved</span>
+                  <span
+                    className={`
+                      inline-flex
+                      h-4
+                      min-w-4
+                      items-center
+                      justify-center
+                      rounded-full
+                      px-1
+                      text-[10px]
+                      font-bold
+                      ${
+                        showSavedOnly
+                          ? "bg-indigo-500 text-white"
+                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      }
+                    `}
+                  >
+                    {savedCount}
+                  </span>
+                </button>
+              </div>
+
+              {/* Filter Popover Trigger */}
+              <HackathonFilters
+                statusFilter={statusFilter}
+                formatFilter={formatFilter}
+                onApply={handleApplyFilterPopover}
+                onClear={() => {
+                  setStatusFilter("all");
+                  setFormatFilter("all");
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
