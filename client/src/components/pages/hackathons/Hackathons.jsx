@@ -42,8 +42,10 @@ function applyFilter(hackathons, filterId) {
       return hackathons.filter(
         (h) => h.registrationOpen && new Date(h.registrationDeadline) > now
       );
-    case "upcoming":
-      return hackathons.filter((h) => new Date(h.registrationDeadline) > now);
+    case "registration-closed":
+      return hackathons.filter(
+        (h) => !h.registrationOpen || new Date(h.registrationDeadline) <= now
+      );
     case "online":
       return hackathons.filter((h) => h.mode === "Online");
     case "offline":
@@ -104,7 +106,7 @@ function Hackathons() {
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
       {/* ── Page header ── */}
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-        <div className="mx-auto max-w-7xl px-5 pb-6 pt-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-5 pb-6 pt-5 sm:px-6 lg:px-8">
           {/* Breadcrumb / label */}
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-indigo-500">
             Discover

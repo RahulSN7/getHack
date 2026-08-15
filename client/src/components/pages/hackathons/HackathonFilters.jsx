@@ -5,11 +5,11 @@
 // ---------------------------------------------------------------------------
 
 const FILTERS = [
-  { id: "all",               label: "All" },
-  { id: "registration-open", label: "Registration Open" },
-  { id: "upcoming",          label: "Upcoming" },
-  { id: "online",            label: "Online" },
-  { id: "offline",           label: "Offline" },
+  { id: "all",                 label: "All" },
+  { id: "registration-open",   label: "Registration Open" },
+  { id: "registration-closed", label: "Registration Closed" },
+  { id: "online",              label: "Online" },
+  { id: "offline",             label: "Offline" },
 ];
 
 function HackathonFilters({ active, onChange }) {
