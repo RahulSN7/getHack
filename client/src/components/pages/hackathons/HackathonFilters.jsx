@@ -32,11 +32,14 @@ function HackathonFilters({
   const popoverRef = useRef(null);
   const triggerRef = useRef(null);
 
-  // Sync draft state when popover opens or props change
-  useEffect(() => {
-    setDraftStatus(statusFilter);
-    setDraftFormat(formatFilter);
-  }, [statusFilter, formatFilter, isOpen]);
+  const handleToggleOpen = () => {
+    if (!isOpen) {
+      // Sync draft state to current active filters when opening popover
+      setDraftStatus(statusFilter);
+      setDraftFormat(formatFilter);
+    }
+    setIsOpen((prev) => !prev);
+  };
 
   // Calculate active filters count
   const activeCount =
@@ -96,7 +99,7 @@ function HackathonFilters({
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleToggleOpen}
         aria-expanded={isOpen}
         aria-haspopup="true"
         aria-label={`Filter hackathons${

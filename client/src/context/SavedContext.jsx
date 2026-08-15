@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 // ---------------------------------------------------------------------------
 // SavedContext — manages bookmarking / saving hackathons with localStorage persistence
 // ---------------------------------------------------------------------------
@@ -61,5 +62,3 @@ export function useSaved() {
   }
   return context;
 }
-
-export default SavedContext;

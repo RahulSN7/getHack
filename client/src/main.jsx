@@ -1,16 +1,42 @@
 // main.jsx
 
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import { ThemeProvider } from './context/ThemeContext.jsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import "./index.css";
+import App from "./App.jsx";
+import LandingPage from "./pages/Landing/LandingPage.jsx";
+import HackathonsPage from "./pages/Hackathons/HackathonsPage.jsx";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { SavedProvider } from "./context/SavedContext.jsx";
 
-createRoot(document.getElementById('root')).render(
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <App />,
+    children: [
+      {
+        index: true,
+        element: <LandingPage />,
+      },
+      {
+        path: "hackathons",
+        element: <HackathonsPage />,
+      },
+      {
+        path: "*",
+        element: <LandingPage />,
+      },
+    ],
+  },
+]);
+
+createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
-  </StrictMode>,
-)
-
+    <SavedProvider>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </SavedProvider>
+  </StrictMode>
+);
