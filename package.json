@@ -23,5 +23,8 @@
   "homepage": "https://github.com/RahulSN7/getHack#readme",
   "devDependencies": {
     "concurrently": "^10.0.4"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.18.2"
   }
 }

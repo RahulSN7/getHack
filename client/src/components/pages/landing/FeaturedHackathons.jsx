@@ -1,67 +1,31 @@
+import { HACKATHONS } from "../../../data/hackathons";
 import HackathonCard from "./HackathonCard";
 
-const sampleHackathons = [
-  {
-    name: "HackForGood 2025",
-    organizer: "TechCommunity India",
-    mode: "Online",
-    deadline: "3 days left",
-    prize: "₹50,000",
-    participants: 342,
-    tags: ["React", "Node.js", "Social Impact"],
-    accent: "indigo",
-  },
-  {
-    name: "BuildWithAI",
-    organizer: "Google Developer Groups",
-    mode: "Hybrid",
-    deadline: "1 week left",
-    prize: "$2,500",
-    participants: 578,
-    tags: ["AI/ML", "Python", "TensorFlow"],
-    accent: "emerald",
-  },
-  {
-    name: "DevSprint Bangalore",
-    organizer: "Startup Karnataka",
-    mode: "Offline",
-    deadline: "12 days left",
-    prize: "₹1,00,000",
-    participants: 210,
-    tags: ["Full Stack", "Cloud", "DevOps"],
-    accent: "amber",
-  },
-  {
-    name: "HealthTech Hack",
-    organizer: "MedTech Alliance",
-    mode: "Online",
-    deadline: "5 days left",
-    prize: "$5,000",
-    participants: 189,
-    tags: ["Healthcare", "React", "APIs"],
-    accent: "rose",
-  },
-  {
-    name: "Open Source Sprint",
-    organizer: "FOSS United",
-    mode: "Online",
-    deadline: "2 weeks left",
-    prize: "Swag + Mentorship",
-    participants: 425,
-    tags: ["Open Source", "Rust", "Go"],
-    accent: "sky",
-  },
-  {
-    name: "FinTech Challenge",
-    organizer: "Razorpay Community",
-    mode: "Hybrid",
-    deadline: "9 days left",
-    prize: "₹75,000",
-    participants: 296,
-    tags: ["FinTech", "TypeScript", "PostgreSQL"],
-    accent: "violet",
-  },
-];
+// Compute a human-readable deadline label from an ISO date string
+function getDeadlineLabel(isoDate) {
+  const now = new Date();
+  const deadline = new Date(isoDate);
+  const msLeft = deadline - now;
+  const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+  if (msLeft <= 0) return "Registration closed";
+  if (daysLeft <= 1) return "Closes today";
+  if (daysLeft <= 7) return `${daysLeft} days left`;
+  if (daysLeft <= 14) return `${daysLeft} days left`;
+  const formatted = deadline.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+  return `Closes ${formatted}`;
+}
+
+// Show the first 6 hackathons on the landing page
+const sampleHackathons = HACKATHONS.slice(0, 6).map((h) => ({
+  name: h.name,
+  organizer: h.organizer,
+  mode: h.mode,
+  deadline: getDeadlineLabel(h.registrationDeadline),
+  prize: h.prize,
+  participants: h.participants,
+  tags: h.tags,
+  accent: h.accent,
+}));
 
 function FeaturedHackathons() {
   return (
@@ -102,7 +66,7 @@ function FeaturedHackathons() {
           </div>
 
           <a
-            href="#hackathons"
+            href="/hackathons"
             className="
               hidden
               shrink-0
@@ -142,7 +106,7 @@ function FeaturedHackathons() {
         {/* Mobile "View all" */}
         <div className="mt-8 text-center sm:hidden">
           <a
-            href="#hackathons"
+            href="/hackathons"
             className="
               text-sm
               font-medium

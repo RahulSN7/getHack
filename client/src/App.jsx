@@ -1,3 +1,4 @@
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Header from "./components/Header/Header";
 import HeroCTA from "./components/pages/landing/HeroCTA";
 import FeaturedHackathons from "./components/pages/landing/FeaturedHackathons";
@@ -6,12 +7,15 @@ import HowItWorks from "./components/pages/landing/HowItWorks";
 import WhyGetHack from "./components/pages/landing/WhyGetHack";
 import FAQ from "./components/pages/landing/FAQ";
 import Footer from "./components/pages/landing/Footer";
+import HackathonsPage from "./components/pages/hackathons/Hackathons";
 
-function App() {
+// ---------------------------------------------------------------------------
+// Landing page — unchanged
+// ---------------------------------------------------------------------------
+
+function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
-      <Header />
-
       {/* Hero */}
       <main className="px-6 pt-20 pb-16">
         <div className="mx-auto max-w-7xl">
@@ -61,6 +65,24 @@ function App() {
       <FAQ />
       <Footer />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// App — with routing
+// ---------------------------------------------------------------------------
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Header />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/hackathons" element={<HackathonsPage />} />
+        {/* Catch-all: redirect to landing */}
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
