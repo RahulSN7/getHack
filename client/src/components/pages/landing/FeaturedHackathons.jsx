@@ -1,33 +1,10 @@
 import { HACKATHONS } from "../../../data/hackathons";
-import HackathonCard from "./HackathonCard";
-
-// Compute a human-readable deadline label from an ISO date string
-function getDeadlineLabel(isoDate) {
-  const now = new Date();
-  const deadline = new Date(isoDate);
-  const msLeft = deadline - now;
-  const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-  if (msLeft <= 0) return "Registration closed";
-  if (daysLeft <= 1) return "Closes today";
-  if (daysLeft <= 7) return `${daysLeft} days left`;
-  if (daysLeft <= 14) return `${daysLeft} days left`;
-  const formatted = deadline.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-  return `Closes ${formatted}`;
-}
-
-// Show the first 6 hackathons on the landing page
-const sampleHackathons = HACKATHONS.slice(0, 6).map((h) => ({
-  name: h.name,
-  organizer: h.organizer,
-  mode: h.mode,
-  deadline: getDeadlineLabel(h.registrationDeadline),
-  prize: h.prize,
-  participants: h.participants,
-  tags: h.tags,
-  accent: h.accent,
-}));
+import HackathonCard from "../hackathons/HackathonCard";
 
 function FeaturedHackathons() {
+  // Use the same raw dataset objects directly with the shared HackathonCard
+  const featuredList = HACKATHONS.slice(0, 6);
+
   return (
     <section id="hackathons" className="px-6 py-20">
       <div className="mx-auto max-w-7xl">
@@ -49,7 +26,7 @@ function FeaturedHackathons() {
                 dark:text-white
               "
             >
-              Discover hackathons
+              Featured hackathons
             </h2>
             <p
               className="
@@ -61,7 +38,7 @@ function FeaturedHackathons() {
                 dark:text-neutral-400
               "
             >
-              Browse by technology, domain, location, and format. Find the right challenge for your skills and interests.
+              Hand-picked opportunities worth exploring. Find the right challenge for your skills and interests.
             </p>
           </div>
 
@@ -98,8 +75,8 @@ function FeaturedHackathons() {
             lg:grid-cols-3
           "
         >
-          {sampleHackathons.map((hackathon) => (
-            <HackathonCard key={hackathon.name} hackathon={hackathon} />
+          {featuredList.map((hackathon) => (
+            <HackathonCard key={hackathon.id || hackathon.name} hackathon={hackathon} />
           ))}
         </div>
 

@@ -41,6 +41,24 @@ function getDeadlineText(isoDate, isOpen) {
 }
 
 // ---------------------------------------------------------------------------
+// Team size formatting helper
+// ---------------------------------------------------------------------------
+
+function formatTeamSize(min, max, customText) {
+  if (customText) return customText;
+  if (!min && !max) return "Individual / Team";
+  if (min && max) {
+    if (min === max) {
+      return `${min} ${min === 1 ? "member" : "members"}`;
+    }
+    return `${min}–${max} members`;
+  }
+  if (min) return `Min ${min} ${min === 1 ? "member" : "members"}`;
+  if (max) return `Up to ${max} ${max === 1 ? "member" : "members"}`;
+  return "Individual / Team";
+}
+
+// ---------------------------------------------------------------------------
 // Mode & location icon display
 // ---------------------------------------------------------------------------
 
@@ -79,6 +97,9 @@ function HackathonCard({ hackathon }) {
     registrationDeadline,
     registrationOpen,
     fee = "Free",
+    minTeamSize,
+    maxTeamSize,
+    teamSize,
     prize = "N/A",
     accent = "indigo",
     url = "#",
@@ -91,6 +112,7 @@ function HackathonCard({ hackathon }) {
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
   const initial = name ? name.charAt(0).toUpperCase() : "H";
   const deadlineText = getDeadlineText(registrationDeadline, isOpen);
+  const teamSizeLabel = formatTeamSize(minTeamSize, maxTeamSize, teamSize);
 
   return (
     <article
@@ -177,14 +199,24 @@ function HackathonCard({ hackathon }) {
           </span>
         </div>
 
-        {/* ── 3. Registration Fee ── */}
-        <div className="mt-4 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-            REGISTRATION FEE
-          </p>
-          <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-            {fee}
-          </p>
+        {/* ── 3. Team Size & Registration Fee ── */}
+        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              TEAM SIZE
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+              {teamSizeLabel}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              REGISTRATION FEE
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+              {fee}
+            </p>
+          </div>
         </div>
       </div>
 
