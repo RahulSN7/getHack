@@ -127,10 +127,10 @@ function Network() {
         {/* ── Page Header ── */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl dark:text-white">
-            My Network
+            Collaborate
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Stay connected with builders you may want to collaborate with.
+            Stay connected with builders and collaborate on your next project.
           </p>
         </div>
 

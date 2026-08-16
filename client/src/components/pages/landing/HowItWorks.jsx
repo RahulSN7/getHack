@@ -25,8 +25,8 @@ const steps = [
   },
   {
     number: "03",
-    title: "Build",
-    description: "Create something meaningful together and ship your project.",
+    title: "Collaborate",
+    description: "Stay connected, exchange ideas, and work together to turn an idea into a project.",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="m18 16 4-4-4-4" />

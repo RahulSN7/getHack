@@ -17,7 +17,7 @@ function LandingPage() {
       <main className="px-6 pt-20 pb-16">
         <div className="mx-auto max-w-7xl">
           <p className="mb-4 text-sm font-semibold tracking-widest text-indigo-500">
-            DISCOVER · CONNECT · BUILD
+            DISCOVER · CONNECT · COLLABORATE
           </p>
 
           <h1
