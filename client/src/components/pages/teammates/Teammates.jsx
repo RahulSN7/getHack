@@ -46,10 +46,11 @@ function matchesRole(roleStr, filterId) {
 
 function searchMembers(members, query) {
   if (!query.trim()) return members;
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().replace(/^@/, "");
   return members.filter(
     (m) =>
       m.name.toLowerCase().includes(q) ||
+      (m.username && m.username.toLowerCase().includes(q)) ||
       m.role.toLowerCase().includes(q) ||
       m.skills.some((s) => s.toLowerCase().includes(q)) ||
       (m.location && m.location.toLowerCase().includes(q))

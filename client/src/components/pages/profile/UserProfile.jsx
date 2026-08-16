@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
-// UserProfile — User Profile Page Component (/profile/:id)
-// Dedicated single-column profile page for Find Teammates members
+// UserProfile — Professional Developer Profile Component (/profile/:id)
+// Production-quality community profile for Find Teammates members
 // ---------------------------------------------------------------------------
 
 import { useState } from "react";
@@ -40,8 +40,10 @@ function UserProfile() {
   const { id } = useParams();
   const [connected, setConnected] = useState(false);
 
-  // Find user by ID
-  const user = TEAMMATES.find((m) => m.id === id);
+  // Find user by ID or username
+  const user = TEAMMATES.find(
+    (m) => m.id === id || (m.username && m.username.toLowerCase() === id.toLowerCase())
+  );
 
   // ---------------------------------------------------------------------------
   // Profile Not Found Fallback (404)
@@ -71,7 +73,7 @@ function UserProfile() {
             Profile not found
           </h1>
           <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-            The requested profile could not be found or may have been removed.
+            The profile you're looking for doesn't exist or is no longer available.
           </p>
           <div className="mt-6">
             <Link
@@ -100,17 +102,22 @@ function UserProfile() {
 
   const {
     name,
+    username,
+    headline,
     role,
     skills = [],
     interests = [],
     experience,
     bio,
     location,
+    email,
+    showEmail,
     availability,
     hackathonsCompleted = 0,
     accent = "indigo",
     github,
     linkedin,
+    portfolio,
   } = user;
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
@@ -160,7 +167,7 @@ function UserProfile() {
         </div>
       </div>
 
-      {/* ── Main Profile Body (Single Column, Centered Max Width) ── */}
+      {/* ── Main Profile Body (Single Column, Editorial Spacing) ── */}
       <main className="mx-auto max-w-3xl px-5 py-8 sm:px-6 lg:px-8 space-y-8">
         {/* ── 1. Profile Header ── */}
         <section className="space-y-4">
@@ -183,19 +190,27 @@ function UserProfile() {
               {initials}
             </div>
 
-            {/* Name & Title */}
+            {/* Identity & Headline */}
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-                {name}
-              </h1>
-              <p className="mt-1 text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                {role}
+              <div className="flex flex-wrap items-baseline gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                  {name}
+                </h1>
+                {username && (
+                  <span className="text-xs font-mono font-medium text-neutral-400 dark:text-neutral-500">
+                    @{username}
+                  </span>
+                )}
+              </div>
+
+              <p className="mt-1 text-sm font-medium text-neutral-600 dark:text-neutral-300">
+                {headline || role}
               </p>
 
               {/* Status & Location Meta */}
               <div className="mt-3 flex flex-wrap items-center gap-2.5 text-xs">
                 <AvailabilityBadge availability={availability} />
-                {location && (
+                {location ? (
                   <>
                     <span className="text-neutral-300 dark:text-neutral-700">·</span>
                     <span className="inline-flex items-center gap-1 font-medium text-neutral-600 dark:text-neutral-400">
@@ -214,12 +229,11 @@ function UserProfile() {
                       <span>{location}</span>
                     </span>
                   </>
-                )}
-                {!location && (
+                ) : (
                   <>
                     <span className="text-neutral-300 dark:text-neutral-700">·</span>
-                    <span className="inline-flex items-center gap-1 font-medium text-neutral-500 dark:text-neutral-400">
-                      <span>Remote</span>
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400">
+                      Remote
                     </span>
                   </>
                 )}
@@ -227,102 +241,189 @@ function UserProfile() {
             </div>
           </div>
 
-          {/* Social Links (only rendered if URL exists) */}
-          {(github || linkedin) && (
-            <div className="flex flex-wrap items-center gap-2 pt-2">
-              {github && (
-                <a
-                  href={github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${name}'s GitHub profile`}
-                  className="
-                    inline-flex
-                    items-center
-                    gap-1.5
-                    rounded-lg
-                    border
-                    border-neutral-200
-                    bg-white
-                    px-3
-                    py-1.5
-                    text-xs
-                    font-semibold
-                    text-neutral-700
-                    transition-colors
-                    hover:border-neutral-300
-                    hover:text-neutral-900
-                    dark:border-neutral-800
-                    dark:bg-neutral-900
-                    dark:text-neutral-300
-                    dark:hover:border-neutral-700
-                    dark:hover:text-white
-                  "
+          {/* Social & Contact Actions */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {github && (
+              <a
+                href={github}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${name}'s GitHub profile`}
+                className="
+                  inline-flex
+                  items-center
+                  gap-1.5
+                  rounded-lg
+                  border
+                  border-neutral-200
+                  bg-white
+                  px-3
+                  py-1.5
+                  text-xs
+                  font-semibold
+                  text-neutral-700
+                  transition-colors
+                  hover:border-neutral-300
+                  hover:text-neutral-900
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:text-neutral-300
+                  dark:hover:border-neutral-700
+                  dark:hover:text-white
+                "
+              >
+                <span>GitHub</span>
+                <svg
+                  className="h-3 w-3 text-neutral-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <span>GitHub</span>
-                  <svg
-                    className="h-3 w-3 text-neutral-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </a>
-              )}
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
+            )}
 
-              {linkedin && (
-                <a
-                  href={linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${name}'s LinkedIn profile`}
-                  className="
-                    inline-flex
-                    items-center
-                    gap-1.5
-                    rounded-lg
-                    border
-                    border-neutral-200
-                    bg-white
-                    px-3
-                    py-1.5
-                    text-xs
-                    font-semibold
-                    text-neutral-700
-                    transition-colors
-                    hover:border-neutral-300
-                    hover:text-neutral-900
-                    dark:border-neutral-800
-                    dark:bg-neutral-900
-                    dark:text-neutral-300
-                    dark:hover:border-neutral-700
-                    dark:hover:text-white
-                  "
+            {linkedin && (
+              <a
+                href={linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${name}'s LinkedIn profile`}
+                className="
+                  inline-flex
+                  items-center
+                  gap-1.5
+                  rounded-lg
+                  border
+                  border-neutral-200
+                  bg-white
+                  px-3
+                  py-1.5
+                  text-xs
+                  font-semibold
+                  text-neutral-700
+                  transition-colors
+                  hover:border-neutral-300
+                  hover:text-neutral-900
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:text-neutral-300
+                  dark:hover:border-neutral-700
+                  dark:hover:text-white
+                "
+              >
+                <span>LinkedIn</span>
+                <svg
+                  className="h-3 w-3 text-neutral-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <span>LinkedIn</span>
-                  <svg
-                    className="h-3 w-3 text-neutral-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </a>
-              )}
-            </div>
-          )}
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
+            )}
+
+            {portfolio && (
+              <a
+                href={portfolio}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${name}'s Portfolio`}
+                className="
+                  inline-flex
+                  items-center
+                  gap-1.5
+                  rounded-lg
+                  border
+                  border-neutral-200
+                  bg-white
+                  px-3
+                  py-1.5
+                  text-xs
+                  font-semibold
+                  text-neutral-700
+                  transition-colors
+                  hover:border-neutral-300
+                  hover:text-neutral-900
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:text-neutral-300
+                  dark:hover:border-neutral-700
+                  dark:hover:text-white
+                "
+              >
+                <span>Portfolio</span>
+                <svg
+                  className="h-3 w-3 text-neutral-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+              </a>
+            )}
+
+            {showEmail && email && (
+              <a
+                href={`mailto:${email}`}
+                aria-label={`Send email to ${name}`}
+                className="
+                  inline-flex
+                  items-center
+                  gap-1.5
+                  rounded-lg
+                  border
+                  border-neutral-200
+                  bg-white
+                  px-3
+                  py-1.5
+                  text-xs
+                  font-semibold
+                  text-neutral-700
+                  transition-colors
+                  hover:border-neutral-300
+                  hover:text-neutral-900
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:text-neutral-300
+                  dark:hover:border-neutral-700
+                  dark:hover:text-white
+                "
+              >
+                <svg
+                  className="h-3.5 w-3.5 text-neutral-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect width="20" height="16" x="2" y="4" rx="2" />
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                </svg>
+                <span>Email</span>
+              </a>
+            )}
+          </div>
         </section>
 
         <div className="border-t border-neutral-200 dark:border-neutral-800" />
@@ -384,7 +485,7 @@ function UserProfile() {
               HACKATHON EXPERIENCE
             </h2>
             <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-              {hackathonsCompleted} {hackathonsCompleted === 1 ? "hackathon" : "hackathons"} completed
+              {hackathonsCompleted} {hackathonsCompleted === 1 ? "Hackathon" : "Hackathons"} completed
             </p>
           </section>
         )}
@@ -401,7 +502,22 @@ function UserProfile() {
           </section>
         )}
 
-        {/* ── 7. CONNECT CTA ── */}
+        {/* ── 9. EMAIL CONTACT (conditional) ── */}
+        {showEmail && email && (
+          <section className="space-y-2 border-t border-neutral-100 pt-8 dark:border-neutral-800">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              EMAIL
+            </h2>
+            <a
+              href={`mailto:${email}`}
+              className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              {email}
+            </a>
+          </section>
+        )}
+
+        {/* ── 10. CONNECT CTA ── */}
         <section className="border-t border-neutral-100 pt-8 dark:border-neutral-800">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">

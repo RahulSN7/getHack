@@ -45,6 +45,7 @@ function TeammateCard({ teammate }) {
     availability,
     hackathonsCompleted = 0,
     accent = "indigo",
+    username,
   } = teammate;
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
@@ -105,6 +106,11 @@ function TeammateCard({ teammate }) {
               <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
                 {name}
               </h3>
+              {username && (
+                <p className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500 font-mono">
+                  @{username}
+                </p>
+              )}
               <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
                 {role}
               </p>
