@@ -258,7 +258,7 @@ function NetworkFilters({
           <line x1="8" y1="12" x2="20" y2="12" />
           <line x1="12" y1="18" x2="20" y2="18" />
         </svg>
-        <span>Filter</span>
+        <span>Filters</span>
         {hasActiveFilters && (
           <span className="grid h-4 min-w-4 place-items-center rounded-full bg-indigo-500 px-1 text-[10px] font-bold text-white">
             {activeCount}

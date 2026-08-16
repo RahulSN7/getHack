@@ -107,40 +107,25 @@ function HackathonFilters({
         }`}
         className={`
           inline-flex
-          h-9
           items-center
-          gap-2
+          gap-1.5
           rounded-lg
           border
-          px-3.5
+          px-3
+          py-1.5
           text-xs
           font-semibold
           transition-all
           duration-150
-          focus-visible:outline
-          focus-visible:outline-2
-          focus-visible:outline-indigo-500
           ${
             hasActiveFilters || isOpen
-              ? `${accentBgSoft} ${accentText} border-indigo-500/30 dark:border-indigo-400/30`
-              : `
-                border-neutral-200
-                bg-white
-                text-neutral-700
-                hover:border-neutral-300
-                hover:text-neutral-900
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:text-neutral-300
-                dark:hover:border-neutral-700
-                dark:hover:text-white
-              `
+              ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
+              : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
           }
         `}
       >
-        {/* Filter Icon */}
         <svg
-          className="h-3.5 w-3.5 shrink-0"
+          className="h-3.5 w-3.5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -148,46 +133,18 @@ function HackathonFilters({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="8" y1="12" x2="20" y2="12" />
+          <line x1="12" y1="18" x2="20" y2="18" />
         </svg>
 
-        <span>Filter</span>
+        <span>Filters</span>
 
-        {/* Active Filter Count Indicator */}
         {hasActiveFilters && (
-          <span
-            className={`
-              inline-flex
-              h-4
-              min-w-4
-              items-center
-              justify-center
-              rounded-full
-              bg-indigo-500
-              px-1
-              text-[10px]
-              font-bold
-              text-white
-            `}
-          >
+          <span className="grid h-4 min-w-4 place-items-center rounded-full bg-indigo-500 px-1 text-[10px] font-bold text-white">
             {activeCount}
           </span>
         )}
-
-        {/* Chevron Icon */}
-        <svg
-          className={`h-3 w-3 transition-transform duration-150 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
       </button>
 
       {/* ── Popover Panel ── */}
