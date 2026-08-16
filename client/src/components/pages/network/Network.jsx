@@ -13,6 +13,8 @@ import {
 } from "../../../data/networkData";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 
+import NetworkFilters from "./NetworkFilters";
+
 // ---------------------------------------------------------------------------
 // Availability badge (strictly 2 states)
 // ---------------------------------------------------------------------------
@@ -35,6 +37,25 @@ function AvailabilityBadge({ availability }) {
       Not Available
     </span>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Days ago parser helper
+// ---------------------------------------------------------------------------
+
+function getDaysAgo(dateStr) {
+  if (!dateStr) return 999;
+  const s = dateStr.toLowerCase();
+  if (s.includes("just now") || s.includes("today") || s.includes("yesterday")) return 1;
+  const match = s.match(/(\d+)\s*(day|week|month|year)/);
+  if (!match) return 1;
+  const val = parseInt(match[1], 10);
+  const unit = match[2];
+  if (unit.startsWith("day")) return val;
+  if (unit.startsWith("week")) return val * 7;
+  if (unit.startsWith("month")) return val * 30;
+  if (unit.startsWith("year")) return val * 365;
+  return val;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,6 +89,18 @@ function Network() {
   const [sent, setSent] = useState(INITIAL_SENT);
   const [toastMessage, setToastMessage] = useState(null);
 
+  // Filter states
+  const [connAvailability, setConnAvailability] = useState("all");
+  const [connRole, setConnRole] = useState("all");
+  const [connSkills, setConnSkills] = useState([]);
+  const [requestAge, setRequestAge] = useState("all");
+  const [sentAge, setSentAge] = useState("all");
+
+  // Sort states
+  const [connSort, setConnSort] = useState("recently-connected");
+  const [requestSort, setRequestSort] = useState("newest");
+  const [sentSort, setSentSort] = useState("newest");
+
   // ── Action Handlers ──
 
   const handleAcceptRequest = (requestItem) => {
@@ -98,33 +131,154 @@ function Network() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // ── Derived Filtered Lists ──
+  const handleApplyFilters = ({
+    connAvailability: nextAvail,
+    connRole: nextRole,
+    connSkills: nextSkills,
+    requestAge: nextReqAge,
+    sentAge: nextSentAge,
+  }) => {
+    setConnAvailability(nextAvail);
+    setConnRole(nextRole);
+    setConnSkills(nextSkills);
+    setRequestAge(nextReqAge);
+    setSentAge(nextSentAge);
+  };
 
-  const filteredConnections = useMemo(() => {
-    return connections.filter((conn) => {
+  const handleClearFilters = () => {
+    if (activeTab === "connections") {
+      setConnAvailability("all");
+      setConnRole("all");
+      setConnSkills([]);
+    } else if (activeTab === "requests") {
+      setRequestAge("all");
+    } else if (activeTab === "sent") {
+      setSentAge("all");
+    }
+  };
+
+  // ── Derived Dynamic Filter Options ──
+
+  const availableRoles = useMemo(() => {
+    const rolesSet = new Set();
+    connections.forEach((conn) => {
+      const u = TEAMMATES.find((m) => m.id === conn.userId);
+      if (u?.role) rolesSet.add(u.role);
+    });
+    return Array.from(rolesSet);
+  }, [connections]);
+
+  const availableSkills = useMemo(() => {
+    const skillsSet = new Set();
+    connections.forEach((conn) => {
+      const u = TEAMMATES.find((m) => m.id === conn.userId);
+      if (u?.skills) {
+        u.skills.forEach((s) => skillsSet.add(s));
+      }
+    });
+    return Array.from(skillsSet);
+  }, [connections]);
+
+  // ── Derived Pipeline: Search → Filter → Sort ──
+
+  const displayedConnections = useMemo(() => {
+    let list = connections.filter((conn) => {
       const u = TEAMMATES.find((m) => m.id === conn.userId);
       return matchesUserSearch(u, searchQuery);
     });
-  }, [connections, searchQuery]);
 
-  const filteredRequests = useMemo(() => {
-    return requests.filter((req) => {
+    if (connAvailability !== "all") {
+      list = list.filter((conn) => {
+        const u = TEAMMATES.find((m) => m.id === conn.userId);
+        return u?.availability === connAvailability;
+      });
+    }
+
+    if (connRole !== "all") {
+      list = list.filter((conn) => {
+        const u = TEAMMATES.find((m) => m.id === conn.userId);
+        return u?.role === connRole;
+      });
+    }
+
+    if (connSkills.length > 0) {
+      list = list.filter((conn) => {
+        const u = TEAMMATES.find((m) => m.id === conn.userId);
+        return u?.skills && connSkills.some((s) => u.skills.includes(s));
+      });
+    }
+
+    return [...list].sort((a, b) => {
+      const uA = TEAMMATES.find((m) => m.id === a.userId);
+      const uB = TEAMMATES.find((m) => m.id === b.userId);
+
+      if (connSort === "name-asc") {
+        return (uA?.name || "").localeCompare(uB?.name || "");
+      }
+      if (connSort === "name-desc") {
+        return (uB?.name || "").localeCompare(uA?.name || "");
+      }
+      return getDaysAgo(a.connectedAt) - getDaysAgo(b.connectedAt);
+    });
+  }, [connections, searchQuery, connAvailability, connRole, connSkills, connSort]);
+
+  const displayedRequests = useMemo(() => {
+    let list = requests.filter((req) => {
       const u = TEAMMATES.find((m) => m.id === req.fromUserId);
       return matchesUserSearch(u, searchQuery);
     });
-  }, [requests, searchQuery]);
 
-  const filteredSent = useMemo(() => {
-    return sent.filter((s) => {
+    if (requestAge === "recent") {
+      list = list.filter((req) => getDaysAgo(req.createdAt) <= 7);
+    } else if (requestAge === "older") {
+      list = list.filter((req) => getDaysAgo(req.createdAt) > 7);
+    }
+
+    return [...list].sort((a, b) => {
+      const uA = TEAMMATES.find((m) => m.id === a.fromUserId);
+      const uB = TEAMMATES.find((m) => m.id === b.fromUserId);
+
+      if (requestSort === "oldest") {
+        return getDaysAgo(b.createdAt) - getDaysAgo(a.createdAt);
+      }
+      if (requestSort === "name-asc") {
+        return (uA?.name || "").localeCompare(uB?.name || "");
+      }
+      return getDaysAgo(a.createdAt) - getDaysAgo(b.createdAt);
+    });
+  }, [requests, searchQuery, requestAge, requestSort]);
+
+  const displayedSent = useMemo(() => {
+    let list = sent.filter((s) => {
       const u = TEAMMATES.find((m) => m.id === s.toUserId);
       return matchesUserSearch(u, searchQuery);
     });
-  }, [sent, searchQuery]);
+
+    if (sentAge === "recent") {
+      list = list.filter((s) => getDaysAgo(s.createdAt) <= 7);
+    } else if (sentAge === "older") {
+      list = list.filter((s) => getDaysAgo(s.createdAt) > 7);
+    }
+
+    return [...list].sort((a, b) => {
+      const uA = TEAMMATES.find((m) => m.id === a.toUserId);
+      const uB = TEAMMATES.find((m) => m.id === b.toUserId);
+
+      if (sentSort === "oldest") {
+        return getDaysAgo(b.createdAt) - getDaysAgo(a.createdAt);
+      }
+      if (sentSort === "name-asc") {
+        return (uA?.name || "").localeCompare(uB?.name || "");
+      }
+      return getDaysAgo(a.createdAt) - getDaysAgo(b.createdAt);
+    });
+  }, [sent, searchQuery, sentAge, sentSort]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
       {/* ── Page Header ── */}
-      <div className="bg-white dark:bg-neutral-950">
+      {/* ── Page Header Banner ── */}
+      <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto max-w-7xl px-5 pb-6 pt-5 sm:px-6 lg:px-8">
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-indigo-500">
             COLLABORATE
@@ -136,7 +290,7 @@ function Network() {
             Stay connected with builders, message teammates, and collaborate on what comes next.
           </p>
 
-          {/* ── Search Bar (Matches Hackathons / Find Teammates search UI) ── */}
+          {/* ── Search Bar ── */}
           <div className="mt-6 max-w-2xl">
             <div className="relative">
               <svg
@@ -166,7 +320,7 @@ function Network() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, role, skill, or getHack ID…"
+                placeholder="Search your network by name, role, or skill…"
                 className="
                   h-10
                   w-full
@@ -228,130 +382,263 @@ function Network() {
               )}
             </div>
           </div>
+
+          {/* ── Toolbar: View Tabs + Filter Popover ── */}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("connections")}
+                  className={`
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-md
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-150
+                    ${
+                      activeTab === "connections"
+                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    }
+                  `}
+                >
+                  <span>Connections</span>
+                  <span
+                    className={`
+                      inline-flex
+                      h-4
+                      min-w-4
+                      items-center
+                      justify-center
+                      rounded-full
+                      px-1
+                      text-[10px]
+                      font-bold
+                      ${
+                        activeTab === "connections"
+                          ? "bg-indigo-500 text-white"
+                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      }
+                    `}
+                  >
+                    {connections.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("requests")}
+                  className={`
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-md
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-150
+                    ${
+                      activeTab === "requests"
+                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    }
+                  `}
+                >
+                  <span>Requests</span>
+                  <span
+                    className={`
+                      inline-flex
+                      h-4
+                      min-w-4
+                      items-center
+                      justify-center
+                      rounded-full
+                      px-1
+                      text-[10px]
+                      font-bold
+                      ${
+                        activeTab === "requests"
+                          ? "bg-indigo-500 text-white"
+                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      }
+                    `}
+                  >
+                    {requests.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("sent")}
+                  className={`
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-md
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-150
+                    ${
+                      activeTab === "sent"
+                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    }
+                  `}
+                >
+                  <span>Sent</span>
+                  <span
+                    className={`
+                      inline-flex
+                      h-4
+                      min-w-4
+                      items-center
+                      justify-center
+                      rounded-full
+                      px-1
+                      text-[10px]
+                      font-bold
+                      ${
+                        activeTab === "sent"
+                          ? "bg-indigo-500 text-white"
+                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      }
+                    `}
+                  >
+                    {sent.length}
+                  </span>
+                </button>
+              </div>
+
+              {/* Filter Popover */}
+              <NetworkFilters
+                activeTab={activeTab}
+                connAvailability={connAvailability}
+                connRole={connRole}
+                connSkills={connSkills}
+                availableRoles={availableRoles}
+                availableSkills={availableSkills}
+                requestAge={requestAge}
+                sentAge={sentAge}
+                onApply={handleApplyFilters}
+                onClear={handleClearFilters}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ── Page Content Container ── */}
-      <div className="mx-auto max-w-7xl px-5 py-6 sm:px-6 lg:px-8 space-y-6">
-        {/* Navigation Tabs with Dynamic Counts */}
-        <div className="flex items-center gap-2 border-b border-neutral-200/80 dark:border-neutral-800/80">
-            <button
-              type="button"
-              onClick={() => setActiveTab("connections")}
-              className={`
-                inline-flex
-                items-center
-                gap-2
-                border-b-2
-                pb-3
-                px-1
-                text-xs
-                font-semibold
-                transition-colors
-                ${
+      <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8">
+        {/* Result Toolbar: Result count (Left) + Sort select (Right) */}
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <p className="text-sm font-normal text-neutral-500 dark:text-neutral-400">
+            <span className="font-semibold text-neutral-900 dark:text-white">
+              {activeTab === "connections"
+                ? displayedConnections.length
+                : activeTab === "requests"
+                ? displayedRequests.length
+                : displayedSent.length}
+            </span>{" "}
+            {activeTab === "connections"
+              ? displayedConnections.length === 1
+                ? "connection"
+                : "connections"
+              : activeTab === "requests"
+              ? displayedRequests.length === 1
+                ? "request"
+                : "requests"
+              : displayedSent.length === 1
+              ? "sent request"
+              : "sent requests"}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="network-sort" className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              Sort by
+            </label>
+            <div className="relative">
+              <select
+                id="network-sort"
+                value={
                   activeTab === "connections"
-                    ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                    ? connSort
+                    : activeTab === "requests"
+                    ? requestSort
+                    : sentSort
                 }
-              `}
-            >
-              <span>Connections</span>
-              <span
-                className={`
-                  rounded-full
-                  px-2
-                  py-0.5
-                  text-[10px]
-                  font-bold
-                  ${
-                    activeTab === "connections"
-                      ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
-                      : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
-                  }
-                `}
+                onChange={(e) => {
+                  if (activeTab === "connections") setConnSort(e.target.value);
+                  else if (activeTab === "requests") setRequestSort(e.target.value);
+                  else setSentSort(e.target.value);
+                }}
+                className="
+                  h-8
+                  appearance-none
+                  rounded-lg
+                  border
+                  border-neutral-200
+                  bg-white
+                  pl-3
+                  pr-8
+                  text-xs
+                  font-medium
+                  text-neutral-700
+                  outline-none
+                  transition-[border-color,box-shadow]
+                  duration-150
+                  focus:border-indigo-400
+                  focus:ring-2
+                  focus:ring-indigo-500/15
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:text-neutral-200
+                  dark:focus:border-indigo-500
+                "
               >
-                {connections.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("requests")}
-              className={`
-                inline-flex
-                items-center
-                gap-2
-                border-b-2
-                pb-3
-                px-1
-                text-xs
-                font-semibold
-                transition-colors
-                ${
-                  activeTab === "requests"
-                    ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }
-              `}
-            >
-              <span>Requests</span>
+                {activeTab === "connections" && (
+                  <>
+                    <option value="recently-connected">Recently Connected</option>
+                    <option value="name-asc">Name A–Z</option>
+                    <option value="name-desc">Name Z–A</option>
+                  </>
+                )}
+                {activeTab === "requests" && (
+                  <>
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name-asc">Name A–Z</option>
+                  </>
+                )}
+                {activeTab === "sent" && (
+                  <>
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name-asc">Name A–Z</option>
+                  </>
+                )}
+              </select>
               <span
-                className={`
-                  rounded-full
-                  px-2
-                  py-0.5
-                  text-[10px]
-                  font-bold
-                  ${
-                    activeTab === "requests"
-                      ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
-                      : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
-                  }
-                `}
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-neutral-400 dark:text-neutral-500"
               >
-                {requests.length}
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
               </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("sent")}
-              className={`
-                inline-flex
-                items-center
-                gap-2
-                border-b-2
-                pb-3
-                px-1
-                text-xs
-                font-semibold
-                transition-colors
-                ${
-                  activeTab === "sent"
-                    ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }
-              `}
-            >
-              <span>Sent</span>
-              <span
-                className={`
-                  rounded-full
-                  px-2
-                  py-0.5
-                  text-[10px]
-                  font-bold
-                  ${
-                    activeTab === "sent"
-                      ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
-                      : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
-                  }
-                `}
-              >
-                {sent.length}
-              </span>
-            </button>
+            </div>
           </div>
+        </div>
 
         {/* Toast Feedback */}
         {toastMessage && (
@@ -363,9 +650,9 @@ function Network() {
         {/* ── TAB 1: CONNECTIONS ── */}
         {activeTab === "connections" && (
           <div>
-            {filteredConnections.length > 0 ? (
+            {displayedConnections.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {filteredConnections.map((conn) => {
+                {displayedConnections.map((conn) => {
                   const user = TEAMMATES.find((m) => m.id === conn.userId);
                   if (!user) return null;
 
@@ -511,7 +798,24 @@ function Network() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
-                {searchQuery ? (
+                {connections.length === 0 ? (
+                  <>
+                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      No connections yet
+                    </h3>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      Start discovering builders and connect with people who share your interests.
+                    </p>
+                    <div className="mt-4">
+                      <Link
+                        to="/teammates"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                      >
+                        <span>Find Teammates</span>
+                      </Link>
+                    </div>
+                  </>
+                ) : searchQuery ? (
                   <>
                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
                       No people found
@@ -523,18 +827,19 @@ function Network() {
                 ) : (
                   <>
                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No connections yet
+                      No matches found
                     </h3>
                     <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Start discovering builders and connect with people who share your interests.
+                      Try changing or clearing your filters.
                     </p>
                     <div className="mt-4">
-                      <Link
-                        to="/teammates"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                      <button
+                        type="button"
+                        onClick={handleClearFilters}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                       >
-                        <span>Find Teammates</span>
-                      </Link>
+                        Clear Filters
+                      </button>
                     </div>
                   </>
                 )}
@@ -546,9 +851,9 @@ function Network() {
         {/* ── TAB 2: INCOMING REQUESTS ── */}
         {activeTab === "requests" && (
           <div>
-            {filteredRequests.length > 0 ? (
+            {displayedRequests.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {filteredRequests.map((req) => {
+                {displayedRequests.map((req) => {
                   const user = TEAMMATES.find((m) => m.id === req.fromUserId);
                   if (!user) return null;
 
@@ -632,7 +937,7 @@ function Network() {
                         {/* Optional Message */}
                         {req.message && (
                           <div className="rounded-lg bg-neutral-50 p-3 text-xs italic text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-300">
-                            "{req.message}"
+                            &quot;{req.message}&quot;
                           </div>
                         )}
 
@@ -723,7 +1028,16 @@ function Network() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
-                {searchQuery ? (
+                {requests.length === 0 ? (
+                  <>
+                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      No connection requests
+                    </h3>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      You&apos;re all caught up.
+                    </p>
+                  </>
+                ) : searchQuery ? (
                   <>
                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
                       No people found
@@ -735,11 +1049,20 @@ function Network() {
                 ) : (
                   <>
                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No connection requests
+                      No matches found
                     </h3>
                     <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      You're all caught up.
+                      Try changing or clearing your filters.
                     </p>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={handleClearFilters}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -750,9 +1073,9 @@ function Network() {
         {/* ── TAB 3: SENT REQUESTS ── */}
         {activeTab === "sent" && (
           <div>
-            {filteredSent.length > 0 ? (
+            {displayedSent.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {filteredSent.map((s) => {
+                {displayedSent.map((s) => {
                   const user = TEAMMATES.find((m) => m.id === s.toUserId);
                   if (!user) return null;
 
@@ -895,7 +1218,16 @@ function Network() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
-                {searchQuery ? (
+                {sent.length === 0 ? (
+                  <>
+                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      No sent requests
+                    </h3>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      Requests you send to developers will appear here.
+                    </p>
+                  </>
+                ) : searchQuery ? (
                   <>
                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
                       No people found
@@ -907,18 +1239,27 @@ function Network() {
                 ) : (
                   <>
                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No pending requests
+                      No matches found
                     </h3>
                     <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      People you connect with will appear here.
+                      Try changing or clearing your filters.
                     </p>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={handleClearFilters}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
             )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

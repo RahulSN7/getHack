@@ -427,8 +427,8 @@ function Teammates() {
       {/* ── Content ── */}
       <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8">
         {/* Sort + Count Row */}
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <p className="text-sm font-normal text-neutral-500 dark:text-neutral-400">
             <span className="font-semibold text-neutral-900 dark:text-white">
               {results.length}
             </span>{" "}
@@ -437,47 +437,62 @@ function Teammates() {
                 ? "person"
                 : "people"
               : results.length === 1
-                ? "team"
-                : "teams"}{" "}
-            found
+              ? "team"
+              : "teams"}
           </p>
 
           {/* Sort dropdown */}
           <div className="flex items-center gap-2">
             <label
               htmlFor="teammate-sort"
-              className="text-xs font-medium text-neutral-500 dark:text-neutral-400"
+              className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400"
             >
               Sort by
             </label>
-            <select
-              id="teammate-sort"
-              value={currentSort}
-              onChange={(e) => setCurrentSort(e.target.value)}
-              className="
-                rounded-lg
-                border
-                border-neutral-200
-                bg-white
-                px-2.5
-                py-1.5
-                text-xs
-                font-medium
-                text-neutral-700
-                outline-none
-                transition-colors
-                focus:border-indigo-500
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:text-neutral-300
-              "
-            >
-              {sortOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                id="teammate-sort"
+                value={currentSort}
+                onChange={(e) => setCurrentSort(e.target.value)}
+                className="
+                  h-8
+                  appearance-none
+                  rounded-lg
+                  border
+                  border-neutral-200
+                  bg-white
+                  pl-3
+                  pr-8
+                  text-xs
+                  font-medium
+                  text-neutral-700
+                  outline-none
+                  transition-[border-color,box-shadow]
+                  duration-150
+                  focus:border-indigo-400
+                  focus:ring-2
+                  focus:ring-indigo-500/15
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:text-neutral-200
+                  dark:focus:border-indigo-500
+                "
+              >
+                {sortOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-neutral-400 dark:text-neutral-500"
+              >
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </span>
+            </div>
           </div>
         </div>
 

@@ -6,59 +6,61 @@ function HackathonSearch({ value, onChange }) {
   return (
     <div className="relative w-full">
       {/* Search icon */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-neutral-400 dark:text-neutral-500"
+      <svg
+        className="
+          pointer-events-none
+          absolute
+          left-3.5
+          top-1/2
+          h-4
+          w-4
+          -translate-y-1/2
+          text-neutral-400
+          dark:text-neutral-500
+        "
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
-      </span>
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+      </svg>
 
       <input
         id="hackathon-search"
         type="search"
         autoComplete="off"
         spellCheck="false"
-        placeholder="Search by name, technology, organizer, or location…"
+        placeholder="Search hackathons by name, organizer, or tech…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="
-          h-11
+          h-10
           w-full
-          rounded-xl
+          rounded-lg
           border
           border-neutral-200
           bg-white
           pl-10
-          pr-10
+          pr-4
           text-sm
           text-neutral-900
           placeholder-neutral-400
           outline-none
-
-          transition-[border-color,box-shadow]
+          transition-colors
           duration-150
-
-          focus:border-indigo-400
-          focus:ring-2
-          focus:ring-indigo-500/15
-
+          focus:border-indigo-500
+          focus:ring-1
+          focus:ring-indigo-500/20
           dark:border-neutral-800
           dark:bg-neutral-900
           dark:text-white
-          dark:placeholder-neutral-600
-          dark:focus:border-indigo-500
-          dark:focus:ring-indigo-500/20
+          dark:placeholder-neutral-500
+          dark:focus:border-indigo-400
+          dark:focus:ring-indigo-400/20
         "
       />
 

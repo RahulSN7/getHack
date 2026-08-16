@@ -13,12 +13,11 @@ function HackathonSort({ value, onChange, resultCount }) {
   return (
     <div className="flex items-center justify-between gap-4">
       {/* Result count */}
-      <p className="text-sm text-neutral-500 dark:text-neutral-400" aria-live="polite" aria-atomic="true">
-        {resultCount === 0
-          ? "No hackathons"
-          : resultCount === 1
-          ? "1 hackathon"
-          : `${resultCount} hackathons`}
+      <p className="text-sm font-normal text-neutral-500 dark:text-neutral-400" aria-live="polite" aria-atomic="true">
+        <span className="font-semibold text-neutral-900 dark:text-white">
+          {resultCount}
+        </span>{" "}
+        {resultCount === 1 ? "hackathon" : "hackathons"}
       </p>
 
       {/* Sort select */}
