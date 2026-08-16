@@ -13,14 +13,20 @@ import ProfilePage from "./pages/Profile/ProfilePage.jsx";
 import NetworkPage from "./pages/Network/NetworkPage.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { SavedProvider } from "./context/SavedContext.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
 import OrganizerLayout from "./components/organizer/OrganizerLayout.jsx";
 import OrganizerDashboardPage from "./pages/Organizer/OrganizerDashboardPage.jsx";
 import OrganizerHackathonsPage from "./pages/Organizer/OrganizerHackathonsPage.jsx";
 import CreateHackathonPage from "./pages/Organizer/CreateHackathonPage.jsx";
 import SelectedHackathonPage from "./pages/Organizer/SelectedHackathonPage.jsx";
 import OrganizerProfilePage from "./pages/Organizer/OrganizerProfilePage.jsx";
+import AuthLayout from "./components/auth/AuthLayout.jsx";
+import LoginPage from "./pages/Auth/LoginPage.jsx";
+import SignupPage from "./pages/Auth/SignupPage.jsx";
+import ForgotPasswordPage from "./pages/Auth/ForgotPasswordPage.jsx";
 
 const router = createBrowserRouter([
+  /* ── Main Application Route (with Website Header) ── */
   {
     path: "/",
     element: <App />,
@@ -75,20 +81,43 @@ const router = createBrowserRouter([
           },
         ],
       },
+    ],
+  },
+
+  /* ── Dedicated Authentication Route (Standalone AuthLayout without Header) ── */
+  {
+    element: <AuthLayout />,
+    children: [
       {
-        path: "*",
-        element: <LandingPage />,
+        path: "login",
+        element: <LoginPage />,
+      },
+      {
+        path: "signup",
+        element: <SignupPage />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage />,
       },
     ],
+  },
+
+  /* Fallback Route */
+  {
+    path: "*",
+    element: <LandingPage />,
   },
 ]);
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <SavedProvider>
-      <ThemeProvider>
-        <RouterProvider router={router} />
-      </ThemeProvider>
-    </SavedProvider>
+    <AuthProvider>
+      <SavedProvider>
+        <ThemeProvider>
+          <RouterProvider router={router} />
+        </ThemeProvider>
+      </SavedProvider>
+    </AuthProvider>
   </StrictMode>
 );

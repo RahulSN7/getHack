@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/useAuth";
 
 function Header() {
+  const { user, isAuthenticated, logout } = useAuth();
   // --------------------------------------------------
   // DARK / LIGHT MODE (from global context)
   // --------------------------------------------------
@@ -656,42 +658,97 @@ function Header() {
             </button>
 
             {/* ==================================================
-                LOGIN
+                LOGIN / PROFILE BUTTON
                 ================================================== */}
 
-            <Link
-              to="/login"
-              className="
-                hidden
-                h-8
-                items-center
-                justify-center
-
-                rounded-lg
-
-                bg-neutral-950
-
-                px-3.5
-                ml-1.5
-
-                text-sm
-                font-medium
-                text-white
-
-                transition-colors
-                duration-150
-
-                hover:bg-neutral-800
-
-                dark:bg-white
-                dark:text-neutral-950
-                dark:hover:bg-neutral-200
-
-                sm:flex
-              "
-            >
-              Log in
-            </Link>
+            {isAuthenticated ? (
+              <div className="hidden sm:flex items-center gap-2 ml-1.5">
+                <Link
+                  to={`/profile/${user?.id || "m1"}`}
+                  className="
+                    flex
+                    h-8
+                    items-center
+                    gap-2
+                    rounded-lg
+                    border
+                    border-neutral-200
+                    bg-white
+                    px-2.5
+                    py-1
+                    text-xs
+                    font-semibold
+                    text-neutral-900
+                    transition-colors
+                    hover:bg-neutral-50
+                    dark:border-neutral-800
+                    dark:bg-neutral-900
+                    dark:text-white
+                    dark:hover:bg-neutral-800
+                  "
+                >
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </span>
+                  <span className="max-w-[100px] truncate">{user?.name || "Profile"}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={logout}
+                  title="Log out"
+                  className="
+                    inline-flex
+                    h-8
+                    w-8
+                    items-center
+                    justify-center
+                    rounded-lg
+                    border
+                    border-neutral-200
+                    text-neutral-500
+                    transition-colors
+                    hover:bg-neutral-100
+                    hover:text-neutral-900
+                    dark:border-neutral-800
+                    dark:text-neutral-400
+                    dark:hover:bg-neutral-800
+                    dark:hover:text-white
+                  "
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="
+                  hidden
+                  h-8
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-neutral-950
+                  px-3.5
+                  ml-1.5
+                  text-sm
+                  font-medium
+                  text-white
+                  transition-colors
+                  duration-150
+                  hover:bg-neutral-800
+                  dark:bg-white
+                  dark:text-neutral-950
+                  dark:hover:bg-neutral-200
+                  sm:flex
+                "
+              >
+                Log in
+              </Link>
+            )}
 
             {/* ==================================================
                 MOBILE MENU BUTTON
