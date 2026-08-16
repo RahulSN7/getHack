@@ -282,7 +282,7 @@ function Header() {
             </NavLink>
 
             <NavLink
-              to="/my-network"
+              to="/network"
               className={({ isActive }) =>
                 `${navLinkClass} ${
                   isActive
@@ -816,7 +816,7 @@ function Header() {
               </Link>
 
               <Link
-                to="/my-network"
+                to="/network"
                 onClick={() => setMobileMenuOpen(false)}
                 className="
                   block

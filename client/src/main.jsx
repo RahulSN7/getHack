@@ -10,6 +10,7 @@ import HackathonsPage from "./pages/Hackathons/HackathonsPage.jsx";
 import HackathonDetailsPage from "./pages/Hackathons/HackathonDetailsPage.jsx";
 import TeammatesPage from "./pages/Teammates/TeammatesPage.jsx";
 import ProfilePage from "./pages/Profile/ProfilePage.jsx";
+import NetworkPage from "./pages/Network/NetworkPage.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { SavedProvider } from "./context/SavedContext.jsx";
 
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
       {
         path: "profile/:id",
         element: <ProfilePage />,
+      },
+      {
+        path: "network",
+        element: <NetworkPage />,
       },
       {
         path: "*",
