@@ -123,24 +123,34 @@ function Network() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
-      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-6 lg:px-8 space-y-8">
-        {/* ── Page Header ── */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl dark:text-white">
-            Collaborate
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Stay connected with builders and collaborate on your next project.
+      {/* ── Page Header ── */}
+      <div className="bg-white dark:bg-neutral-950">
+        <div className="mx-auto max-w-7xl px-5 pb-6 pt-5 sm:px-6 lg:px-8">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-indigo-500">
+            COLLABORATE
           </p>
-        </div>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
+            My Network
+          </h1>
+          <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
+            Stay connected with builders, message teammates, and collaborate on what comes next.
+          </p>
 
-        {/* ── Search Bar & Tabs Row ── */}
-        <div className="space-y-4">
-          {/* Search Input */}
-          <div className="relative max-w-md">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+          {/* ── Search Bar (Matches Hackathons / Find Teammates search UI) ── */}
+          <div className="mt-6 max-w-2xl">
+            <div className="relative">
               <svg
-                className="h-4 w-4 text-neutral-400 dark:text-neutral-500"
+                className="
+                  pointer-events-none
+                  absolute
+                  left-3.5
+                  top-1/2
+                  h-4
+                  w-4
+                  -translate-y-1/2
+                  text-neutral-400
+                  dark:text-neutral-500
+                "
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -151,54 +161,80 @@ function Network() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.3-4.3" />
               </svg>
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search your network by name, role, skill, @username..."
-              className="
-                w-full
-                rounded-xl
-                border
-                border-neutral-200
-                bg-white
-                py-2.5
-                pl-10
-                pr-4
-                text-xs
-                font-medium
-                text-neutral-900
-                placeholder-neutral-400
-                shadow-xs
-                transition-colors
-                focus:border-indigo-500
-                focus:outline-none
-                focus:ring-2
-                focus:ring-indigo-500/20
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:text-white
-                dark:placeholder-neutral-500
-                dark:focus:border-indigo-400
-              "
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            )}
-          </div>
 
-          {/* Navigation Tabs with Dynamic Counts */}
-          <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, role, skill, or getHack ID…"
+                className="
+                  h-10
+                  w-full
+                  rounded-lg
+                  border
+                  border-neutral-200
+                  bg-white
+                  pl-10
+                  pr-4
+                  text-sm
+                  text-neutral-900
+                  placeholder-neutral-400
+                  outline-none
+                  transition-colors
+                  duration-150
+                  focus:border-indigo-500
+                  focus:ring-1
+                  focus:ring-indigo-500/20
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:text-white
+                  dark:placeholder-neutral-500
+                  dark:focus:border-indigo-400
+                  dark:focus:ring-indigo-400/20
+                "
+              />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                  className="
+                    absolute
+                    right-3
+                    top-1/2
+                    -translate-y-1/2
+                    rounded
+                    p-0.5
+                    text-neutral-400
+                    transition-colors
+                    hover:text-neutral-600
+                    dark:text-neutral-500
+                    dark:hover:text-neutral-300
+                  "
+                >
+                  <svg
+                    className="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Page Content Container ── */}
+      <div className="mx-auto max-w-7xl px-5 py-6 sm:px-6 lg:px-8 space-y-6">
+        {/* Navigation Tabs with Dynamic Counts */}
+        <div className="flex items-center gap-2 border-b border-neutral-200/80 dark:border-neutral-800/80">
             <button
               type="button"
               onClick={() => setActiveTab("connections")}
@@ -316,7 +352,6 @@ function Network() {
               </span>
             </button>
           </div>
-        </div>
 
         {/* Toast Feedback */}
         {toastMessage && (
