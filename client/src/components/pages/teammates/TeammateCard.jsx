@@ -3,6 +3,7 @@
 // Follows the same card design conventions as HackathonCard.jsx
 // ---------------------------------------------------------------------------
 
+import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 
 // ---------------------------------------------------------------------------
@@ -211,8 +212,8 @@ function TeammateCard({ teammate }) {
         </span>
 
         {/* View Profile */}
-        <a
-          href="#"
+        <Link
+          to={`/profile/${teammate.id}`}
           className="
             inline-flex
             items-center
@@ -240,7 +241,7 @@ function TeammateCard({ teammate }) {
             <path d="M5 12h14" />
             <path d="m12 5 7 7-7 7" />
           </svg>
-        </a>
+        </Link>
       </div>
     </article>
   );

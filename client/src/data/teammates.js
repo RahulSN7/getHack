@@ -16,6 +16,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 7,
     lookingFor: "team",
     accent: "indigo",
+    interests: ["Design Systems", "Web Accessibility", "Developer Experience"],
+    github: "https://github.com/priyasharma",
+    linkedin: "https://linkedin.com/in/priyasharma",
   },
   {
     id: "arjun-mehta",
@@ -29,6 +32,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 5,
     lookingFor: "hackathon",
     accent: "emerald",
+    interests: ["Distributed Systems", "Open Source", "API Design"],
+    github: "https://github.com/arjunmehta",
+    linkedin: "https://linkedin.com/in/arjunmehta",
   },
   {
     id: "sneha-reddy",
@@ -42,6 +48,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 3,
     lookingFor: "team",
     accent: "rose",
+    interests: ["User Research", "Interaction Design", "EdTech"],
+    github: null,
+    linkedin: "https://linkedin.com/in/snehareddy",
   },
   {
     id: "vikram-singh",
@@ -55,6 +64,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 6,
     lookingFor: "hackathon",
     accent: "violet",
+    interests: ["AI & Machine Learning", "Computer Vision", "Deep Learning"],
+    github: "https://github.com/vikramsingh",
+    linkedin: "https://linkedin.com/in/vikramsingh",
   },
   {
     id: "ananya-gupta",
@@ -68,6 +80,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 4,
     lookingFor: "team",
     accent: "sky",
+    interests: ["Cloud Infrastructure", "Full Stack Development", "HealthTech"],
+    github: "https://github.com/ananyagupta",
+    linkedin: null,
   },
   {
     id: "rahul-joshi",
@@ -81,6 +96,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 2,
     lookingFor: "team",
     accent: "amber",
+    interests: ["Data Analytics", "Predictive Modeling", "ClimateTech"],
+    github: "https://github.com/rahuljoshi",
+    linkedin: "https://linkedin.com/in/rahuljoshi",
   },
   {
     id: "kavya-nair",
@@ -94,6 +112,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 3,
     lookingFor: "hackathon",
     accent: "emerald",
+    interests: ["DevOps", "Containerization", "Green Computing"],
+    github: "https://github.com/kavyanair",
+    linkedin: "https://linkedin.com/in/kavyanair",
   },
   {
     id: "aditya-kumar",
@@ -107,6 +128,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 5,
     lookingFor: "team",
     accent: "indigo",
+    interests: ["Mobile UX", "Cross-Platform Tech", "Offline Apps"],
+    github: "https://github.com/adityakumar",
+    linkedin: null,
   },
   {
     id: "meera-patel",
@@ -120,6 +144,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 8,
     lookingFor: "hackathon",
     accent: "violet",
+    interests: ["Web3 & DeFi", "Zero-Knowledge Proofs", "Smart Contracts"],
+    github: "https://github.com/meerapatel",
+    linkedin: "https://linkedin.com/in/meerapatel",
   },
   {
     id: "rohan-das",
@@ -133,6 +160,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 1,
     lookingFor: "team",
     accent: "sky",
+    interests: ["Web Development", "CSS Architecture", "Open Source"],
+    github: "https://github.com/rohandas",
+    linkedin: "https://linkedin.com/in/rohandas",
   },
   {
     id: "ishita-bansal",
@@ -146,6 +176,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 4,
     lookingFor: "hackathon",
     accent: "amber",
+    interests: ["Systems Programming", "FinTech", "High-Performance APIs"],
+    github: "https://github.com/ishitabansal",
+    linkedin: "https://linkedin.com/in/ishitabansal",
   },
   {
     id: "sarthak-verma",
@@ -159,6 +192,9 @@ export const TEAMMATES = [
     hackathonsCompleted: 3,
     lookingFor: "team",
     accent: "rose",
+    interests: ["Product Management", "SaaS Tools", "Agile Workflows"],
+    github: null,
+    linkedin: "https://linkedin.com/in/sarthakverma",
   },
 ];
 
