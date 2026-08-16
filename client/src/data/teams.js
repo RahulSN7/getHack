@@ -18,6 +18,7 @@ export const TEAMS = [
     accent: "indigo",
     status: "Recruiting",
     createdBy: "priya-sharma",
+    memberIds: ["priya-sharma", "sneha-reddy"],
   },
   {
     id: "team-neural-net",
@@ -33,6 +34,7 @@ export const TEAMS = [
     accent: "emerald",
     status: "Recruiting",
     createdBy: "vikram-singh",
+    memberIds: ["vikram-singh", "rahul-joshi"],
   },
   {
     id: "team-stack-overflow",
@@ -48,6 +50,7 @@ export const TEAMS = [
     accent: "amber",
     status: "Recruiting",
     createdBy: "arjun-mehta",
+    memberIds: ["arjun-mehta", "kavya-nair", "ishita-bansal"],
   },
   {
     id: "team-health-sync",
@@ -63,6 +66,7 @@ export const TEAMS = [
     accent: "rose",
     status: "Recruiting",
     createdBy: "ananya-gupta",
+    memberIds: ["ananya-gupta"],
   },
   {
     id: "team-block-builders",
@@ -78,6 +82,7 @@ export const TEAMS = [
     accent: "violet",
     status: "Recruiting",
     createdBy: "meera-patel",
+    memberIds: ["meera-patel", "rohan-das", "aditya-kumar"],
   },
   {
     id: "team-green-compute",
@@ -93,6 +98,7 @@ export const TEAMS = [
     accent: "emerald",
     status: "Recruiting",
     createdBy: "kavya-nair",
+    memberIds: ["kavya-nair", "rahul-joshi"],
   },
   {
     id: "team-pay-guard",
@@ -108,6 +114,7 @@ export const TEAMS = [
     accent: "violet",
     status: "Full",
     createdBy: "ishita-bansal",
+    memberIds: ["ishita-bansal", "arjun-mehta", "ananya-gupta", "sarthak-verma"],
   },
   {
     id: "team-api-forge",
@@ -123,6 +130,7 @@ export const TEAMS = [
     accent: "indigo",
     status: "Recruiting",
     createdBy: "sarthak-verma",
+    memberIds: ["sarthak-verma", "priya-sharma"],
   },
 ];
 

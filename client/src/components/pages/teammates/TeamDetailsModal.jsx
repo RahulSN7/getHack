@@ -1,9 +1,10 @@
 // ---------------------------------------------------------------------------
-// TeamDetailsModal — Modal dialog displaying full team details
-// Community-focused, friendly UI displaying team info, roles needed, tech stack, and members
+// TeamDetailsModal — Redesigned Team Details Modal / Profile
+// Community-focused, friendly team profile with clear information hierarchy:
+// Team Identity -> Project Overview -> Looking For -> Tech Stack -> Team Members -> CTA
 // ---------------------------------------------------------------------------
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TEAMMATES } from "../../../data/teammates";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 
@@ -27,6 +28,7 @@ function StatusBadge({ status }) {
 
 function TeamDetailsModal({ team, onClose }) {
   const modalRef = useRef(null);
+  const [joined, setJoined] = useState(false);
 
   // Close on Escape key press
   useEffect(() => {
@@ -53,18 +55,30 @@ function TeamDetailsModal({ team, onClose }) {
     accent = "indigo",
     status,
     createdBy,
+    memberIds = [],
   } = team;
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
-  const initial = teamName ? teamName.charAt(0).toUpperCase() : "T";
+  const isFull = status === "Full" || currentSize >= maxSize;
 
-  // Find creator details if present
+  // Resolve member profiles from TEAMMATES data
+  const memberList = memberIds
+    .map((id) => TEAMMATES.find((m) => m.id === id))
+    .filter(Boolean);
+
+  // Fallback if no memberIds defined
   const creator = TEAMMATES.find((m) => m.id === createdBy);
+  const displayMembers =
+    memberList.length > 0
+      ? memberList
+      : creator
+      ? [creator]
+      : [];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-neutral-950/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150 overflow-y-auto"
       onClick={(e) => {
         if (modalRef.current && !modalRef.current.contains(e.target)) {
           onClose();
@@ -76,136 +90,289 @@ function TeamDetailsModal({ team, onClose }) {
     >
       <div
         ref={modalRef}
-        className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+        className="relative my-auto w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
       >
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close dialog"
-          className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-
-        {/* Modal Header */}
-        <div className="flex items-start gap-4 pr-8">
-          <div
-            className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-lg font-bold ${accentBgSoft} ${accentText}`}
-          >
-            {initial}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 id="team-details-title" className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
-              {teamName}
-            </h2>
-            <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-              Building for <span className="font-semibold text-neutral-800 dark:text-neutral-200">{hackathonName}</span>
-            </p>
-            <div className="mt-2.5 flex items-center gap-2">
-              <StatusBadge status={status} />
-              <span className="text-xs text-neutral-400 dark:text-neutral-500">·</span>
-              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                {currentSize} / {maxSize} members
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="my-5 border-t border-neutral-100 dark:border-neutral-800" />
-
-        {/* Content Body */}
-        <div className="space-y-5 text-sm">
-          {/* Description */}
-          {description && (
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                Project Overview
-              </h3>
-              <p className="mt-1.5 text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                {description}
-              </p>
-            </div>
-          )}
-
-          {/* Roles Needed */}
-          {rolesNeeded.length > 0 && (
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                Looking for Skills & Roles
-              </h3>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {rolesNeeded.map((role) => (
-                  <span
-                    key={role}
-                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${accentBgSoft} ${accentText}`}
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tech Stack */}
-          {techStack.length > 0 && (
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                Tech Stack
-              </h3>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {techStack.map((tech) => (
-                  <span
-                    key={tech}
-                    className="inline-flex items-center rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-800/50 dark:text-neutral-300"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Team Info / Creator */}
-          <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/50 p-4 dark:border-neutral-800/80 dark:bg-neutral-900/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                  Team Contact
-                </p>
-                <p className="mt-0.5 font-semibold text-neutral-900 dark:text-white">
-                  {creator ? creator.name : "Team Builder"}
-                </p>
-                {creator && (
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {creator.role} {creator.location ? `· ${creator.location}` : ""}
-                  </p>
-                )}
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                  Location
-                </p>
-                <p className="mt-0.5 font-semibold text-neutral-900 dark:text-white">
-                  {location || "Remote"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Action */}
-        <div className="mt-6 flex items-center justify-end gap-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+        {/* ── Top Bar: Back & Close ── */}
+        <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
           >
-            Close
+            <svg
+              className="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
+            </svg>
+            <span>Back to Join a Team</span>
           </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close team details"
+            className="
+              grid
+              h-8
+              w-8
+              place-items-center
+              rounded-lg
+              text-neutral-400
+              transition-colors
+              hover:bg-neutral-100
+              hover:text-neutral-700
+              focus-visible:outline
+              focus-visible:outline-2
+              focus-visible:outline-indigo-500
+              dark:text-neutral-500
+              dark:hover:bg-neutral-800
+              dark:hover:text-neutral-200
+            "
+          >
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* ── Scrollable Body ── */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          {/* Header & Team Identity */}
+          <div className="flex items-start gap-4">
+            <div
+              className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-lg font-bold ${accentBgSoft} ${accentText}`}
+            >
+              {teamName ? teamName.charAt(0).toUpperCase() : "T"}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h2
+                id="team-details-title"
+                className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl dark:text-white"
+              >
+                {teamName}
+              </h2>
+              <p className="mt-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                Building for{" "}
+                <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                  {hackathonName}
+                </span>
+              </p>
+
+              {/* Status & Member Count */}
+              <div className="mt-3 flex flex-wrap items-center gap-2.5 text-xs">
+                <StatusBadge status={status} />
+                <span className="text-neutral-300 dark:text-neutral-700">·</span>
+                <span className="font-medium text-neutral-600 dark:text-neutral-400">
+                  {currentSize} of {maxSize} members
+                </span>
+                {location && (
+                  <>
+                    <span className="text-neutral-300 dark:text-neutral-700">·</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">
+                      {location}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="my-6 border-t border-neutral-100 dark:border-neutral-800" />
+
+          {/* ── Content Layout (Editorial 2-Column Desktop) ── */}
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Left Column: Project Overview, Looking For, Tech Stack */}
+            <div className="space-y-6 md:col-span-2">
+              {/* Project Overview */}
+              {description && (
+                <section>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                    Project Overview
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+                    {description}
+                  </p>
+                </section>
+              )}
+
+              {/* Looking For */}
+              {rolesNeeded.length > 0 && (
+                <section className={description ? "border-t border-neutral-100 pt-5 dark:border-neutral-800" : ""}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                    Looking For
+                  </h3>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {rolesNeeded.map((role) => (
+                      <span
+                        key={role}
+                        className={`inline-flex items-center rounded-md px-3 py-1 text-xs font-semibold ${accentBgSoft} ${accentText}`}
+                      >
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Tech Stack */}
+              {techStack.length > 0 && (
+                <section className="border-t border-neutral-100 pt-5 dark:border-neutral-800">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                    Tech Stack
+                  </h3>
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {techStack.map((tech) => (
+                      <span
+                        key={tech}
+                        className="inline-flex items-center rounded-md border border-neutral-200/90 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-800/60 dark:text-neutral-300"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+
+            {/* Right Column: Team Members */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                Team Members ({displayMembers.length})
+              </h3>
+
+              <div className="space-y-3">
+                {displayMembers.map((member) => {
+                  const isLeader = member.id === createdBy;
+                  const memberInitials = member.name
+                    ? member.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                    : "?";
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3 dark:border-neutral-800/70 dark:bg-neutral-900/50"
+                    >
+                      {/* Avatar */}
+                      <div
+                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-bold ${
+                          isLeader
+                            ? `${accentBgSoft} ${accentText}`
+                            : "bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                        }`}
+                      >
+                        {memberInitials}
+                      </div>
+
+                      {/* Info */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="truncate text-xs font-semibold text-neutral-900 dark:text-white">
+                            {member.name}
+                          </p>
+                          {isLeader && (
+                            <span className="shrink-0 rounded bg-indigo-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">
+                              LEADER
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-neutral-500 dark:text-neutral-400">
+                          {member.role}
+                          {member.location ? ` · ${member.location}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer CTA ── */}
+        <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50/50 px-6 py-4 dark:border-neutral-800 dark:bg-neutral-950/50">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            {!isFull ? "Reach out to connect and build together." : "This team has reached its max member capacity."}
+          </p>
+
+          {!isFull ? (
+            <button
+              type="button"
+              onClick={() => setJoined(true)}
+              className={`
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                rounded-lg
+                px-5
+                py-2.5
+                text-xs
+                font-semibold
+                shadow-xs
+                transition-all
+                duration-150
+                focus-visible:outline
+                focus-visible:outline-2
+                focus-visible:outline-indigo-500
+                ${
+                  joined
+                    ? "bg-emerald-600 text-white dark:bg-emerald-500 hover:bg-emerald-700"
+                    : "bg-indigo-600 text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                }
+              `}
+            >
+              {joined ? (
+                <>
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>Interest Sent</span>
+                </>
+              ) : (
+                <span>I'd like to join</span>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="
+                cursor-not-allowed
+                rounded-lg
+                bg-neutral-200
+                px-5
+                py-2.5
+                text-xs
+                font-semibold
+                text-neutral-500
+                dark:bg-neutral-800
+                dark:text-neutral-400
+              "
+            >
+              Team is full
+            </button>
+          )}
         </div>
       </div>
     </div>
