@@ -7,6 +7,7 @@ import "./index.css";
 import App from "./App.jsx";
 import LandingPage from "./pages/Landing/LandingPage.jsx";
 import HackathonsPage from "./pages/Hackathons/HackathonsPage.jsx";
+import HackathonDetailsPage from "./pages/Hackathons/HackathonDetailsPage.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { SavedProvider } from "./context/SavedContext.jsx";
 
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
       {
         path: "hackathons",
         element: <HackathonsPage />,
+      },
+      {
+        path: "hackathons/:id",
+        element: <HackathonDetailsPage />,
       },
       {
         path: "*",

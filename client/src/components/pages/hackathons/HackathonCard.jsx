@@ -2,6 +2,7 @@
 // HackathonCard — compact, information-first card design with Save / Bookmark
 // ---------------------------------------------------------------------------
 
+import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
 import DeadlineDisplay from "./DeadlineDisplay";
@@ -90,7 +91,6 @@ function HackathonCard({ hackathon }) {
     teamSize,
     prize = "N/A",
     accent = "indigo",
-    url = "#",
   } = hackathon;
 
   const { isSaved, toggleSave } = useSaved();
@@ -256,7 +256,7 @@ function HackathonCard({ hackathon }) {
         </div>
       </div>
 
-      {/* ── 4. Footer: Prize (Left) & View Hackathon CTA (Right) ── */}
+      {/* ── 4. Footer: Prize (Left) & View Details CTA (Right) ── */}
       <div className="mt-4 flex items-end justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
@@ -267,8 +267,8 @@ function HackathonCard({ hackathon }) {
           </p>
         </div>
 
-        <a
-          href={url}
+        <Link
+          to={`/hackathons/${id}`}
           className="
             inline-flex
             items-center
@@ -283,7 +283,7 @@ function HackathonCard({ hackathon }) {
             dark:hover:text-indigo-300
           "
         >
-          <span>View Hackathon</span>
+          <span>View Details</span>
           <svg
             className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1"
             viewBox="0 0 24 24"
@@ -296,7 +296,7 @@ function HackathonCard({ hackathon }) {
             <path d="M5 12h14" />
             <path d="m12 5 7 7-7 7" />
           </svg>
-        </a>
+        </Link>
       </div>
     </article>
   );
