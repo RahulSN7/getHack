@@ -21,6 +21,7 @@ import OrganizerDashboardPage from "./pages/Organizer/OrganizerDashboardPage.jsx
 import OrganizerHackathonsPage from "./pages/Organizer/OrganizerHackathonsPage.jsx";
 import CreateHackathonPage from "./pages/Organizer/CreateHackathonPage.jsx";
 import EditHackathonPage from "./pages/Organizer/EditHackathonPage.jsx";
+import OrganizerHackathonDetailsPage from "./pages/Organizer/OrganizerHackathonDetailsPage.jsx";
 import OrganizerProfilePage from "./pages/Organizer/OrganizerProfilePage.jsx";
 import AuthLayout from "./components/auth/AuthLayout.jsx";
 import LoginPage from "./pages/Auth/LoginPage.jsx";
@@ -84,6 +85,10 @@ const router = createBrowserRouter([
       {
         path: "hackathons",
         element: <OrganizerHackathonsPage />,
+      },
+      {
+        path: "hackathons/:id",
+        element: <OrganizerHackathonDetailsPage />,
       },
       {
         path: "hackathons/:id/edit",

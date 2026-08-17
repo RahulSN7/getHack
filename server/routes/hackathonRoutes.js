@@ -12,6 +12,7 @@ const {
   getPublicHackathons,
   getMyHackathons,
   getHackathonById,
+  getOrganizerHackathonById,
   updateHackathon,
   deleteHackathon,
 } = require("../controllers/hackathonController");
@@ -19,8 +20,9 @@ const {
 // Public endpoints
 router.get("/", getPublicHackathons);
 
-// Organizer my hackathons endpoint (must come before /:id)
+// Organizer my hackathons endpoints (must come before /:id)
 router.get("/my", requireAuth, requireOrganizer, getMyHackathons);
+router.get("/organizer/:id", requireAuth, requireOrganizer, getOrganizerHackathonById);
 
 // Public single hackathon view endpoint
 router.get("/:id", getHackathonById);

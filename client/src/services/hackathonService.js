@@ -67,6 +67,16 @@ export const hackathonService = {
     return handleResponse(response);
   },
 
+  // Get organizer hackathon details by ID (Owner & Organizer check)
+  async getOrganizerHackathonById(id) {
+    const response = await fetch(`${API_BASE}/organizer/${id}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    return handleResponse(response);
+  },
+
   // Create new hackathon (Organizer only)
   async createHackathon(payload) {
     const response = await fetch(`${API_BASE}`, {

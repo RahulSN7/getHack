@@ -319,7 +319,7 @@ function OrganizerHackathonsPage() {
                 {/* ── Actions: View | Edit | Delete ── */}
                 <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t border-neutral-100 md:border-t-0 dark:border-neutral-800">
                   <Link
-                    to={`/hackathons/${h.id}`}
+                    to={`/organizer/hackathons/${h.id}`}
                     className="
                       inline-flex
                       items-center

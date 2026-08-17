@@ -293,7 +293,7 @@ function OrganizerDashboardPage() {
                       {/* Card Actions */}
                       <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0">
                         <Link
-                          to={`/hackathons/${h.id}`}
+                          to={`/organizer/hackathons/${h.id}`}
                           className="
                             inline-flex
                             items-center

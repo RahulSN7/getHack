@@ -183,6 +183,38 @@ const getHackathonById = async (req, res) => {
 };
 
 // ---------------------------------------------------------------------------
+// GET /api/hackathons/organizer/:id — Get Organizer Hackathon by ID (Owner Only)
+// ---------------------------------------------------------------------------
+const getOrganizerHackathonById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(404).json({ message: "Hackathon not found." });
+    }
+
+    const hackathon = await Hackathon.findById(id).populate("organizer", "name email");
+
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found." });
+    }
+
+    // Strict Ownership Verification
+    const orgId = typeof hackathon.organizer === "object" ? hackathon.organizer._id.toString() : hackathon.organizer.toString();
+    if (orgId !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "You don't have permission to view this hackathon.",
+      });
+    }
+
+    return res.json({ hackathon: hackathon.toJSON() });
+  } catch (error) {
+    console.error("Error fetching organizer hackathon by ID:", error);
+    return res.status(500).json({ message: "Failed to fetch hackathon details." });
+  }
+};
+
+// ---------------------------------------------------------------------------
 // PUT /api/hackathons/:id — Update Hackathon (Organizer + Owner Only)
 // ---------------------------------------------------------------------------
 const updateHackathon = async (req, res) => {
@@ -323,6 +355,7 @@ module.exports = {
   getPublicHackathons,
   getMyHackathons,
   getHackathonById,
+  getOrganizerHackathonById,
   updateHackathon,
   deleteHackathon,
 };
