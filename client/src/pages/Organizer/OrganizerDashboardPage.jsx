@@ -112,7 +112,7 @@ function OrganizerDashboardPage() {
             Welcome back, {user?.name || "Organizer"}
           </h1>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Create and manage your hackathons from one place.
+            Create, publish, and manage your hackathons from one place.
           </p>
         </div>
 

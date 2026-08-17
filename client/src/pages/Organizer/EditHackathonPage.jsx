@@ -261,10 +261,10 @@ function EditHackathonPage() {
       {/* ── Page Header ── */}
       <div>
         <Link
-          to="/organizer/hackathons"
+          to="/organizer"
           className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white mb-2"
         >
-          <span>← Back to My Hackathons</span>
+          <span>← Back</span>
         </Link>
         <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
           ORGANIZER PORTAL
@@ -685,7 +685,7 @@ function EditHackathonPage() {
           <button
             type="button"
             disabled={submitting}
-            onClick={() => navigate("/organizer/hackathons")}
+            onClick={() => navigate("/organizer")}
             className="
               rounded-lg
               border

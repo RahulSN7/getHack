@@ -146,18 +146,6 @@ function OrganizerHeader() {
           {/* Desktop Navigation */}
           <nav className="ml-8 hidden items-center gap-1 md:flex">
             <NavLink
-              to="/organizer"
-              end
-              className={({ isActive }) =>
-                `${navLinkClass} ${
-                  isActive ? "font-semibold text-neutral-950 dark:text-white" : ""
-                }`
-              }
-            >
-              Dashboard
-            </NavLink>
-
-            <NavLink
               to="/organizer/create"
               className={({ isActive }) =>
                 `${navLinkClass} ${
@@ -367,14 +355,6 @@ function OrganizerHeader() {
         >
           <nav className="mx-auto max-w-7xl px-5 pb-4 sm:px-6 lg:px-8">
             <div className="space-y-0.5 border-t border-neutral-200/60 pt-3 dark:border-neutral-800">
-              <Link
-                to="/organizer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-              >
-                Dashboard
-              </Link>
-
               <Link
                 to="/organizer/create"
                 onClick={() => setMobileMenuOpen(false)}
