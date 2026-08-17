@@ -7,24 +7,20 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   HACKATHON_ANNOUNCEMENTS,
-  HACKATHON_REGISTRATIONS,
   HACKATHON_SETTINGS,
   HACKATHON_SUBMISSIONS,
-  HACKATHON_TEAMS,
   HACKATHON_TIMELINE,
   ORGANIZER_HACKATHONS,
 } from "../../data/organizerData";
 
 function SelectedHackathonPage() {
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("overview"); // overview | registrations | teams | submissions | timeline | announcements | settings
+  const [activeTab, setActiveTab] = useState("overview"); // overview | submissions | timeline | announcements | settings
 
   // Match selected hackathon or fallback
   const hackathon =
     ORGANIZER_HACKATHONS.find((h) => h.id === id) || ORGANIZER_HACKATHONS[0];
 
-  const registrations = HACKATHON_REGISTRATIONS[hackathon.id] || HACKATHON_REGISTRATIONS["hack-for-good-2025"] || [];
-  const teams = HACKATHON_TEAMS[hackathon.id] || HACKATHON_TEAMS["hack-for-good-2025"] || [];
   const submissions = HACKATHON_SUBMISSIONS[hackathon.id] || HACKATHON_SUBMISSIONS["hack-for-good-2025"] || [];
   const timeline = HACKATHON_TIMELINE[hackathon.id] || HACKATHON_TIMELINE["hack-for-good-2025"] || [];
   const announcements = HACKATHON_ANNOUNCEMENTS[hackathon.id] || HACKATHON_ANNOUNCEMENTS["hack-for-good-2025"] || [];
@@ -115,8 +111,6 @@ function SelectedHackathonPage() {
           <nav className="flex items-center gap-1 overflow-x-auto pt-2">
             {[
               { id: "overview", label: "Overview" },
-              { id: "registrations", label: `Registrations (${registrations.length})` },
-              { id: "teams", label: `Teams (${teams.length})` },
               { id: "submissions", label: `Submissions (${submissions.length})` },
               { id: "timeline", label: "Timeline" },
               { id: "announcements", label: `Announcements (${announcements.length})` },
@@ -159,16 +153,16 @@ function SelectedHackathonPage() {
             {/* Overview Stats */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Registrations</p>
-                <p className="mt-2 text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
-                  {hackathon.registrationsCount.toLocaleString()}
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Event Mode & Schedule</p>
+                <p className="mt-2 text-base font-bold tracking-tight text-neutral-900 dark:text-white">
+                  {hackathon.mode} · {hackathon.hackathonDate}
                 </p>
               </div>
 
               <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Formed Teams</p>
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Prize Pool</p>
                 <p className="mt-2 text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
-                  {hackathon.teamsCount}
+                  {hackathon.prizePool}
                 </p>
               </div>
 
@@ -184,20 +178,6 @@ function SelectedHackathonPage() {
             <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
               <h2 className="text-sm font-bold text-neutral-900 dark:text-white">Quick Actions</h2>
               <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("registrations")}
-                  className="rounded-lg bg-neutral-100 px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                >
-                  Manage Registrations
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("teams")}
-                  className="rounded-lg bg-neutral-100 px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                >
-                  Manage Teams
-                </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("submissions")}
@@ -217,84 +197,7 @@ function SelectedHackathonPage() {
           </div>
         )}
 
-        {/* ── TAB 2: REGISTRATIONS ── */}
-        {activeTab === "registrations" && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-              Registered Participants ({registrations.length})
-            </h2>
 
-            <div className="grid grid-cols-1 gap-3">
-              {registrations.map((reg) => (
-                <div
-                  key={reg.id}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-xs dark:border-neutral-800 dark:bg-neutral-900"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">{reg.name}</h3>
-                      <span className="font-mono text-[11px] text-neutral-400 dark:text-neutral-500">{reg.getHackId}</span>
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{reg.role} · {reg.email}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="rounded bg-neutral-100 px-2 py-0.5 font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                      {reg.teamStatus} {reg.teamName ? `(${reg.teamName})` : ""}
-                    </span>
-                    <span className="text-neutral-400">Registered {reg.registeredAt}</span>
-                    <Link
-                      to={`/profile/${reg.userId}`}
-                      target="_blank"
-                      className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-                    >
-                      View Profile
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 3: TEAMS ── */}
-        {activeTab === "teams" && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-              Registered Teams ({teams.length})
-            </h2>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {teams.map((t) => (
-                <div
-                  key={t.id}
-                  className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-900 space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-base font-semibold text-neutral-900 dark:text-white">{t.name}</h3>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Leader: {t.leader} · Formed {t.createdAt}</p>
-                    </div>
-                    <span className="rounded-md bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
-                      {t.size}/{t.maxSize} Members
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {t.members.map((m, idx) => (
-                      <span
-                        key={idx}
-                        className="rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-                      >
-                        {m.name} ({m.role})
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* ── TAB 4: SUBMISSIONS ── */}
         {activeTab === "submissions" && (

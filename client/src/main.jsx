@@ -19,9 +19,8 @@ import RoleProtectedRoute from "./components/auth/RoleProtectedRoute.jsx";
 import OrganizerLayout from "./components/organizer/OrganizerLayout.jsx";
 import OrganizerDashboardPage from "./pages/Organizer/OrganizerDashboardPage.jsx";
 import OrganizerHackathonsPage from "./pages/Organizer/OrganizerHackathonsPage.jsx";
-import OrganizerManagePage from "./pages/Organizer/OrganizerManagePage.jsx";
 import CreateHackathonPage from "./pages/Organizer/CreateHackathonPage.jsx";
-import SelectedHackathonPage from "./pages/Organizer/SelectedHackathonPage.jsx";
+import EditHackathonPage from "./pages/Organizer/EditHackathonPage.jsx";
 import OrganizerProfilePage from "./pages/Organizer/OrganizerProfilePage.jsx";
 import AuthLayout from "./components/auth/AuthLayout.jsx";
 import LoginPage from "./pages/Auth/LoginPage.jsx";
@@ -79,24 +78,16 @@ const router = createBrowserRouter([
         element: <OrganizerDashboardPage />,
       },
       {
-        path: "hackathons",
-        element: <OrganizerHackathonsPage />,
-      },
-      {
         path: "create",
         element: <CreateHackathonPage />,
       },
       {
-        path: "hackathons/create",
-        element: <CreateHackathonPage />,
+        path: "hackathons",
+        element: <OrganizerHackathonsPage />,
       },
       {
-        path: "manage",
-        element: <OrganizerManagePage />,
-      },
-      {
-        path: "hackathons/:id",
-        element: <SelectedHackathonPage />,
+        path: "hackathons/:id/edit",
+        element: <EditHackathonPage />,
       },
       {
         path: "profile",

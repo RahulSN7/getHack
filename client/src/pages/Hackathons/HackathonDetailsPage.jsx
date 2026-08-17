@@ -5,11 +5,13 @@
 // themes, eligibility, complete timeline with end date, single prize pool, and zero duplicate data.
 // ---------------------------------------------------------------------------
 
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { HACKATHONS } from "../../data/hackathons";
 import { useSaved } from "../../context/SavedContext";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../constants/themeTokens";
 import DeadlineDisplay from "../../components/pages/hackathons/DeadlineDisplay";
+import { hackathonService } from "../../services/hackathonService";
 
 // Helper to format team size cleanly
 function formatTeamSize(min, max, customText) {
@@ -46,8 +48,66 @@ function HackathonDetailsPage() {
   const { id } = useParams();
   const { isSaved, toggleSave } = useSaved();
 
-  // Find target hackathon in data source
-  const hackathon = HACKATHONS.find((h) => String(h.id) === String(id));
+  const [hackathon, setHackathon] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadHackathon() {
+      try {
+        setLoading(true);
+        // Try fetching from API backend first
+        const data = await hackathonService.getHackathonById(id);
+        if (isMounted && data?.hackathon) {
+          const h = data.hackathon;
+          setHackathon({
+            ...h,
+            name: h.title || h.name,
+            organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer.name : h.organizer),
+            mode: h.format || h.mode,
+            location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : h.location,
+            hackathonDate: h.startDate || h.hackathonDate,
+            eventEndDate: h.endDate || h.eventEndDate,
+            url: h.registrationUrl || h.url,
+            prize: h.prizes || h.prizePool || h.prize || "N/A",
+            registrationOpen: h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true,
+          });
+          return;
+        }
+      } catch {
+        // Fallback to static mock data
+      }
+
+      const staticMatch = HACKATHONS.find((h) => String(h.id) === String(id));
+      if (isMounted) {
+        setHackathon(staticMatch || null);
+        setLoading(false);
+      }
+    }
+
+    loadHackathon().finally(() => {
+      if (isMounted) setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 px-6 py-20 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+        <div className="mx-auto max-w-xl text-center">
+          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+            <svg className="h-4 w-4 animate-spin text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+            </svg>
+            <span>Loading hackathon details...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // 404 Not Found State
@@ -617,7 +677,7 @@ function HackathonDetailsPage() {
                         dark:hover:bg-indigo-400
                       "
                     >
-                      <span>Register on official portal</span>
+                      <span>Register on Organizer&apos;s Platform</span>
                       <svg
                         className="h-3.5 w-3.5"
                         viewBox="0 0 24 24"

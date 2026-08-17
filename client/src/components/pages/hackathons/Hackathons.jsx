@@ -5,7 +5,7 @@
 // All operations are pure and non-mutating.
 // ---------------------------------------------------------------------------
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HACKATHONS } from "../../../data/hackathons";
 import { useSaved } from "../../../context/SavedContext";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
@@ -13,6 +13,30 @@ import HackathonSearch from "./HackathonSearch";
 import HackathonFilters from "./HackathonFilters";
 import HackathonSort from "./HackathonSort";
 import HackathonGrid from "./HackathonGrid";
+import { hackathonService } from "../../../services/hackathonService";
+
+// Helper to normalize backend DB hackathons
+function normalizeHackathon(h) {
+  return {
+    ...h,
+    id: h.id || h._id,
+    name: h.title || h.name,
+    organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer.name : h.organizer) || "Organizer",
+    mode: h.format || h.mode || "Online",
+    location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : h.location || null,
+    registrationDeadline: h.registrationDeadline,
+    hackathonDate: h.startDate || h.hackathonDate,
+    eventEndDate: h.endDate || h.eventEndDate,
+    registrationOpen: h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true,
+    prize: h.prizes || h.prizePool || h.prize || "Free",
+    prizeValue: 0,
+    tags: h.skills?.length ? h.skills : h.tags || ["Hackathon"],
+    themes: h.themes?.length ? h.themes : h.tags || [],
+    url: h.registrationUrl || h.url || "#",
+    description: h.shortDescription || h.description || "",
+    accent: "indigo",
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Search: match against name, organizer, tags, domain, location
@@ -23,11 +47,11 @@ function applySearch(hackathons, query) {
   const q = query.toLowerCase();
   return hackathons.filter((h) => {
     return (
-      h.name.toLowerCase().includes(q) ||
-      h.organizer.toLowerCase().includes(q) ||
+      (h.name && h.name.toLowerCase().includes(q)) ||
+      (h.organizer && h.organizer.toLowerCase().includes(q)) ||
       (h.domain && h.domain.toLowerCase().includes(q)) ||
       (h.location && h.location.toLowerCase().includes(q)) ||
-      h.tags.some((tag) => tag.toLowerCase().includes(q))
+      (h.tags && h.tags.some((tag) => tag.toLowerCase().includes(q)))
     );
   });
 }
@@ -63,7 +87,7 @@ function applyFormatFilter(hackathons, formatId) {
     case "online":
       return hackathons.filter((h) => h.mode === "Online");
     case "offline":
-      return hackathons.filter((h) => h.mode === "Offline");
+      return hackathons.filter((h) => h.mode === "Offline" || h.mode === "Hybrid");
     case "all":
     default:
       return hackathons;
@@ -112,6 +136,29 @@ function Hackathons() {
   const [formatFilter, setFormatFilter] = useState("all");
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("deadline-asc");
+  const [allHackathons, setAllHackathons] = useState(HACKATHONS);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadPublicHackathons() {
+      try {
+        const data = await hackathonService.getPublicHackathons();
+        if (isMounted && data?.hackathons?.length > 0) {
+          const apiNormalized = data.hackathons.map(normalizeHackathon);
+          // Prepend API hackathons to static HACKATHONS
+          const apiIds = new Set(apiNormalized.map((h) => String(h.id)));
+          const filteredStatic = HACKATHONS.filter((h) => !apiIds.has(String(h.id)));
+          setAllHackathons([...apiNormalized, ...filteredStatic]);
+        }
+      } catch {
+        // Fail silently and keep static list
+      }
+    }
+    loadPublicHackathons();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const { isSaved, savedCount } = useSaved();
 
@@ -135,12 +182,12 @@ function Hackathons() {
 
   // Pipeline: search → status filter → format filter → saved filter → sort
   const results = useMemo(() => {
-    const searched = applySearch(HACKATHONS, searchQuery);
+    const searched = applySearch(allHackathons, searchQuery);
     const statusFiltered = applyStatusFilter(searched, statusFilter);
     const formatFiltered = applyFormatFilter(statusFiltered, formatFilter);
     const savedFiltered = applySavedFilter(formatFiltered, showSavedOnly, isSaved);
     return applySort(savedFiltered, sortBy);
-  }, [searchQuery, statusFilter, formatFilter, showSavedOnly, isSaved, sortBy]);
+  }, [allHackathons, searchQuery, statusFilter, formatFilter, showSavedOnly, isSaved, sortBy]);
 
   const accentText = ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT.indigo;

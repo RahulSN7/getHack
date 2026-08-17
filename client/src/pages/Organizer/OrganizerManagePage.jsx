@@ -33,7 +33,7 @@ function OrganizerManagePage() {
             Manage Hackathons
           </h1>
           <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
-            Monitor status, manage registrations, update schedules, and access organizer tools.
+            Monitor status, update schedules, and access organizer tools.
           </p>
         </div>
 
@@ -113,7 +113,6 @@ function OrganizerManagePage() {
                   <th className="px-6 py-3.5 font-semibold">Hackathon Name</th>
                   <th className="px-6 py-3.5 font-semibold">Status</th>
                   <th className="px-6 py-3.5 font-semibold">Registration Deadline</th>
-                  <th className="px-6 py-3.5 font-semibold">Participants</th>
                   <th className="px-6 py-3.5 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
@@ -159,13 +158,6 @@ function OrganizerManagePage() {
                     </td>
                     <td className="px-6 py-4 text-neutral-600 dark:text-neutral-300 font-medium">
                       {h.hackathonDate}
-                    </td>
-                    <td className="px-6 py-4 text-neutral-600 dark:text-neutral-300 font-medium">
-                      {h.registrationsCount > 0 ? (
-                        <span>{h.registrationsCount.toLocaleString()} registered</span>
-                      ) : (
-                        <span className="text-neutral-400">0 registered</span>
-                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

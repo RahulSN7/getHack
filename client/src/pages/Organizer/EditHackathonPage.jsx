@@ -1,21 +1,31 @@
 // ---------------------------------------------------------------------------
-// CreateHackathonPage.jsx — Professional Multi-Section Hackathon Creation Form
+// EditHackathonPage.jsx — Pre-filled Multi-Section Hackathon Edit Form
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/useAuth";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { hackathonService } from "../../services/hackathonService";
 
-function CreateHackathonPage() {
+function formatDateForInput(dateStr) {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().split("T")[0];
+  } catch {
+    return "";
+  }
+}
+
+function EditHackathonPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     title: "",
     shortDescription: "",
     description: "",
-    organizerName: user?.name || "",
+    organizerName: "",
     registrationOpens: "",
     registrationDeadline: "",
     startDate: "",
@@ -36,8 +46,58 @@ function CreateHackathonPage() {
     fee: "Free",
   });
 
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadHackathon() {
+      try {
+        setLoading(true);
+        const data = await hackathonService.getHackathonById(id);
+        if (isMounted && data?.hackathon) {
+          const h = data.hackathon;
+          setFormData({
+            title: h.title || h.name || "",
+            shortDescription: h.shortDescription || "",
+            description: h.description || "",
+            organizerName: h.organizerName || "",
+            registrationOpens: formatDateForInput(h.registrationOpens),
+            registrationDeadline: formatDateForInput(h.registrationDeadline),
+            startDate: formatDateForInput(h.startDate || h.hackathonDate),
+            endDate: formatDateForInput(h.endDate || h.eventEndDate),
+            format: h.format || h.mode || "Online",
+            venue: h.location?.venue || "",
+            city: h.location?.city || "",
+            country: h.location?.country || "",
+            registrationUrl: h.registrationUrl || h.url || "",
+            skills: Array.isArray(h.skills) ? h.skills.join(", ") : h.skills || "",
+            themes: Array.isArray(h.themes) ? h.themes.join(", ") : h.themes || "",
+            eligibility: h.eligibility || "",
+            minTeamSize: h.minTeamSize || 1,
+            maxTeamSize: h.maxTeamSize || 4,
+            prizes: h.prizes || h.prizePool || "",
+            rules: h.rules || "",
+            contact: h.contact || "",
+            fee: h.fee || "Free",
+          });
+        }
+      } catch (err) {
+        if (isMounted) {
+          setErrorMessage(err.message || "Failed to load hackathon details.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+    loadHackathon();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -123,7 +183,7 @@ function CreateHackathonPage() {
         title: formData.title.trim(),
         shortDescription: formData.shortDescription.trim(),
         description: formData.description.trim(),
-        organizerName: formData.organizerName.trim() || user?.name || "Organizer",
+        organizerName: formData.organizerName.trim(),
         registrationOpens: formData.registrationOpens || undefined,
         registrationDeadline: formData.registrationDeadline,
         startDate: formData.startDate,
@@ -149,12 +209,12 @@ function CreateHackathonPage() {
         fee: formData.fee.trim() || "Free",
       };
 
-      await hackathonService.createHackathon(payload);
+      await hackathonService.updateHackathon(id, payload);
 
-      // Redirect immediately to My Hackathons page
+      // Return to My Hackathons
       navigate("/organizer/hackathons");
     } catch (err) {
-      setErrorMessage(err.message || "Failed to create hackathon. Please try again.");
+      setErrorMessage(err.message || "Failed to update hackathon.");
     } finally {
       setSubmitting(false);
     }
@@ -183,6 +243,19 @@ function CreateHackathonPage() {
 
   const labelClass = "block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1";
 
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-4xl px-5 py-16 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+          <svg className="h-4 w-4 animate-spin text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+          </svg>
+          <span>Loading hackathon details...</span>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-4xl px-5 py-8 sm:px-6 lg:px-8 space-y-8">
       {/* ── Page Header ── */}
@@ -197,10 +270,10 @@ function CreateHackathonPage() {
           ORGANIZER PORTAL
         </p>
         <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
-          Create Hackathon
+          Edit Hackathon
         </h1>
         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Publish your event to help developers discover and register on your platform.
+          Update the hackathon details, schedule, or external registration link.
         </p>
       </div>
 
@@ -241,7 +314,6 @@ function CreateHackathonPage() {
                 required
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="e.g. India AI Innovation Challenge 2026"
                 className={inputClass}
               />
             </div>
@@ -257,7 +329,6 @@ function CreateHackathonPage() {
                 required
                 value={formData.organizerName}
                 onChange={handleChange}
-                placeholder="e.g. TechCommunity India"
                 className={inputClass}
               />
             </div>
@@ -273,7 +344,6 @@ function CreateHackathonPage() {
                 required
                 value={formData.shortDescription}
                 onChange={handleChange}
-                placeholder="Brief summary for discovery cards (1-2 sentences)"
                 className={inputClass}
               />
             </div>
@@ -289,7 +359,6 @@ function CreateHackathonPage() {
                 rows={5}
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Comprehensive details about the hackathon goals, problem statements, guidelines, and target participants."
                 className="w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
               />
             </div>
@@ -375,9 +444,6 @@ function CreateHackathonPage() {
             <h2 className="text-base font-bold text-neutral-900 dark:text-white">
               3. Event Format
             </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              Choose whether the event is held online, offline, or hybrid.
-            </p>
           </div>
 
           <div className="space-y-4">
@@ -398,7 +464,6 @@ function CreateHackathonPage() {
               </select>
             </div>
 
-            {/* Display location fields conditionally when Offline or Hybrid */}
             {(formData.format === "Offline" || formData.format === "Hybrid") && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
                 <div>
@@ -411,7 +476,6 @@ function CreateHackathonPage() {
                     name="venue"
                     value={formData.venue}
                     onChange={handleChange}
-                    placeholder="e.g. KTPO Convention Center"
                     className={inputClass}
                   />
                 </div>
@@ -426,7 +490,6 @@ function CreateHackathonPage() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    placeholder="e.g. Bengaluru"
                     className={inputClass}
                   />
                 </div>
@@ -441,7 +504,6 @@ function CreateHackathonPage() {
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    placeholder="e.g. India"
                     className={inputClass}
                   />
                 </div>
@@ -450,15 +512,12 @@ function CreateHackathonPage() {
           </div>
         </div>
 
-        {/* Section 4: Registration */}
+        {/* Section 4: Registration Link */}
         <div className="space-y-5 rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
           <div>
             <h2 className="text-base font-bold text-neutral-900 dark:text-white">
               4. Registration Link
             </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              Direct participants to your official external platform.
-            </p>
           </div>
 
           <div>
@@ -472,7 +531,6 @@ function CreateHackathonPage() {
               required
               value={formData.registrationUrl}
               onChange={handleChange}
-              placeholder="https://devfolio.co/my-hackathon or https://unstop.com/hackathon/example"
               className={inputClass}
             />
             <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
@@ -487,9 +545,6 @@ function CreateHackathonPage() {
             <h2 className="text-base font-bold text-neutral-900 dark:text-white">
               5. Additional Information
             </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              Specify themes, skills, eligibility, team size, and prizes.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -503,7 +558,6 @@ function CreateHackathonPage() {
                 name="skills"
                 value={formData.skills}
                 onChange={handleChange}
-                placeholder="React, Python, Node.js, AI/ML"
                 className={inputClass}
               />
             </div>
@@ -518,7 +572,6 @@ function CreateHackathonPage() {
                 name="themes"
                 value={formData.themes}
                 onChange={handleChange}
-                placeholder="Generative AI, Social Impact, FinTech"
                 className={inputClass}
               />
             </div>
@@ -565,7 +618,6 @@ function CreateHackathonPage() {
                 name="prizes"
                 value={formData.prizes}
                 onChange={handleChange}
-                placeholder="e.g. ₹1,00,000 Total Prize Pool"
                 className={inputClass}
               />
             </div>
@@ -580,7 +632,6 @@ function CreateHackathonPage() {
                 name="fee"
                 value={formData.fee}
                 onChange={handleChange}
-                placeholder="e.g. Free or ₹499"
                 className={inputClass}
               />
             </div>
@@ -595,7 +646,6 @@ function CreateHackathonPage() {
                 name="eligibility"
                 value={formData.eligibility}
                 onChange={handleChange}
-                placeholder="Open to developers, students, and working professionals worldwide."
                 className={inputClass}
               />
             </div>
@@ -610,7 +660,6 @@ function CreateHackathonPage() {
                 rows={3}
                 value={formData.rules}
                 onChange={handleChange}
-                placeholder="Submission guidelines, code of conduct, and evaluation criteria."
                 className="w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
               />
             </div>
@@ -625,7 +674,6 @@ function CreateHackathonPage() {
                 name="contact"
                 value={formData.contact}
                 onChange={handleChange}
-                placeholder="e.g. hackathon@example.com or Discord link"
                 className={inputClass}
               />
             </div>
@@ -687,10 +735,10 @@ function CreateHackathonPage() {
                 <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
                 </svg>
-                <span>Creating Hackathon...</span>
+                <span>Updating Hackathon...</span>
               </>
             ) : (
-              <span>Create Hackathon</span>
+              <span>Save Changes</span>
             )}
           </button>
         </div>
@@ -699,4 +747,4 @@ function CreateHackathonPage() {
   );
 }
 
-export default CreateHackathonPage;
+export default EditHackathonPage;

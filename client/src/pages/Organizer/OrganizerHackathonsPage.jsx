@@ -1,39 +1,140 @@
 // ---------------------------------------------------------------------------
-// OrganizerHackathonsPage.jsx — Organizer Hackathons Management List
-// Standardized container layout matching getHack design language.
+// OrganizerHackathonsPage.jsx — "My Hackathons" Central Management Area
+// Displays authenticated organizer's hackathons with View, Edit, & Delete actions.
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ORGANIZER_HACKATHONS } from "../../data/organizerData";
+import DeleteConfirmationModal from "../../components/organizer/DeleteConfirmationModal";
+import { hackathonService } from "../../services/hackathonService";
+
+function formatDate(dateStr) {
+  if (!dateStr) return "N/A";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(d);
+  } catch {
+    return dateStr;
+  }
+}
+
+function getStatusBadge(status) {
+  switch (status) {
+    case "Registration Open":
+    case "Active":
+    case "Ongoing":
+      return {
+        label: status,
+        className: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20",
+      };
+    case "Upcoming":
+      return {
+        label: "Upcoming",
+        className: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-500/20",
+      };
+    case "Draft":
+      return {
+        label: "Draft",
+        className: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20",
+      };
+    case "Registration Closed":
+    case "Completed":
+      return {
+        label: status,
+        className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700",
+      };
+    default:
+      return {
+        label: status || "Published",
+        className: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
+      };
+  }
+}
 
 function OrganizerHackathonsPage() {
-  const [activeTab, setActiveTab] = useState("all"); // all | active | drafts | completed
+  const [hackathons, setHackathons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
 
-  const filteredHackathons = ORGANIZER_HACKATHONS.filter((h) => {
-    if (activeTab === "active") return h.status === "Active";
-    if (activeTab === "drafts") return h.status === "Draft";
-    if (activeTab === "completed") return h.status === "Completed";
+  // Deletion modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [targetHackathon, setTargetHackathon] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Fetch organizer hackathons on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadMyHackathons() {
+      try {
+        setLoading(true);
+        const data = await hackathonService.getMyHackathons();
+        if (isMounted) {
+          setHackathons(data?.hackathons || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.message || "Failed to load your hackathons.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+    loadMyHackathons();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Filter hackathons
+  const filteredHackathons = hackathons.filter((h) => {
+    if (activeFilter === "open") return h.status === "Registration Open" || h.status === "Ongoing" || h.status === "Active";
+    if (activeFilter === "upcoming") return h.status === "Upcoming";
+    if (activeFilter === "drafts") return h.status === "Draft";
+    if (activeFilter === "closed") return h.status === "Registration Closed" || h.status === "Completed";
     return true;
   });
 
-  const activeCount = ORGANIZER_HACKATHONS.filter((h) => h.status === "Active").length;
-  const draftCount = ORGANIZER_HACKATHONS.filter((h) => h.status === "Draft").length;
-  const completedCount = ORGANIZER_HACKATHONS.filter((h) => h.status === "Completed").length;
+  const promptDelete = (hackathon) => {
+    setTargetHackathon(hackathon);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!targetHackathon) return;
+    try {
+      setDeleting(true);
+      await hackathonService.deleteHackathon(targetHackathon.id);
+      setHackathons((prev) => prev.filter((h) => h.id !== targetHackathon.id));
+      setDeleteModalOpen(false);
+      setTargetHackathon(null);
+    } catch (err) {
+      alert(err.message || "Failed to delete hackathon.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8 space-y-6">
       {/* ── Page Header ── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-indigo-500">
-            ORGANIZER
+          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+            ORGANIZER PORTAL
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
+          <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
             My Hackathons
           </h1>
-          <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
-            View and manage all your organized hackathons from one place.
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            View, edit, and manage all hackathons you have created.
           </p>
         </div>
 
@@ -43,14 +144,14 @@ function OrganizerHackathonsPage() {
             inline-flex
             items-center
             gap-2
-            rounded-lg
+            rounded-xl
             bg-indigo-600
             px-4
             py-2.5
             text-xs
             font-semibold
             text-white
-            shadow-xs
+            shadow-sm
             transition-colors
             hover:bg-indigo-500
             dark:bg-indigo-500
@@ -65,248 +166,304 @@ function OrganizerHackathonsPage() {
         </Link>
       </div>
 
-      {/* ── Filter Tabs ── */}
-      <div className="flex items-center gap-2 border-b border-neutral-200/80 pb-3 dark:border-neutral-800/80">
-        <button
-          type="button"
-          onClick={() => setActiveTab("all")}
-          className={`
-            inline-flex
-            items-center
-            gap-1.5
-            rounded-md
-            px-3
-            py-1.5
-            text-xs
-            font-semibold
-            transition-all
-            duration-150
-            ${
-              activeTab === "all"
-                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
-            }
-          `}
-        >
-          <span>All</span>
-          <span className="rounded px-1.5 py-0.2 text-[10px] font-bold bg-white/20">
-            {ORGANIZER_HACKATHONS.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("active")}
-          className={`
-            inline-flex
-            items-center
-            gap-1.5
-            rounded-md
-            px-3
-            py-1.5
-            text-xs
-            font-semibold
-            transition-all
-            duration-150
-            ${
-              activeTab === "active"
-                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
-            }
-          `}
-        >
-          <span>Active</span>
-          <span className="rounded px-1.5 py-0.2 text-[10px] font-bold bg-white/20">
-            {activeCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("drafts")}
-          className={`
-            inline-flex
-            items-center
-            gap-1.5
-            rounded-md
-            px-3
-            py-1.5
-            text-xs
-            font-semibold
-            transition-all
-            duration-150
-            ${
-              activeTab === "drafts"
-                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
-            }
-          `}
-        >
-          <span>Drafts</span>
-          <span className="rounded px-1.5 py-0.2 text-[10px] font-bold bg-white/20">
-            {draftCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("completed")}
-          className={`
-            inline-flex
-            items-center
-            gap-1.5
-            rounded-md
-            px-3
-            py-1.5
-            text-xs
-            font-semibold
-            transition-all
-            duration-150
-            ${
-              activeTab === "completed"
-                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
-                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
-            }
-          `}
-        >
-          <span>Completed</span>
-          <span className="rounded px-1.5 py-0.2 text-[10px] font-bold bg-white/20">
-            {completedCount}
-          </span>
-        </button>
-      </div>
-
-      {/* ── Hackathons List ── */}
-      {filteredHackathons.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredHackathons.map((h) => (
-            <div
-              key={h.id}
-              className="
-                flex
-                flex-col
-                justify-between
-                gap-4
-                rounded-xl
-                border
-                border-neutral-200
-                bg-white
-                p-6
-                shadow-xs
-                transition-all
-                hover:border-neutral-300
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:hover:border-neutral-700
-                sm:flex-row
-                sm:items-center
-              "
-            >
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-                    {h.name}
-                  </h3>
-                  <span
-                    className={`
-                      rounded-md
-                      px-2.5
-                      py-0.5
-                      text-[10px]
-                      font-bold
-                      uppercase
-                      tracking-wide
-                      ${
-                        h.status === "Active"
-                          ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
-                          : h.status === "Draft"
-                          ? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
-                          : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                      }
-                    `}
-                  >
-                    {h.status}
-                  </span>
-                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                    {h.registrationStatus}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  <span>Dates: {h.hackathonDate}</span>
-                  <span>Mode: {h.mode}</span>
-                  <span>Prize Pool: {h.prizePool}</span>
-                  <span>Registrations: {h.registrationsCount.toLocaleString()}</span>
-                  <span>Teams: {h.teamsCount}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2.5 shrink-0 pt-2 sm:pt-0">
-                <Link
-                  to={`/organizer/hackathons/${h.id}`}
-                  className="
-                    inline-flex
-                    items-center
-                    gap-1.5
-                    rounded-lg
-                    bg-neutral-950
-                    px-4
-                    py-2
-                    text-xs
-                    font-semibold
-                    text-white
-                    transition-colors
-                    hover:bg-neutral-800
-                    dark:bg-white
-                    dark:text-neutral-950
-                    dark:hover:bg-neutral-200
-                  "
-                >
-                  <span>Manage</span>
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </Link>
-
-                <Link
-                  to={`/hackathons/${h.id}`}
-                  target="_blank"
-                  className="
-                    inline-flex
-                    items-center
-                    gap-1
-                    rounded-lg
-                    border
-                    border-neutral-200
-                    px-3.5
-                    py-2
-                    text-xs
-                    font-semibold
-                    text-neutral-600
-                    transition-colors
-                    hover:bg-neutral-50
-                    dark:border-neutral-800
-                    dark:text-neutral-400
-                    dark:hover:bg-neutral-800
-                  "
-                >
-                  <span>Public View</span>
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-            No hackathons found
-          </h3>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-            There are no hackathons matching the selected filter.
-          </p>
+      {/* Error state */}
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-600 dark:border-red-900/50 dark:bg-red-950/60 dark:text-red-300">
+          {error}
         </div>
       )}
+
+      {/* ── Filter Tabs ── */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200/80 pb-3 dark:border-neutral-800">
+        {[
+          { key: "all", label: "All Hackathons", count: hackathons.length },
+          {
+            key: "open",
+            label: "Registration Open",
+            count: hackathons.filter((h) => h.status === "Registration Open" || h.status === "Ongoing" || h.status === "Active").length,
+          },
+          {
+            key: "upcoming",
+            label: "Upcoming",
+            count: hackathons.filter((h) => h.status === "Upcoming").length,
+          },
+          {
+            key: "drafts",
+            label: "Drafts",
+            count: hackathons.filter((h) => h.status === "Draft").length,
+          },
+          {
+            key: "closed",
+            label: "Completed",
+            count: hackathons.filter((h) => h.status === "Registration Closed" || h.status === "Completed").length,
+          },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveFilter(tab.key)}
+            className={`
+              inline-flex
+              items-center
+              gap-1.5
+              rounded-lg
+              px-3
+              py-1.5
+              text-xs
+              font-semibold
+              transition-all
+              duration-150
+              ${
+                activeFilter === tab.key
+                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              }
+            `}
+          >
+            <span>{tab.label}</span>
+            <span className="rounded px-1.5 py-0.2 text-[10px] font-bold bg-white/20">
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Loading state */}
+      {loading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-32 animate-pulse rounded-2xl border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800/60" />
+          ))}
+        </div>
+      ) : filteredHackathons.length > 0 ? (
+        /* ── Hackathons Card List ── */
+        <div className="grid grid-cols-1 gap-4">
+          {filteredHackathons.map((h) => {
+            const badge = getStatusBadge(h.status);
+
+            return (
+              <div
+                key={h.id}
+                className="
+                  flex
+                  flex-col
+                  justify-between
+                  gap-4
+                  rounded-2xl
+                  border
+                  border-neutral-200/90
+                  bg-white
+                  p-6
+                  shadow-xs
+                  transition-all
+                  hover:border-neutral-300
+                  dark:border-neutral-800
+                  dark:bg-neutral-900
+                  dark:hover:border-neutral-700
+                  md:flex-row
+                  md:items-center
+                "
+              >
+                <div className="space-y-2.5 max-w-3xl">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+                      {h.title || h.name}
+                    </h3>
+
+                    <span
+                      className={`
+                        rounded-md
+                        px-2.5
+                        py-0.5
+                        text-[10px]
+                        font-bold
+                        uppercase
+                        tracking-wide
+                        ${badge.className}
+                      `}
+                    >
+                      {badge.label}
+                    </span>
+
+                    <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                      {h.format || h.mode || "Online"}
+                    </span>
+                  </div>
+
+                  <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                    {h.shortDescription || h.description}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400 pt-1">
+                    <span>
+                      <strong className="font-semibold text-neutral-700 dark:text-neutral-300">Reg. Deadline:</strong>{" "}
+                      {formatDate(h.registrationDeadline)}
+                    </span>
+                    <span>
+                      <strong className="font-semibold text-neutral-700 dark:text-neutral-300">Start:</strong>{" "}
+                      {formatDate(h.startDate || h.hackathonDate)}
+                    </span>
+                    <span>
+                      <strong className="font-semibold text-neutral-700 dark:text-neutral-300">End:</strong>{" "}
+                      {formatDate(h.endDate || h.eventEndDate)}
+                    </span>
+                    {h.createdAt && (
+                      <span>
+                        <strong className="font-semibold text-neutral-700 dark:text-neutral-300">Created:</strong>{" "}
+                        {formatDate(h.createdAt)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Actions: View | Edit | Delete ── */}
+                <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t border-neutral-100 md:border-t-0 dark:border-neutral-800">
+                  <Link
+                    to={`/hackathons/${h.id}`}
+                    className="
+                      inline-flex
+                      items-center
+                      gap-1
+                      rounded-lg
+                      border
+                      border-neutral-200
+                      bg-white
+                      px-3.5
+                      py-2
+                      text-xs
+                      font-semibold
+                      text-neutral-700
+                      transition-colors
+                      hover:bg-neutral-50
+                      dark:border-neutral-800
+                      dark:bg-neutral-900
+                      dark:text-neutral-300
+                      dark:hover:bg-neutral-800
+                    "
+                  >
+                    <span>View</span>
+                  </Link>
+
+                  <Link
+                    to={`/organizer/hackathons/${h.id}/edit`}
+                    className="
+                      inline-flex
+                      items-center
+                      gap-1.5
+                      rounded-lg
+                      bg-neutral-950
+                      px-3.5
+                      py-2
+                      text-xs
+                      font-semibold
+                      text-white
+                      transition-colors
+                      hover:bg-neutral-800
+                      dark:bg-white
+                      dark:text-neutral-950
+                      dark:hover:bg-neutral-200
+                    "
+                  >
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    <span>Edit</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => promptDelete(h)}
+                    className="
+                      inline-flex
+                      items-center
+                      gap-1
+                      rounded-lg
+                      border
+                      border-red-200
+                      bg-red-50/50
+                      px-3
+                      py-2
+                      text-xs
+                      font-semibold
+                      text-red-600
+                      transition-colors
+                      hover:bg-red-100
+                      dark:border-red-900/50
+                      dark:bg-red-950/40
+                      dark:text-red-400
+                      dark:hover:bg-red-900/60
+                    "
+                  >
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    </svg>
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
+          </div>
+
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Create your first hackathon
+            </h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+              Publish your hackathon on getHack and help developers discover it.
+            </p>
+          </div>
+
+          <Link
+            to="/organizer/create"
+            className="
+              inline-flex
+              items-center
+              gap-2
+              rounded-lg
+              bg-indigo-600
+              px-4
+              py-2.5
+              text-xs
+              font-semibold
+              text-white
+              shadow-xs
+              transition-colors
+              hover:bg-indigo-500
+              dark:bg-indigo-500
+              dark:hover:bg-indigo-400
+            "
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Create Hackathon</span>
+          </Link>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        hackathonTitle={targetHackathon?.title || targetHackathon?.name || ""}
+        isDeleting={deleting}
+      />
     </main>
   );
 }
