@@ -14,6 +14,8 @@ import NetworkPage from "./pages/Network/NetworkPage.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { SavedProvider } from "./context/SavedContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
+import RoleProtectedRoute from "./components/auth/RoleProtectedRoute.jsx";
 import OrganizerLayout from "./components/organizer/OrganizerLayout.jsx";
 import OrganizerDashboardPage from "./pages/Organizer/OrganizerDashboardPage.jsx";
 import OrganizerHackathonsPage from "./pages/Organizer/OrganizerHackathonsPage.jsx";
@@ -53,11 +55,19 @@ const router = createBrowserRouter([
       },
       {
         path: "network",
-        element: <NetworkPage />,
+        element: (
+          <ProtectedRoute>
+            <NetworkPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "organizer",
-        element: <OrganizerLayout />,
+        element: (
+          <RoleProtectedRoute allowedRole="organizer">
+            <OrganizerLayout />
+          </RoleProtectedRoute>
+        ),
         children: [
           {
             index: true,

@@ -49,9 +49,15 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
+      const loggedUser = await login({ email, password });
       setIsLoading(false);
-      navigate("/hackathons");
+
+      // Redirect based on account role from DB
+      if (loggedUser?.role === "organizer") {
+        navigate("/organizer");
+      } else {
+        navigate("/hackathons");
+      }
     } catch (err) {
       setIsLoading(false);
       setGeneralError(

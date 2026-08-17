@@ -65,10 +65,12 @@ function SignupPage() {
     setIsLoading(true);
 
     try {
-      await signup({ name, email, password, role });
+      // Send normalized single role ('participant' or 'organizer')
+      const selectedRole = role.toLowerCase();
+      const newUser = await signup({ name, email, password, role: selectedRole });
       setIsLoading(false);
 
-      if (role === "Organizer") {
+      if (newUser?.role === "organizer") {
         navigate("/organizer");
       } else {
         navigate("/hackathons");
