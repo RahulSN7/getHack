@@ -38,7 +38,7 @@ function OrganizerHackathonsPage() {
         </div>
 
         <Link
-          to="/organizer/hackathons/create"
+          to="/organizer/create"
           className="
             inline-flex
             items-center

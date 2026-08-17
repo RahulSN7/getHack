@@ -295,19 +295,6 @@ function Header() {
             >
               My Network
             </NavLink>
-
-            <NavLink
-              to="/organizer"
-              className={({ isActive }) =>
-                `${navLinkClass} ${
-                  isActive
-                    ? "font-semibold text-neutral-950 dark:text-white"
-                    : ""
-                }`
-              }
-            >
-              Organizer
-            </NavLink>
           </nav>
 
           {/* ==================================================
@@ -908,26 +895,6 @@ function Header() {
                 "
               >
                 My Network
-              </Link>
-
-              <Link
-                to="/organizer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="
-                  block
-                  rounded-lg
-                  px-3
-                  py-2.5
-                  text-sm
-                  font-medium
-                  text-neutral-700
-                  transition-colors
-                  hover:bg-neutral-100
-                  dark:text-neutral-300
-                  dark:hover:bg-white/5
-                "
-              >
-                Organizer Portal
               </Link>
 
               <Link

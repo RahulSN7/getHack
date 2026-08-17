@@ -19,6 +19,7 @@ import RoleProtectedRoute from "./components/auth/RoleProtectedRoute.jsx";
 import OrganizerLayout from "./components/organizer/OrganizerLayout.jsx";
 import OrganizerDashboardPage from "./pages/Organizer/OrganizerDashboardPage.jsx";
 import OrganizerHackathonsPage from "./pages/Organizer/OrganizerHackathonsPage.jsx";
+import OrganizerManagePage from "./pages/Organizer/OrganizerManagePage.jsx";
 import CreateHackathonPage from "./pages/Organizer/CreateHackathonPage.jsx";
 import SelectedHackathonPage from "./pages/Organizer/SelectedHackathonPage.jsx";
 import OrganizerProfilePage from "./pages/Organizer/OrganizerProfilePage.jsx";
@@ -28,7 +29,7 @@ import SignupPage from "./pages/Auth/SignupPage.jsx";
 import ForgotPasswordPage from "./pages/Auth/ForgotPasswordPage.jsx";
 
 const router = createBrowserRouter([
-  /* ── Main Application Route (with Website Header) ── */
+  /* ── Participant Application Experience (with Participant Header) ── */
   {
     path: "/",
     element: <App />,
@@ -61,40 +62,50 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+    ],
+  },
+
+  /* ── Dedicated Organizer Portal Experience (with Organizer Header) ── */
+  {
+    path: "organizer",
+    element: (
+      <RoleProtectedRoute allowedRole="organizer">
+        <OrganizerLayout />
+      </RoleProtectedRoute>
+    ),
+    children: [
       {
-        path: "organizer",
-        element: (
-          <RoleProtectedRoute allowedRole="organizer">
-            <OrganizerLayout />
-          </RoleProtectedRoute>
-        ),
-        children: [
-          {
-            index: true,
-            element: <OrganizerDashboardPage />,
-          },
-          {
-            path: "hackathons",
-            element: <OrganizerHackathonsPage />,
-          },
-          {
-            path: "hackathons/create",
-            element: <CreateHackathonPage />,
-          },
-          {
-            path: "hackathons/:id",
-            element: <SelectedHackathonPage />,
-          },
-          {
-            path: "profile",
-            element: <OrganizerProfilePage />,
-          },
-        ],
+        index: true,
+        element: <OrganizerDashboardPage />,
+      },
+      {
+        path: "hackathons",
+        element: <OrganizerHackathonsPage />,
+      },
+      {
+        path: "create",
+        element: <CreateHackathonPage />,
+      },
+      {
+        path: "hackathons/create",
+        element: <CreateHackathonPage />,
+      },
+      {
+        path: "manage",
+        element: <OrganizerManagePage />,
+      },
+      {
+        path: "hackathons/:id",
+        element: <SelectedHackathonPage />,
+      },
+      {
+        path: "profile",
+        element: <OrganizerProfilePage />,
       },
     ],
   },
 
-  /* ── Dedicated Authentication Route (Standalone AuthLayout without Header) ── */
+  /* ── Dedicated Authentication Routes (Standalone AuthLayout without Header) ── */
   {
     element: <AuthLayout />,
     children: [
