@@ -14,13 +14,13 @@ const hackathonSchema = new mongoose.Schema(
 
     shortDescription: {
       type: String,
-      required: [true, "Short description is required"],
       trim: true,
+      default: "",
     },
 
     description: {
       type: String,
-      required: [true, "Detailed description is required"],
+      required: [true, "Description is required"],
       trim: true,
     },
 

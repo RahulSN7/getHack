@@ -13,7 +13,6 @@ function CreateHackathonPage() {
 
   const [formData, setFormData] = useState({
     title: "",
-    shortDescription: "",
     description: "",
     organizerName: user?.name || "",
     registrationOpens: "",
@@ -38,10 +37,14 @@ function CreateHackathonPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
     if (errorMessage) setErrorMessage("");
   };
 
@@ -84,35 +87,111 @@ function CreateHackathonPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
+    const newErrors = {};
 
+    // Section 1: Basic Information
     if (!formData.title.trim()) {
-      setErrorMessage("Hackathon Name is required.");
-      return;
+      newErrors.title = "Hackathon Name is required.";
     }
 
-    if (!formData.shortDescription.trim()) {
-      setErrorMessage("Short Description is required.");
-      return;
+    if (!formData.organizerName.trim()) {
+      newErrors.organizerName = "Organizer Name is required.";
     }
 
     if (!formData.description.trim()) {
-      setErrorMessage("Detailed Description is required.");
-      return;
+      newErrors.description = "Description is required.";
     }
 
-    if (!formData.registrationUrl.trim()) {
-      setErrorMessage("External Registration Link is required.");
-      return;
+    // Section 2: Schedule
+    if (!formData.registrationOpens) {
+      newErrors.registrationOpens = "Registration Opens date is required.";
     }
 
-    if (!validateUrl(formData.registrationUrl.trim())) {
-      setErrorMessage("Please enter a valid Registration URL starting with http:// or https://");
-      return;
+    if (!formData.registrationDeadline) {
+      newErrors.registrationDeadline = "Registration Deadline is required.";
+    }
+
+    if (!formData.startDate) {
+      newErrors.startDate = "Start Date is required.";
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = "End Date is required.";
     }
 
     const dateErr = validateDates();
-    if (dateErr) {
+    if (dateErr && !newErrors.registrationOpens && !newErrors.registrationDeadline && !newErrors.startDate && !newErrors.endDate) {
       setErrorMessage(dateErr);
+    }
+
+    // Section 3: Event Format & Location
+    if (!formData.format) {
+      newErrors.format = "Event Format is required.";
+    }
+
+    if (formData.format === "Offline" || formData.format === "Hybrid") {
+      if (!formData.venue.trim()) {
+        newErrors.venue = "Venue is required.";
+      }
+      if (!formData.city.trim()) {
+        newErrors.city = "City is required.";
+      }
+      if (!formData.country.trim()) {
+        newErrors.country = "Country is required.";
+      }
+    }
+
+    // Section 4: Registration Link
+    if (!formData.registrationUrl.trim()) {
+      newErrors.registrationUrl = "External Registration Link is required.";
+    } else if (!validateUrl(formData.registrationUrl.trim())) {
+      newErrors.registrationUrl = "Please enter a valid Registration URL starting with http:// or https://";
+    }
+
+    // Section 5: Additional Information
+    if (!formData.skills.trim()) {
+      newErrors.skills = "Please enter at least one technology or skill.";
+    }
+
+    if (!formData.themes.trim()) {
+      newErrors.themes = "Please enter at least one theme.";
+    }
+
+    if (!formData.eligibility.trim()) {
+      newErrors.eligibility = "Please specify the eligibility criteria.";
+    }
+
+    if (formData.minTeamSize === "" || formData.minTeamSize === null || Number(formData.minTeamSize) < 1) {
+      newErrors.minTeamSize = "Please enter a valid minimum team size.";
+    }
+
+    if (formData.maxTeamSize === "" || formData.maxTeamSize === null || Number(formData.maxTeamSize) < 1) {
+      newErrors.maxTeamSize = "Please enter a valid maximum team size.";
+    } else if (Number(formData.maxTeamSize) < Number(formData.minTeamSize)) {
+      newErrors.maxTeamSize = "Max team size cannot be less than min team size.";
+    }
+
+    if (!formData.prizes.trim()) {
+      newErrors.prizes = "Please enter prize information.";
+    }
+
+    if (!formData.fee.trim()) {
+      newErrors.fee = "Please enter registration fee information.";
+    }
+
+    if (!formData.rules.trim()) {
+      newErrors.rules = "Please enter rules & guidelines.";
+    }
+
+    if (!formData.contact.trim()) {
+      newErrors.contact = "Please enter a contact number.";
+    }
+
+    if (Object.keys(newErrors).length > 0 || dateErr) {
+      setErrors(newErrors);
+      if (!errorMessage && !dateErr) {
+        setErrorMessage("Please fix the highlighted errors before submitting.");
+      }
       return;
     }
 
@@ -121,7 +200,6 @@ function CreateHackathonPage() {
 
       const payload = {
         title: formData.title.trim(),
-        shortDescription: formData.shortDescription.trim(),
         description: formData.description.trim(),
         organizerName: formData.organizerName.trim() || user?.name || "Organizer",
         registrationOpens: formData.registrationOpens || undefined,
@@ -217,7 +295,7 @@ function CreateHackathonPage() {
       )}
 
       {/* ── Multi-Section Form ── */}
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} noValidate className="space-y-8">
         {/* Section 1: Basic Information */}
         <div className="space-y-5 rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
           <div>
@@ -238,12 +316,16 @@ function CreateHackathonPage() {
                 id="title"
                 type="text"
                 name="title"
-                required
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="e.g. India AI Innovation Challenge 2026"
-                className={inputClass}
+                className={`${inputClass} ${errors.title ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.title && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.title}
+                </p>
+              )}
             </div>
 
             <div>
@@ -254,44 +336,40 @@ function CreateHackathonPage() {
                 id="organizerName"
                 type="text"
                 name="organizerName"
-                required
                 value={formData.organizerName}
                 onChange={handleChange}
                 placeholder="e.g. TechCommunity India"
-                className={inputClass}
+                className={`${inputClass} ${errors.organizerName ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
-            </div>
-
-            <div>
-              <label htmlFor="shortDescription" className={labelClass}>
-                Short Description <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="shortDescription"
-                type="text"
-                name="shortDescription"
-                required
-                value={formData.shortDescription}
-                onChange={handleChange}
-                placeholder="Brief summary for discovery cards (1-2 sentences)"
-                className={inputClass}
-              />
+              {errors.organizerName && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.organizerName}
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="description" className={labelClass}>
-                Detailed Description <span className="text-red-500">*</span>
+                Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="description"
                 name="description"
-                required
                 rows={5}
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Comprehensive details about the hackathon goals, problem statements, guidelines, and target participants."
-                className="w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
+                className={`w-full rounded-lg border bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors dark:bg-neutral-950 dark:text-white ${
+                  errors.description
+                    ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
+                    : "border-neutral-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
+                }`}
               />
+              {errors.description && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.description}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -310,7 +388,7 @@ function CreateHackathonPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="registrationOpens" className={labelClass}>
-                Registration Opens
+                Registration Opens <span className="text-red-500">*</span>
               </label>
               <input
                 id="registrationOpens"
@@ -318,8 +396,13 @@ function CreateHackathonPage() {
                 name="registrationOpens"
                 value={formData.registrationOpens}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.registrationOpens ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.registrationOpens && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.registrationOpens}
+                </p>
+              )}
             </div>
 
             <div>
@@ -330,11 +413,15 @@ function CreateHackathonPage() {
                 id="registrationDeadline"
                 type="date"
                 name="registrationDeadline"
-                required
                 value={formData.registrationDeadline}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.registrationDeadline ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.registrationDeadline && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.registrationDeadline}
+                </p>
+              )}
             </div>
 
             <div>
@@ -345,11 +432,15 @@ function CreateHackathonPage() {
                 id="startDate"
                 type="date"
                 name="startDate"
-                required
                 value={formData.startDate}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.startDate ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.startDate && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.startDate}
+                </p>
+              )}
             </div>
 
             <div>
@@ -360,11 +451,15 @@ function CreateHackathonPage() {
                 id="endDate"
                 type="date"
                 name="endDate"
-                required
                 value={formData.endDate}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.endDate ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.endDate && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.endDate}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -403,7 +498,7 @@ function CreateHackathonPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
                 <div>
                   <label htmlFor="venue" className={labelClass}>
-                    Venue
+                    Venue <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="venue"
@@ -412,13 +507,18 @@ function CreateHackathonPage() {
                     value={formData.venue}
                     onChange={handleChange}
                     placeholder="e.g. KTPO Convention Center"
-                    className={inputClass}
+                    className={`${inputClass} ${errors.venue ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
                   />
+                  {errors.venue && (
+                    <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                      {errors.venue}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label htmlFor="city" className={labelClass}>
-                    City
+                    City <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="city"
@@ -427,13 +527,18 @@ function CreateHackathonPage() {
                     value={formData.city}
                     onChange={handleChange}
                     placeholder="e.g. Bengaluru"
-                    className={inputClass}
+                    className={`${inputClass} ${errors.city ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
                   />
+                  {errors.city && (
+                    <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                      {errors.city}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label htmlFor="country" className={labelClass}>
-                    Country
+                    Country <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="country"
@@ -442,8 +547,13 @@ function CreateHackathonPage() {
                     value={formData.country}
                     onChange={handleChange}
                     placeholder="e.g. India"
-                    className={inputClass}
+                    className={`${inputClass} ${errors.country ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
                   />
+                  {errors.country && (
+                    <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                      {errors.country}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -469,15 +579,20 @@ function CreateHackathonPage() {
               id="registrationUrl"
               type="url"
               name="registrationUrl"
-              required
               value={formData.registrationUrl}
               onChange={handleChange}
               placeholder="https://devfolio.co/my-hackathon or https://unstop.com/hackathon/example"
-              className={inputClass}
+              className={`${inputClass} ${errors.registrationUrl ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
             />
-            <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-              Participants will be redirected to this link to complete registration.
-            </p>
+            {errors.registrationUrl ? (
+              <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                {errors.registrationUrl}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                Participants will be redirected to this link to complete registration.
+              </p>
+            )}
           </div>
         </div>
 
@@ -495,7 +610,7 @@ function CreateHackathonPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="skills" className={labelClass}>
-                Technologies / Skills (comma separated)
+                Technologies / Skills <span className="text-red-500">*</span>
               </label>
               <input
                 id="skills"
@@ -504,13 +619,18 @@ function CreateHackathonPage() {
                 value={formData.skills}
                 onChange={handleChange}
                 placeholder="React, Python, Node.js, AI/ML"
-                className={inputClass}
+                className={`${inputClass} ${errors.skills ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.skills && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.skills}
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="themes" className={labelClass}>
-                Themes (comma separated)
+                Themes <span className="text-red-500">*</span>
               </label>
               <input
                 id="themes"
@@ -519,13 +639,18 @@ function CreateHackathonPage() {
                 value={formData.themes}
                 onChange={handleChange}
                 placeholder="Generative AI, Social Impact, FinTech"
-                className={inputClass}
+                className={`${inputClass} ${errors.themes ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.themes && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.themes}
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="minTeamSize" className={labelClass}>
-                Min Team Size
+                Min Team Size <span className="text-red-500">*</span>
               </label>
               <input
                 id="minTeamSize"
@@ -535,13 +660,18 @@ function CreateHackathonPage() {
                 name="minTeamSize"
                 value={formData.minTeamSize}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.minTeamSize ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.minTeamSize && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.minTeamSize}
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="maxTeamSize" className={labelClass}>
-                Max Team Size
+                Max Team Size <span className="text-red-500">*</span>
               </label>
               <input
                 id="maxTeamSize"
@@ -551,13 +681,18 @@ function CreateHackathonPage() {
                 name="maxTeamSize"
                 value={formData.maxTeamSize}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.maxTeamSize ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.maxTeamSize && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.maxTeamSize}
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="prizes" className={labelClass}>
-                Prize Information
+                Prizes <span className="text-red-500">*</span>
               </label>
               <input
                 id="prizes"
@@ -566,13 +701,18 @@ function CreateHackathonPage() {
                 value={formData.prizes}
                 onChange={handleChange}
                 placeholder="e.g. ₹1,00,000 Total Prize Pool"
-                className={inputClass}
+                className={`${inputClass} ${errors.prizes ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.prizes && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.prizes}
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="fee" className={labelClass}>
-                Registration Fee
+                Registration Fee <span className="text-red-500">*</span>
               </label>
               <input
                 id="fee"
@@ -581,13 +721,18 @@ function CreateHackathonPage() {
                 value={formData.fee}
                 onChange={handleChange}
                 placeholder="e.g. Free or ₹499"
-                className={inputClass}
+                className={`${inputClass} ${errors.fee ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.fee && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.fee}
+                </p>
+              )}
             </div>
 
             <div className="sm:col-span-2">
               <label htmlFor="eligibility" className={labelClass}>
-                Eligibility Criteria
+                Eligibility <span className="text-red-500">*</span>
               </label>
               <input
                 id="eligibility"
@@ -596,13 +741,18 @@ function CreateHackathonPage() {
                 value={formData.eligibility}
                 onChange={handleChange}
                 placeholder="Open to developers, students, and working professionals worldwide."
-                className={inputClass}
+                className={`${inputClass} ${errors.eligibility ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.eligibility && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.eligibility}
+                </p>
+              )}
             </div>
 
             <div className="sm:col-span-2">
               <label htmlFor="rules" className={labelClass}>
-                Rules & Guidelines
+                Rules <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="rules"
@@ -611,13 +761,22 @@ function CreateHackathonPage() {
                 value={formData.rules}
                 onChange={handleChange}
                 placeholder="Submission guidelines, code of conduct, and evaluation criteria."
-                className="w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
+                className={`w-full rounded-lg border bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors dark:bg-neutral-950 dark:text-white ${
+                  errors.rules
+                    ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
+                    : "border-neutral-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:focus:border-indigo-400"
+                }`}
               />
+              {errors.rules && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.rules}
+                </p>
+              )}
             </div>
 
             <div className="sm:col-span-2">
               <label htmlFor="contact" className={labelClass}>
-                Contact Information
+                Contact <span className="text-red-500">*</span>
               </label>
               <input
                 id="contact"
@@ -625,9 +784,14 @@ function CreateHackathonPage() {
                 name="contact"
                 value={formData.contact}
                 onChange={handleChange}
-                placeholder="e.g. hackathon@example.com or Discord link"
-                className={inputClass}
+                placeholder="e.g. +91 9876543210 or hackathon@example.com"
+                className={`${inputClass} ${errors.contact ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
+              {errors.contact && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.contact}
+                </p>
+              )}
             </div>
           </div>
         </div>

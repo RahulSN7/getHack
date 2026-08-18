@@ -46,9 +46,9 @@ const createHackathon = async (req, res) => {
 
     const hackathonTitle = title || name;
 
-    if (!hackathonTitle || !shortDescription || !description || !registrationDeadline || !startDate || !endDate || !registrationUrl) {
+    if (!hackathonTitle || !description || !registrationDeadline || !startDate || !endDate || !registrationUrl) {
       return res.status(400).json({
-        message: "Required fields missing. Title, descriptions, dates, and registration link are required.",
+        message: "Required fields missing. Title, description, dates, and registration link are required.",
       });
     }
 
@@ -90,7 +90,7 @@ const createHackathon = async (req, res) => {
 
     const newHackathon = new Hackathon({
       title: hackathonTitle,
-      shortDescription,
+      shortDescription: shortDescription || "",
       description,
       organizerName: organizerName || req.user.name || "Organizer",
       organizer: req.user._id,
