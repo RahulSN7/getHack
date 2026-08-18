@@ -61,7 +61,7 @@ function OrganizerManagePage() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          <span>Create Hackathon</span>
+          <span>Add Hackathon</span>
         </Link>
       </div>
 
@@ -215,13 +215,13 @@ function OrganizerManagePage() {
             No hackathons in this state
           </h3>
           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-            Create your first hackathon or change your filter.
+            Add your first hackathon or change your filter.
           </p>
           <Link
             to="/organizer/create"
             className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500"
           >
-            Create Hackathon
+            Add Hackathon
           </Link>
         </div>
       )}

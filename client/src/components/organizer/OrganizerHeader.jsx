@@ -153,7 +153,7 @@ function OrganizerHeader() {
                 }`
               }
             >
-              Create Hackathon
+              Add Hackathon
             </NavLink>
 
             <NavLink
@@ -360,7 +360,7 @@ function OrganizerHeader() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
               >
-                Create Hackathon
+                Add Hackathon
               </Link>
 
               <Link

@@ -16,7 +16,7 @@ function isValidUrl(string) {
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/hackathons — Create Hackathon (Organizer Only)
+// POST /api/hackathons — Add Hackathon (Organizer Only)
 // ---------------------------------------------------------------------------
 const createHackathon = async (req, res) => {
   try {
@@ -118,9 +118,9 @@ const createHackathon = async (req, res) => {
       hackathon: savedHackathon.toJSON(),
     });
   } catch (error) {
-    console.error("Error creating hackathon:", error);
+    console.error("Error adding hackathon:", error);
     return res.status(500).json({
-      message: error.message || "Failed to create hackathon.",
+      message: error.message || "Failed to add hackathon.",
     });
   }
 };

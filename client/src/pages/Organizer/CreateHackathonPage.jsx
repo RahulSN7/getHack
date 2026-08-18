@@ -232,7 +232,7 @@ function CreateHackathonPage() {
       // Redirect immediately to My Hackathons page
       navigate("/organizer/hackathons");
     } catch (err) {
-      setErrorMessage(err.message || "Failed to create hackathon. Please try again.");
+      setErrorMessage(err.message || "Failed to add hackathon. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -275,7 +275,7 @@ function CreateHackathonPage() {
           ORGANIZER PORTAL
         </p>
         <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
-          Create Hackathon
+          Add Hackathon
         </h1>
         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
           Publish your event to help developers discover and register on your platform.
@@ -851,10 +851,10 @@ function CreateHackathonPage() {
                 <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
                 </svg>
-                <span>Creating Hackathon...</span>
+                <span>Adding Hackathon...</span>
               </>
             ) : (
-              <span>Create Hackathon</span>
+              <span>Add Hackathon</span>
             )}
           </button>
         </div>
