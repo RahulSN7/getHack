@@ -55,6 +55,10 @@ const router = createBrowserRouter([
         element: <ProfilePage />,
       },
       {
+        path: "organizer/:id/profile",
+        element: <OrganizerProfilePage />,
+      },
+      {
         path: "network",
         element: (
           <ProtectedRoute>
@@ -96,6 +100,10 @@ const router = createBrowserRouter([
       },
       {
         path: "profile",
+        element: <OrganizerProfilePage />,
+      },
+      {
+        path: "profile/:id",
         element: <OrganizerProfilePage />,
       },
     ],

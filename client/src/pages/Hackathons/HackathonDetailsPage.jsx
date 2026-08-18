@@ -62,6 +62,7 @@ function HackathonDetailsPage() {
           const h = data.hackathon;
           setHackathon({
             ...h,
+            organizerId: typeof h.organizer === "object" ? h.organizer._id : (h.organizer || "org_demo"),
             name: h.title || h.name,
             organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer.name : h.organizer),
             mode: h.format || h.mode,
@@ -284,9 +285,12 @@ function HackathonDetailsPage() {
                 </h1>
                 <p className="mt-1 text-sm font-medium text-neutral-500 dark:text-neutral-400">
                   Organized by{" "}
-                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                  <Link
+                    to={`/organizer/${hackathon?.organizerId || hackathon?.organizer || "org_demo"}/profile`}
+                    className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
                     {organizer}
-                  </span>
+                  </Link>
                 </p>
 
                 {/* Status & Mode badges */}

@@ -69,6 +69,13 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Update user state locally
+  const updateUser = (updatedUser) => {
+    if (updatedUser) {
+      setUser((prev) => ({ ...prev, ...updatedUser }));
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -78,6 +85,7 @@ export function AuthProvider({ children }) {
         login,
         signup,
         logout,
+        updateUser,
       }}
     >
       {children}

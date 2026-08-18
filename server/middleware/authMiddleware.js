@@ -37,4 +37,26 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { requireAuth };
+const optionalAuth = async (req, res, next) => {
+  try {
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+    if (token) {
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || "gethack_super_secret_jwt_key_2026"
+      );
+      const user = await User.findById(decoded.id).select("-password");
+      if (user) {
+        req.user = user;
+      }
+    }
+  } catch {
+    // Ignore invalid tokens for optional auth
+  }
+  next();
+};
+
+module.exports = { requireAuth, optionalAuth };
