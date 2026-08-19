@@ -1,52 +1,66 @@
 // ---------------------------------------------------------------------------
 // HackathonFilters — compact filter button with popover UI
-// Combines Status & Format filtering into a restrained, popover-based UI.
-// Supports active filter count display, draft states, clear & apply.
+// Combines Status, Format & Platform filtering into a restrained popover UI.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef, useState } from "react";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 
 const STATUS_OPTIONS = [
-  { id: "all", label: "All" },
+  { id: "all", label: "All Statuses" },
   { id: "registration-open", label: "Registration Open" },
+  { id: "upcoming", label: "Upcoming" },
+  { id: "live", label: "Live / Ongoing" },
   { id: "registration-closed", label: "Registration Closed" },
 ];
 
 const FORMAT_OPTIONS = [
-  { id: "all", label: "All" },
+  { id: "all", label: "All Formats" },
   { id: "online", label: "Online" },
-  { id: "offline", label: "Offline" },
+  { id: "offline", label: "Offline / Hybrid" },
+];
+
+const PLATFORM_OPTIONS = [
+  { id: "all", label: "All Platforms" },
+  { id: "devpost", label: "Devpost" },
+  { id: "devfolio", label: "Devfolio" },
+  { id: "mlh", label: "MLH" },
+  { id: "unstop", label: "Unstop" },
+  { id: "dorahacks", label: "DoraHacks" },
+  { id: "kaggle", label: "Kaggle" },
+  { id: "hack2skill", label: "Hack2Skill" },
 ];
 
 function HackathonFilters({
   statusFilter = "all",
   formatFilter = "all",
+  platformFilter = "all",
   onApply,
   onClear,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [draftStatus, setDraftStatus] = useState(statusFilter);
   const [draftFormat, setDraftFormat] = useState(formatFilter);
+  const [draftPlatform, setDraftPlatform] = useState(platformFilter);
 
   const popoverRef = useRef(null);
   const triggerRef = useRef(null);
 
   const handleToggleOpen = () => {
     if (!isOpen) {
-      // Sync draft state to current active filters when opening popover
       setDraftStatus(statusFilter);
       setDraftFormat(formatFilter);
+      setDraftPlatform(platformFilter);
     }
     setIsOpen((prev) => !prev);
   };
 
-  // Calculate active filters count
   const activeCount =
-    (statusFilter !== "all" ? 1 : 0) + (formatFilter !== "all" ? 1 : 0);
+    (statusFilter !== "all" ? 1 : 0) +
+    (formatFilter !== "all" ? 1 : 0) +
+    (platformFilter !== "all" ? 1 : 0);
   const hasActiveFilters = activeCount > 0;
 
-  // Close on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -79,6 +93,7 @@ function HackathonFilters({
     onApply({
       statusFilter: draftStatus,
       formatFilter: draftFormat,
+      platformFilter: draftPlatform,
     });
     setIsOpen(false);
   };
@@ -86,6 +101,7 @@ function HackathonFilters({
   const handleClear = () => {
     setDraftStatus("all");
     setDraftFormat("all");
+    setDraftPlatform("all");
     onClear();
     setIsOpen(false);
   };
@@ -156,7 +172,9 @@ function HackathonFilters({
             left-0
             z-30
             mt-2
-            w-72
+            w-80
+            max-h-[85vh]
+            overflow-y-auto
             rounded-xl
             border
             border-neutral-200
@@ -167,13 +185,12 @@ function HackathonFilters({
             dark:border-neutral-800
             dark:bg-neutral-900
             dark:shadow-neutral-950/50
-            sm:w-80
           "
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
-              FILTER
+              FILTERS
             </h3>
             {hasActiveFilters && (
               <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
@@ -188,7 +205,7 @@ function HackathonFilters({
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                 Status
               </label>
-              <div className="mt-2 space-y-1.5">
+              <div className="mt-2 space-y-1">
                 {STATUS_OPTIONS.map((option) => {
                   const isSelected = draftStatus === option.id;
                   return (
@@ -215,28 +232,46 @@ function HackathonFilters({
                         }
                       `}
                     >
-                      <span className="flex items-center gap-2">
-                        <span
-                          className={`
-                            grid
-                            h-3.5
-                            w-3.5
-                            place-items-center
-                            rounded-full
-                            border
-                            ${
-                              isSelected
-                                ? "border-indigo-500 bg-indigo-500 dark:border-indigo-400 dark:bg-indigo-400"
-                                : "border-neutral-300 dark:border-neutral-600"
-                            }
-                          `}
-                        >
-                          {isSelected && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-950" />
-                          )}
-                        </span>
-                        {option.label}
-                      </span>
+                      <span>{option.label}</span>
+                      {isSelected && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Platform Section */}
+            <div className="border-t border-neutral-100 pt-3 dark:border-neutral-800">
+              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                Platform
+              </label>
+              <div className="mt-2 grid grid-cols-2 gap-1">
+                {PLATFORM_OPTIONS.map((option) => {
+                  const isSelected = draftPlatform === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setDraftPlatform(option.id)}
+                      className={`
+                        rounded-lg
+                        px-2
+                        py-1.5
+                        text-left
+                        text-xs
+                        font-medium
+                        transition-colors
+                        duration-150
+                        ${
+                          isSelected
+                            ? `${accentBgSoft} ${accentText}`
+                            : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                        }
+                      `}
+                    >
+                      {option.label}
                     </button>
                   );
                 })}
@@ -248,7 +283,7 @@ function HackathonFilters({
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                 Format
               </label>
-              <div className="mt-2 space-y-1.5">
+              <div className="mt-2 space-y-1">
                 {FORMAT_OPTIONS.map((option) => {
                   const isSelected = draftFormat === option.id;
                   return (
@@ -275,28 +310,10 @@ function HackathonFilters({
                         }
                       `}
                     >
-                      <span className="flex items-center gap-2">
-                        <span
-                          className={`
-                            grid
-                            h-3.5
-                            w-3.5
-                            place-items-center
-                            rounded-full
-                            border
-                            ${
-                              isSelected
-                                ? "border-indigo-500 bg-indigo-500 dark:border-indigo-400 dark:bg-indigo-400"
-                                : "border-neutral-300 dark:border-neutral-600"
-                            }
-                          `}
-                        >
-                          {isSelected && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-neutral-950" />
-                          )}
-                        </span>
-                        {option.label}
-                      </span>
+                      <span>{option.label}</span>
+                      {isSelected && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
+                      )}
                     </button>
                   );
                 })}

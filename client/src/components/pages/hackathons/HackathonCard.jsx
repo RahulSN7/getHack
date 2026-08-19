@@ -7,10 +7,31 @@ import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
 import DeadlineDisplay from "./DeadlineDisplay";
 
-// ---------------------------------------------------------------------------
-// Team size formatting helper
-// ---------------------------------------------------------------------------
+// Platform Badge helper
+function PlatformBadge({ platform }) {
+  if (!platform || platform === "gethack") return null;
 
+  const labels = {
+    devpost: { label: "Devpost", color: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400" },
+    devfolio: { label: "Devfolio", color: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400" },
+    mlh: { label: "MLH", color: "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400" },
+    unstop: { label: "Unstop", color: "bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400" },
+    dorahacks: { label: "DoraHacks", color: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400" },
+    kaggle: { label: "Kaggle", color: "bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400" },
+    hack2skill: { label: "Hack2Skill", color: "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400" },
+  };
+
+  const pKey = String(platform).toLowerCase();
+  const info = labels[pKey] || { label: platform, color: "bg-neutral-500/10 text-neutral-600 dark:bg-neutral-500/20 dark:text-neutral-400" };
+
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${info.color}`}>
+      {info.label}
+    </span>
+  );
+}
+
+// Team size formatting helper
 function formatTeamSize(min, max, customText) {
   if (customText) return customText;
   if (!min && !max) return "Individual / Team";
@@ -25,10 +46,7 @@ function formatTeamSize(min, max, customText) {
   return "Individual / Team";
 }
 
-// ---------------------------------------------------------------------------
 // Mode & location icon display
-// ---------------------------------------------------------------------------
-
 function ModeDisplay({ mode, location }) {
   const isOnline = mode === "Online";
 
@@ -72,10 +90,6 @@ function ModeDisplay({ mode, location }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// HackathonCard Component
-// ---------------------------------------------------------------------------
-
 function HackathonCard({ hackathon }) {
   const {
     id,
@@ -90,13 +104,15 @@ function HackathonCard({ hackathon }) {
     maxTeamSize,
     teamSize,
     prize = "N/A",
+    source,
     accent = "indigo",
   } = hackathon;
 
   const { isSaved, toggleSave } = useSaved();
   const saved = id ? isSaved(id) : false;
 
-  // Calculate actual registration availability based on deadline and status flag
+  const platform = source?.platform || hackathon.platform;
+
   const isOpen =
     Boolean(registrationOpen) &&
     Boolean(registrationDeadline) &&
@@ -162,9 +178,12 @@ function HackathonCard({ hackathon }) {
 
             {/* Name & Organizer */}
             <div className="min-w-0 flex-1">
-              <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
-                {name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
+                  {name}
+                </h3>
+                <PlatformBadge platform={platform} />
+              </div>
               <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
                 {organizer}
               </p>

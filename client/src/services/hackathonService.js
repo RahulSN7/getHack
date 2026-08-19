@@ -37,14 +37,39 @@ async function handleResponse(response) {
 }
 
 export const hackathonService = {
-  // Get public hackathons list
-  async getPublicHackathons() {
-    const response = await fetch(`${API_BASE}`, {
+  // Get public hackathons list with optional search, status, platform, mode, sort, page parameters
+  async getPublicHackathons(params = {}) {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page);
+    if (params.limit) query.append("limit", params.limit);
+    if (params.search) query.append("search", params.search);
+    if (params.status) query.append("status", params.status);
+    if (params.platform) query.append("platform", params.platform);
+    if (params.mode) query.append("mode", params.mode);
+    if (params.sort) query.append("sort", params.sort);
+
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    const response = await fetch(`${API_BASE}${queryString}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
     return handleResponse(response);
+  },
+
+  // Get upcoming hackathons
+  async getUpcomingHackathons(params = {}) {
+    return this.getPublicHackathons({ ...params, status: "upcoming" });
+  },
+
+  // Get active hackathons
+  async getActiveHackathons(params = {}) {
+    return this.getPublicHackathons({ ...params, status: "live" });
+  },
+
+  // Get registration-open hackathons
+  async getRegistrationOpenHackathons(params = {}) {
+    return this.getPublicHackathons({ ...params, status: "registration-open" });
   },
 
   // Get current organizer's hackathons list
@@ -103,6 +128,16 @@ export const hackathonService = {
   async deleteHackathon(id) {
     const response = await fetch(`${API_BASE}/${id}`, {
       method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    return handleResponse(response);
+  },
+
+  // Trigger manual multi-platform sync
+  async triggerSync() {
+    const response = await fetch(`${API_BASE}/sync`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     });

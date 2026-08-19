@@ -58,20 +58,24 @@ function HackathonDetailsPage() {
         setLoading(true);
         // Try fetching from API backend first
         const data = await hackathonService.getHackathonById(id);
-        if (isMounted && data?.hackathon) {
-          const h = data.hackathon;
+        if (isMounted && (data?.hackathon || data?.data)) {
+          const h = data.hackathon || data.data;
+          const extUrl = h.source?.externalUrl || h.registration?.url || h.registrationUrl || h.url || "#";
           setHackathon({
             ...h,
-            organizerId: typeof h.organizer === "object" ? h.organizer._id : (h.organizer || "org_demo"),
+            organizerId: typeof h.organizer === "object" ? (h.organizer._id || h.organizer.ref) : (h.organizer || "org_demo"),
             name: h.title || h.name,
             organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer.name : h.organizer),
-            mode: h.format || h.mode,
-            location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : h.location,
-            hackathonDate: h.startDate || h.hackathonDate,
-            eventEndDate: h.endDate || h.eventEndDate,
-            url: h.registrationUrl || h.url,
-            prize: h.prizes || h.prizePool || h.prize || "N/A",
-            registrationOpen: h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true,
+            mode: h.event?.mode || h.format || h.mode,
+            location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : (h.event?.venue || h.location),
+            hackathonDate: h.event?.startDate || h.startDate || h.hackathonDate,
+            eventEndDate: h.event?.endDate || h.endDate || h.eventEndDate,
+            registrationDeadline: h.registration?.deadline || h.registrationDeadline,
+            url: extUrl,
+            prize: h.prizePool?.description || h.prizes || h.prizePool || h.prize || "N/A",
+            registrationOpen: h.registration?.deadline ? new Date(h.registration.deadline) > new Date() : (h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true),
+            source: h.source || { platform: h.platform || "gethack", externalUrl: extUrl },
+            platform: h.source?.platform || h.platform,
           });
           return;
         }

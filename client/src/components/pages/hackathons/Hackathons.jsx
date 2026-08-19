@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Hackathons — discovery page with Filter popover, Search, Sort & Saved view
 //
-// Pipeline: data → search → status filter → format filter → saved filter → sort → grid
+// Pipeline: data → search → status filter → platform filter → format filter → saved filter → sort → grid
 // All operations are pure and non-mutating.
 // ---------------------------------------------------------------------------
 
@@ -17,31 +17,33 @@ import { hackathonService } from "../../../services/hackathonService";
 
 // Helper to normalize backend DB hackathons
 function normalizeHackathon(h) {
+  const sourcePlatform = h.source?.platform || h.platform || "gethack";
+  const externalUrl = h.source?.externalUrl || h.registration?.url || h.registrationUrl || h.url || "#";
+
   return {
     ...h,
     id: h.id || h._id,
     name: h.title || h.name,
-    organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer.name : h.organizer) || "Organizer",
-    mode: h.format || h.mode || "Online",
-    location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : h.location || null,
-    registrationDeadline: h.registrationDeadline,
-    hackathonDate: h.startDate || h.hackathonDate,
-    eventEndDate: h.endDate || h.eventEndDate,
-    registrationOpen: h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true,
-    prize: h.prizes || h.prizePool || h.prize || "Free",
-    prizeValue: 0,
+    organizer: h.organizerName || h.organizer?.name || "Organizer",
+    mode: h.event?.mode || h.format || h.mode || "Online",
+    location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : (h.event?.venue || h.location || null),
+    registrationDeadline: h.registration?.deadline || h.registrationDeadline,
+    hackathonDate: h.event?.startDate || h.startDate || h.hackathonDate,
+    eventEndDate: h.event?.endDate || h.endDate || h.eventEndDate,
+    registrationOpen: h.registration?.deadline ? new Date(h.registration.deadline) > new Date() : (h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true),
+    prize: h.prizePool?.description || h.prizes || h.prizePool || h.prize || "Free",
+    prizeValue: h.prizePool?.amount || 0,
     tags: h.skills?.length ? h.skills : h.tags || ["Hackathon"],
     themes: h.themes?.length ? h.themes : h.tags || [],
-    url: h.registrationUrl || h.url || "#",
+    url: externalUrl,
     description: h.shortDescription || h.description || "",
+    source: h.source || { platform: sourcePlatform, externalUrl },
+    platform: sourcePlatform,
     accent: "indigo",
   };
 }
 
-// ---------------------------------------------------------------------------
 // Search: match against name, organizer, tags, domain, location
-// ---------------------------------------------------------------------------
-
 function applySearch(hackathons, query) {
   if (!query.trim()) return hackathons;
   const q = query.toLowerCase();
@@ -51,15 +53,13 @@ function applySearch(hackathons, query) {
       (h.organizer && h.organizer.toLowerCase().includes(q)) ||
       (h.domain && h.domain.toLowerCase().includes(q)) ||
       (h.location && h.location.toLowerCase().includes(q)) ||
+      (h.platform && h.platform.toLowerCase().includes(q)) ||
       (h.tags && h.tags.some((tag) => tag.toLowerCase().includes(q)))
     );
   });
 }
 
-// ---------------------------------------------------------------------------
 // Status Filter
-// ---------------------------------------------------------------------------
-
 function applyStatusFilter(hackathons, statusId) {
   const now = new Date();
 
@@ -67,6 +67,12 @@ function applyStatusFilter(hackathons, statusId) {
     case "registration-open":
       return hackathons.filter(
         (h) => h.registrationOpen && new Date(h.registrationDeadline) > now
+      );
+    case "upcoming":
+      return hackathons.filter((h) => new Date(h.hackathonDate || h.startDate) > now);
+    case "live":
+      return hackathons.filter(
+        (h) => new Date(h.hackathonDate || h.startDate) <= now && new Date(h.eventEndDate || h.endDate) >= now
       );
     case "registration-closed":
       return hackathons.filter(
@@ -78,10 +84,16 @@ function applyStatusFilter(hackathons, statusId) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Format Filter
-// ---------------------------------------------------------------------------
+// Platform Filter
+function applyPlatformFilter(hackathons, platformId) {
+  if (!platformId || platformId === "all") return hackathons;
+  const p = platformId.toLowerCase();
+  return hackathons.filter(
+    (h) => (h.source?.platform || h.platform || "").toLowerCase() === p
+  );
+}
 
+// Format Filter
 function applyFormatFilter(hackathons, formatId) {
   switch (formatId) {
     case "online":
@@ -94,19 +106,13 @@ function applyFormatFilter(hackathons, formatId) {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Saved Filter
-// ---------------------------------------------------------------------------
-
 function applySavedFilter(hackathons, showSavedOnly, isSaved) {
   if (!showSavedOnly) return hackathons;
   return hackathons.filter((h) => isSaved(h.id));
 }
 
-// ---------------------------------------------------------------------------
 // Sort
-// ---------------------------------------------------------------------------
-
 function applySort(hackathons, sortId) {
   const sorted = [...hackathons];
   switch (sortId) {
@@ -126,28 +132,25 @@ function applySort(hackathons, sortId) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Page component
-// ---------------------------------------------------------------------------
-
 function Hackathons() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [formatFilter, setFormatFilter] = useState("all");
+  const [platformFilter, setPlatformFilter] = useState("all");
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("deadline-asc");
-  const [allHackathons, setAllHackathons] = useState(HACKATHONS);
+  const [allHackathons, setAllHackathons] = useState(HACKATHONS.map(normalizeHackathon));
 
   useEffect(() => {
     let isMounted = true;
     async function loadPublicHackathons() {
       try {
-        const data = await hackathonService.getPublicHackathons();
-        if (isMounted && data?.hackathons?.length > 0) {
-          const apiNormalized = data.hackathons.map(normalizeHackathon);
-          // Prepend API hackathons to static HACKATHONS
+        const data = await hackathonService.getPublicHackathons({ limit: 100 });
+        const items = data.data || data.hackathons || [];
+        if (isMounted && items.length > 0) {
+          const apiNormalized = items.map(normalizeHackathon);
           const apiIds = new Set(apiNormalized.map((h) => String(h.id)));
-          const filteredStatic = HACKATHONS.filter((h) => !apiIds.has(String(h.id)));
+          const filteredStatic = HACKATHONS.map(normalizeHackathon).filter((h) => !apiIds.has(String(h.id)));
           setAllHackathons([...apiNormalized, ...filteredStatic]);
         }
       } catch {
@@ -166,28 +169,32 @@ function Hackathons() {
     searchQuery.trim() !== "" ||
     statusFilter !== "all" ||
     formatFilter !== "all" ||
+    platformFilter !== "all" ||
     showSavedOnly;
 
   const handleClearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setFormatFilter("all");
+    setPlatformFilter("all");
     setShowSavedOnly(false);
   };
 
-  const handleApplyFilterPopover = ({ statusFilter: nextStatus, formatFilter: nextFormat }) => {
+  const handleApplyFilterPopover = ({ statusFilter: nextStatus, formatFilter: nextFormat, platformFilter: nextPlatform }) => {
     setStatusFilter(nextStatus);
     setFormatFilter(nextFormat);
+    if (nextPlatform) setPlatformFilter(nextPlatform);
   };
 
-  // Pipeline: search → status filter → format filter → saved filter → sort
+  // Pipeline: search → status filter → platform filter → format filter → saved filter → sort
   const results = useMemo(() => {
     const searched = applySearch(allHackathons, searchQuery);
     const statusFiltered = applyStatusFilter(searched, statusFilter);
-    const formatFiltered = applyFormatFilter(statusFiltered, formatFilter);
+    const platformFiltered = applyPlatformFilter(statusFiltered, platformFilter);
+    const formatFiltered = applyFormatFilter(platformFiltered, formatFilter);
     const savedFiltered = applySavedFilter(formatFiltered, showSavedOnly, isSaved);
     return applySort(savedFiltered, sortBy);
-  }, [allHackathons, searchQuery, statusFilter, formatFilter, showSavedOnly, isSaved, sortBy]);
+  }, [allHackathons, searchQuery, statusFilter, platformFilter, formatFilter, showSavedOnly, isSaved, sortBy]);
 
   const accentText = ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT.indigo;
@@ -207,7 +214,7 @@ function Hackathons() {
             Hackathons
           </h1>
           <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
-            Discover hackathons worth building for — matched to your skills and interests.
+            Discover hackathons worth building for — aggregated across MLH, Devpost, Devfolio, Unstop, DoraHacks, Kaggle, & Hack2Skill.
           </p>
 
           {/* Search bar */}
@@ -301,10 +308,12 @@ function Hackathons() {
               <HackathonFilters
                 statusFilter={statusFilter}
                 formatFilter={formatFilter}
+                platformFilter={platformFilter}
                 onApply={handleApplyFilterPopover}
                 onClear={() => {
                   setStatusFilter("all");
                   setFormatFilter("all");
+                  setPlatformFilter("all");
                 }}
               />
             </div>

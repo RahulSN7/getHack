@@ -15,6 +15,7 @@ try {
 const authRoutes = require("./routes/authRoutes");
 const hackathonRoutes = require("./routes/hackathonRoutes");
 const userRoutes = require("./routes/userRoutes");
+const { initHackathonSyncJob, runSyncTask } = require("./jobs/hackathonSyncJob");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +36,15 @@ app.use("/api/auth", authRoutes);
 app.use("/api/hackathons", hackathonRoutes);
 app.use("/api/users", userRoutes);
 
+// Admin sync endpoint alias
+app.post("/api/admin/hackathons/sync", (req, res) => {
+  runSyncTask();
+  res.json({
+    success: true,
+    message: "Multi-platform hackathon synchronization started.",
+  });
+});
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({
@@ -45,14 +55,21 @@ app.get("/api/health", (req, res) => {
 });
 
 // MongoDB connection
-if (process.env.MONGO_URI) {
-  mongoose
-    .connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB connected successfully to getHack DB"))
-    .catch((err) => console.error("MongoDB connection error:", err.message || err));
-} else {
-  console.warn("MONGO_URI is not set in environment variables");
-}
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/getHack";
+
+mongoose
+  .connect(MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+  })
+  .then(() => {
+    console.log("MongoDB connected successfully to getHack DB");
+    // Initialize multi-platform hackathon synchronization background scheduler
+    initHackathonSyncJob();
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err.message || err);
+    console.warn("Server running without active MongoDB connection. Background sync scheduler will remain paused until database is connected.");
+  });
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
