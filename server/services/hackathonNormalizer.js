@@ -28,6 +28,23 @@ function normalizeDate(val) {
 }
 
 /**
+ * Clean HTML tags and unescape common HTML entities
+ */
+function stripHtmlTags(str) {
+  if (!str || typeof str !== "string") return "";
+  return str
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * Normalize raw hackathon payload into getHack Mongoose Schema compatible object
  * @param {Object} rawHackathon Output from platform adapter
  * @returns {Object} Normalized hackathon object
@@ -50,15 +67,20 @@ function normalize(rawHackathon) {
   const themes = Array.isArray(rawHackathon.themes) ? rawHackathon.themes.filter(Boolean) : [];
   const skills = Array.isArray(rawHackathon.skills) ? rawHackathon.skills.filter(Boolean) : [];
 
+  // Clean prize description of raw HTML tags
+  const rawPrizeDesc = rawHackathon.prizeDescription || "";
+  const cleanPrizeDesc = stripHtmlTags(rawPrizeDesc);
+  const finalPrizeDesc = cleanPrizeDesc || (rawHackathon.prizeAmount ? `${rawHackathon.prizeCurrency || "USD"} ${rawHackathon.prizeAmount}` : "Cash & Perks");
+
   return {
     title,
     slug,
-    shortDescription: (rawHackathon.shortDescription || rawHackathon.description || "").substring(0, 300),
-    description: rawHackathon.description || rawHackathon.shortDescription || title,
+    shortDescription: stripHtmlTags(rawHackathon.shortDescription || rawHackathon.description || "").substring(0, 300),
+    description: stripHtmlTags(rawHackathon.description || rawHackathon.shortDescription || title),
 
-    organizerName: rawHackathon.organizerName || "Organizer",
+    organizerName: stripHtmlTags(rawHackathon.organizerName || "Organizer"),
     organizer: {
-      name: rawHackathon.organizerName || "Organizer",
+      name: stripHtmlTags(rawHackathon.organizerName || "Organizer"),
       logo: rawHackathon.organizerLogo || "",
       website: rawHackathon.organizerWebsite || "",
     },
@@ -86,20 +108,20 @@ function normalize(rawHackathon) {
       endDate: endDate || new Date(Date.now() + 86400000 * 3),
       mode,
       timezone: rawHackathon.timezone || "UTC",
-      venue: mode === "Online" ? "Online" : (rawHackathon.venue || "TBD"),
-      address: rawHackathon.address || "",
+      venue: mode === "Online" ? "Online" : (stripHtmlTags(rawHackathon.venue) || "TBD"),
+      address: stripHtmlTags(rawHackathon.address) || "",
     },
 
     format: mode,
     location: {
-      venue: mode === "Online" ? "Online" : (rawHackathon.venue || "TBD"),
-      city: rawHackathon.city || "",
-      country: rawHackathon.country || "",
-      address: rawHackathon.address || "",
+      venue: mode === "Online" ? "Online" : (stripHtmlTags(rawHackathon.venue) || "TBD"),
+      city: stripHtmlTags(rawHackathon.city) || "",
+      country: stripHtmlTags(rawHackathon.country) || "",
+      address: stripHtmlTags(rawHackathon.address) || "",
     },
 
     registrationUrl,
-    eligibility: rawHackathon.eligibility || "Open to all creators and developers",
+    eligibility: stripHtmlTags(rawHackathon.eligibility) || "Open to all creators and developers",
 
     teamSize: {
       min: rawHackathon.minTeamSize || 1,
@@ -117,13 +139,13 @@ function normalize(rawHackathon) {
     prizePool: {
       amount: rawHackathon.prizeAmount || 0,
       currency: rawHackathon.prizeCurrency || "USD",
-      description: rawHackathon.prizeDescription || (rawHackathon.prizeAmount ? `${rawHackathon.prizeCurrency || "USD"} ${rawHackathon.prizeAmount}` : "Free to enter"),
+      description: finalPrizeDesc,
     },
-    prizes: rawHackathon.prizeDescription || (rawHackathon.prizeAmount ? `${rawHackathon.prizeCurrency || "USD"} ${rawHackathon.prizeAmount}` : "Cash & Perks"),
+    prizes: finalPrizeDesc,
 
-    themes: themes.length > 0 ? themes : ["Innovation", "Technology"],
-    skills: skills.length > 0 ? skills : ["Software Development"],
-    requirements: Array.isArray(rawHackathon.requirements) ? rawHackathon.requirements : [],
+    themes: themes.length > 0 ? themes.map(stripHtmlTags) : ["Innovation", "Technology"],
+    skills: skills.length > 0 ? skills.map(stripHtmlTags) : ["Software Development"],
+    requirements: Array.isArray(rawHackathon.requirements) ? rawHackathon.requirements.map(stripHtmlTags) : [],
 
     submission: {
       deadline: endDate || regDeadline,
@@ -145,4 +167,5 @@ function normalize(rawHackathon) {
 module.exports = {
   normalize,
   slugify,
+  stripHtmlTags,
 };

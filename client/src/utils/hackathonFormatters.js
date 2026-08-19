@@ -1,8 +1,26 @@
 // ---------------------------------------------------------------------------
 // client/src/utils/hackathonFormatters.js
-// Defensive formatter helpers to ensure structured MongoDB objects are cleanly
-// converted to human-readable strings for React rendering.
+// Defensive formatter helpers to ensure structured MongoDB objects and HTML-containing
+// strings are cleanly converted to human-readable strings for React rendering.
 // ---------------------------------------------------------------------------
+
+/**
+ * Strip HTML tags and unescape common HTML entities without using dangerouslySetInnerHTML
+ * @param {string} str
+ * @returns {string} Clean plain text string
+ */
+export function stripHtmlTags(str) {
+  if (!str || typeof str !== "string") return "";
+  let clean = str.replace(/<[^>]*>/g, "");
+  clean = clean
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  return clean.replace(/\s+/g, " ").trim();
+}
 
 /**
  * Format team size cleanly handling objects, numbers, strings, or missing values
@@ -16,7 +34,7 @@ export function formatTeamSize(teamSize, minTeamSize, maxTeamSize) {
   let max = maxTeamSize;
 
   if (typeof teamSize === "string" && teamSize.trim()) {
-    return teamSize.trim();
+    return stripHtmlTags(teamSize);
   }
 
   if (typeof teamSize === "number") {
@@ -48,35 +66,59 @@ export function formatTeamSize(teamSize, minTeamSize, maxTeamSize) {
 }
 
 /**
- * Format prize info handling objects, numbers, strings, or missing values
+ * Format prize info handling objects, numbers, HTML-containing strings, or missing values
  * @param {Object|number|string} prizePool
  * @param {string|number} prizes
  * @param {string} fallback
- * @returns {string}
+ * @returns {string} Clean human-readable prize label
  */
-export function formatPrize(prizePool, prizes, fallback = "Free") {
-  if (typeof prizes === "string" && prizes.trim()) {
-    return prizes.trim();
-  }
+export function formatPrize(prizePool, prizes, fallback = "Not specified") {
+  // 1. Check prizes parameter
   if (typeof prizes === "number") {
-    return `$${prizes.toLocaleString()}`;
+    return prizes === 0 ? "Free" : `$${prizes.toLocaleString()}`;
   }
-  if (typeof prizePool === "string" && prizePool.trim()) {
-    return prizePool.trim();
+  if (typeof prizes === "string") {
+    const cleanPrizes = stripHtmlTags(prizes);
+    if (cleanPrizes) return cleanPrizes;
   }
+
+  // 2. Check prizePool parameter if string or number
   if (typeof prizePool === "number") {
-    return `$${prizePool.toLocaleString()}`;
+    return prizePool === 0 ? "Free" : `$${prizePool.toLocaleString()}`;
   }
+  if (typeof prizePool === "string") {
+    const cleanPool = stripHtmlTags(prizePool);
+    if (cleanPool) return cleanPool;
+  }
+
+  // 3. Check prizePool parameter if structured object { amount, currency, description }
   if (prizePool && typeof prizePool === "object" && !Array.isArray(prizePool)) {
-    if (typeof prizePool.description === "string" && prizePool.description.trim()) {
-      return prizePool.description.trim();
+    if (typeof prizePool.description === "string") {
+      const cleanDesc = stripHtmlTags(prizePool.description);
+      if (cleanDesc) return cleanDesc;
     }
     if (prizePool.amount != null && !isNaN(Number(prizePool.amount))) {
-      const curr = prizePool.currency === "INR" ? "₹" : "$";
-      return `${curr}${Number(prizePool.amount).toLocaleString()}`;
+      const amount = Number(prizePool.amount);
+      if (amount === 0) return "Free";
+      const currSymbol =
+        prizePool.currency === "INR"
+          ? "₹"
+          : prizePool.currency === "EUR"
+            ? "€"
+            : prizePool.currency === "GBP"
+              ? "£"
+              : "$";
+      return `${currSymbol}${amount.toLocaleString()}`;
     }
   }
-  return fallback;
+
+  // 4. Check fallback parameter
+  if (typeof fallback === "string") {
+    const cleanFallback = stripHtmlTags(fallback);
+    if (cleanFallback) return cleanFallback;
+  }
+
+  return "Not specified";
 }
 
 /**
@@ -87,14 +129,14 @@ export function formatPrize(prizePool, prizes, fallback = "Free") {
  */
 export function formatOrganizer(organizerName, organizer) {
   if (typeof organizerName === "string" && organizerName.trim()) {
-    return organizerName.trim();
+    return stripHtmlTags(organizerName);
   }
   if (typeof organizer === "string" && organizer.trim()) {
-    return organizer.trim();
+    return stripHtmlTags(organizer);
   }
   if (organizer && typeof organizer === "object" && !Array.isArray(organizer)) {
     if (typeof organizer.name === "string" && organizer.name.trim()) {
-      return organizer.name.trim();
+      return stripHtmlTags(organizer.name);
     }
   }
   return "Organizer";
@@ -108,19 +150,19 @@ export function formatOrganizer(organizerName, organizer) {
  */
 export function formatLocation(location, event) {
   if (typeof location === "string" && location.trim()) {
-    return location.trim();
+    return stripHtmlTags(location);
   }
   if (location && typeof location === "object" && !Array.isArray(location)) {
     const parts = [];
-    if (location.city) parts.push(location.city);
-    if (location.country) parts.push(location.country);
+    if (location.city) parts.push(stripHtmlTags(location.city));
+    if (location.country) parts.push(stripHtmlTags(location.country));
     if (parts.length > 0) return parts.join(", ");
-    if (location.venue) return location.venue;
-    if (location.address) return location.address;
+    if (location.venue) return stripHtmlTags(location.venue);
+    if (location.address) return stripHtmlTags(location.address);
   }
   if (event && typeof event === "object" && !Array.isArray(event)) {
-    if (event.venue) return event.venue;
-    if (event.address) return event.address;
+    if (event.venue) return stripHtmlTags(event.venue);
+    if (event.address) return stripHtmlTags(event.address);
   }
   return null;
 }
@@ -133,7 +175,7 @@ export function formatLocation(location, event) {
  */
 export function formatFee(fee, registrationFee) {
   if (typeof fee === "string" && fee.trim()) {
-    return fee.trim();
+    return stripHtmlTags(fee);
   }
   if (typeof fee === "number") {
     return fee === 0 ? "Free" : `$${fee}`;
@@ -157,14 +199,14 @@ export function formatFee(fee, registrationFee) {
  */
 export function formatMode(mode, format, event) {
   if (typeof mode === "string" && mode.trim()) {
-    return mode.trim();
+    return stripHtmlTags(mode);
   }
   if (typeof format === "string" && format.trim()) {
-    return format.trim();
+    return stripHtmlTags(format);
   }
   if (event && typeof event === "object" && !Array.isArray(event)) {
     if (typeof event.mode === "string" && event.mode.trim()) {
-      return event.mode.trim();
+      return stripHtmlTags(event.mode);
     }
   }
   return "Online";

@@ -30,10 +30,13 @@ async function fetchHackathons() {
     return items.map((item) => {
       const isOnline = item.displayed_location?.location?.toLowerCase().includes("online") || item.open_state === "online";
       
-      // Parse prize amount
+      // Parse prize amount and clean HTML tags if present
       let prizeAmount = 0;
+      let prizeDescription = "";
       if (item.prize_amount) {
-        const numeric = String(item.prize_amount).replace(/[^0-9]/g, "");
+        const rawString = String(item.prize_amount);
+        prizeDescription = rawString.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+        const numeric = rawString.replace(/[^0-9]/g, "");
         if (numeric) prizeAmount = parseInt(numeric, 10);
       }
 
@@ -55,7 +58,7 @@ async function fetchHackathons() {
         venue: item.displayed_location?.location || "",
         prizeAmount: prizeAmount,
         prizeCurrency: "USD",
-        prizeDescription: item.prize_amount || "",
+        prizeDescription: prizeDescription,
         themes: themes,
         skills: themes,
         startDate: item.submission_period_dates ? parseDateRange(item.submission_period_dates, "start") : null,
