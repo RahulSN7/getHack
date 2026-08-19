@@ -1,11 +1,20 @@
 // ---------------------------------------------------------------------------
 // HackathonCard — compact, information-first card design with Save / Bookmark
+// Safe rendering for all structured MongoDB data fields.
 // ---------------------------------------------------------------------------
 
 import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
 import DeadlineDisplay from "./DeadlineDisplay";
+import {
+  formatTeamSize,
+  formatPrize,
+  formatOrganizer,
+  formatLocation,
+  formatFee,
+  formatMode,
+} from "../../../utils/hackathonFormatters";
 
 // Platform Badge helper
 function PlatformBadge({ platform }) {
@@ -22,28 +31,13 @@ function PlatformBadge({ platform }) {
   };
 
   const pKey = String(platform).toLowerCase();
-  const info = labels[pKey] || { label: platform, color: "bg-neutral-500/10 text-neutral-600 dark:bg-neutral-500/20 dark:text-neutral-400" };
+  const info = labels[pKey] || { label: String(platform), color: "bg-neutral-500/10 text-neutral-600 dark:bg-neutral-500/20 dark:text-neutral-400" };
 
   return (
     <span className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${info.color}`}>
       {info.label}
     </span>
   );
-}
-
-// Team size formatting helper
-function formatTeamSize(min, max, customText) {
-  if (customText) return customText;
-  if (!min && !max) return "Individual / Team";
-  if (min && max) {
-    if (min === max) {
-      return `${min} ${min === 1 ? "member" : "members"}`;
-    }
-    return `${min}–${max} members`;
-  }
-  if (min) return `Min ${min} ${min === 1 ? "member" : "members"}`;
-  if (max) return `Up to ${max} ${max === 1 ? "member" : "members"}`;
-  return "Individual / Team";
 }
 
 // Mode & location icon display
@@ -91,27 +85,25 @@ function ModeDisplay({ mode, location }) {
 }
 
 function HackathonCard({ hackathon }) {
-  const {
-    id,
-    name,
-    organizer,
-    mode,
-    location,
-    registrationDeadline,
-    registrationOpen,
-    fee = "Free",
-    minTeamSize,
-    maxTeamSize,
-    teamSize,
-    prize = "N/A",
-    source,
-    accent = "indigo",
-  } = hackathon;
+  const id = hackathon.id || hackathon._id;
+  const name = typeof hackathon.name === "string" ? hackathon.name : typeof hackathon.title === "string" ? hackathon.title : "Untitled Hackathon";
+  const organizer = formatOrganizer(hackathon.organizerName, hackathon.organizer);
+  const mode = formatMode(hackathon.mode, hackathon.format, hackathon.event);
+  const location = formatLocation(hackathon.location, hackathon.event);
+
+  const registrationDeadline = hackathon.registrationDeadline || hackathon.registration?.deadline;
+  const registrationOpen = hackathon.registrationOpen ?? (registrationDeadline ? new Date(registrationDeadline) > new Date() : true);
+
+  const fee = formatFee(hackathon.fee, hackathon.registrationFee);
+  const teamSizeLabel = formatTeamSize(hackathon.teamSize, hackathon.minTeamSize, hackathon.maxTeamSize);
+  const prize = formatPrize(hackathon.prizePool, hackathon.prizes, hackathon.prize);
+
+  const source = hackathon.source || {};
+  const platform = typeof source === "object" ? source.platform : hackathon.platform;
+  const accent = hackathon.accent || "indigo";
 
   const { isSaved, toggleSave } = useSaved();
   const saved = id ? isSaved(id) : false;
-
-  const platform = source?.platform || hackathon.platform;
 
   const isOpen =
     Boolean(registrationOpen) &&
@@ -121,7 +113,6 @@ function HackathonCard({ hackathon }) {
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
   const initial = name ? name.charAt(0).toUpperCase() : "H";
-  const teamSizeLabel = formatTeamSize(minTeamSize, maxTeamSize, teamSize);
 
   const handleSaveToggle = (e) => {
     e.preventDefault();

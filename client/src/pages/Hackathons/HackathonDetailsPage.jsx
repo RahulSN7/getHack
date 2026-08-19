@@ -7,26 +7,18 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { HACKATHONS } from "../../data/hackathons";
 import { useSaved } from "../../context/SavedContext";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../constants/themeTokens";
 import DeadlineDisplay from "../../components/pages/hackathons/DeadlineDisplay";
 import { hackathonService } from "../../services/hackathonService";
-
-// Helper to format team size cleanly
-function formatTeamSize(min, max, customText) {
-  if (customText) return customText;
-  if (!min && !max) return "Individual / Team";
-  if (min && max) {
-    if (min === max) {
-      return `${min} ${min === 1 ? "member" : "members"}`;
-    }
-    return `${min}–${max} members`;
-  }
-  if (min) return `Min ${min} ${min === 1 ? "member" : "members"}`;
-  if (max) return `Up to ${max} ${max === 1 ? "member" : "members"}`;
-  return "Individual / Team";
-}
+import {
+  formatTeamSize,
+  formatPrize,
+  formatOrganizer,
+  formatLocation,
+  formatFee,
+  formatMode,
+} from "../../utils/hackathonFormatters";
 
 // Helper to format date string cleanly
 function formatDate(dateStr) {
@@ -56,43 +48,50 @@ function HackathonDetailsPage() {
     async function loadHackathon() {
       try {
         setLoading(true);
-        // Try fetching from API backend first
+        // Fetch from API backend
         const data = await hackathonService.getHackathonById(id);
         if (isMounted && (data?.hackathon || data?.data)) {
           const h = data.hackathon || data.data;
-          const extUrl = h.source?.externalUrl || h.registration?.url || h.registrationUrl || h.url || "#";
+          const extUrl = typeof h.source === "object" ? h.source?.externalUrl : h.registration?.url || h.registrationUrl || h.url || "#";
+          const orgStr = formatOrganizer(h.organizerName, h.organizer);
+          const modeStr = formatMode(h.mode, h.format, h.event);
+          const locStr = formatLocation(h.location, h.event);
+          const prizeStr = formatPrize(h.prizePool, h.prizes, h.prize || "N/A");
+          const feeStr = formatFee(h.fee, h.registrationFee);
+          const teamSizeStr = formatTeamSize(h.teamSize, h.minTeamSize, h.maxTeamSize);
+
           setHackathon({
             ...h,
             organizerId: typeof h.organizer === "object" ? (h.organizer._id || h.organizer.ref) : (h.organizer || "org_demo"),
-            name: h.title || h.name,
-            organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer.name : h.organizer),
-            mode: h.event?.mode || h.format || h.mode,
-            location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : (h.event?.venue || h.location),
+            name: typeof h.title === "string" ? h.title : typeof h.name === "string" ? h.name : "Untitled Hackathon",
+            organizer: orgStr,
+            mode: modeStr,
+            location: locStr,
             hackathonDate: h.event?.startDate || h.startDate || h.hackathonDate,
             eventEndDate: h.event?.endDate || h.endDate || h.eventEndDate,
             registrationDeadline: h.registration?.deadline || h.registrationDeadline,
-            url: extUrl,
-            prize: h.prizePool?.description || h.prizes || h.prizePool || h.prize || "N/A",
+            url: typeof extUrl === "string" ? extUrl : "#",
+            fee: feeStr,
+            teamSize: teamSizeStr,
+            prize: prizeStr,
             registrationOpen: h.registration?.deadline ? new Date(h.registration.deadline) > new Date() : (h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true),
-            source: h.source || { platform: h.platform || "gethack", externalUrl: extUrl },
-            platform: h.source?.platform || h.platform,
+            source: typeof h.source === "object" ? h.source : { platform: h.platform || "gethack", externalUrl: extUrl },
+            platform: typeof h.source === "object" ? h.source?.platform : typeof h.platform === "string" ? h.platform : null,
           });
           return;
         }
-      } catch {
-        // Fallback to static mock data
+      } catch (error) {
+        console.error("Failed to load hackathon from API:", error);
+      } finally {
+        if (isMounted) setLoading(false);
       }
 
-      const staticMatch = HACKATHONS.find((h) => String(h.id) === String(id));
       if (isMounted) {
-        setHackathon(staticMatch || null);
-        setLoading(false);
+        setHackathon(null);
       }
     }
 
-    loadHackathon().finally(() => {
-      if (isMounted) setLoading(false);
-    });
+    loadHackathon();
 
     return () => {
       isMounted = false;
@@ -214,8 +213,15 @@ function HackathonDetailsPage() {
   const isOnlineMode = mode === "Online" || mode === "Hybrid";
   const isOfflineMode = mode === "Offline" || mode === "Hybrid";
 
+  const submissionText =
+    typeof submission === "string"
+      ? submission
+      : typeof submission === "object" && submission !== null
+        ? submission.platform || submission.url || (submission.deadline ? formatDate(submission.deadline) : null)
+        : null;
+
   // Check if any event details specs exist
-  const hasOnlineSpecs = isOnlineMode && (platform || duration || timezone || submission);
+  const hasOnlineSpecs = isOnlineMode && (platform || duration || timezone || submissionText);
   const hasOfflineSpecs = isOfflineMode && (venue || address || checkIn || mapUrl);
   const hasEventDetails = hasOnlineSpecs || hasOfflineSpecs;
 
@@ -588,10 +594,10 @@ function HackathonDetailsPage() {
                             <span className="font-semibold text-neutral-900 dark:text-white">{timezone}</span>
                           </div>
                         )}
-                        {submission && (
+                        {submissionText && (
                           <div className="flex items-center justify-between py-1">
                             <span className="text-neutral-500 dark:text-neutral-400">Submission</span>
-                            <span className="font-semibold text-neutral-900 dark:text-white">{submission}</span>
+                            <span className="font-semibold text-neutral-900 dark:text-white">{submissionText}</span>
                           </div>
                         )}
                       </div>

@@ -34,7 +34,7 @@ function EmptyState({ hasFilters, onClear }) {
       <p className="mt-1.5 max-w-xs text-sm text-neutral-500 dark:text-neutral-400">
         {hasFilters
           ? "Try adjusting your search or selecting a different filter."
-          : "No hackathons are available right now. Check back soon."}
+          : "There are currently no hackathons available. Please check again later."}
       </p>
 
       {hasFilters && (
