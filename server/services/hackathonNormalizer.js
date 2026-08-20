@@ -3,6 +3,8 @@
 // Normalizes platform adapter outputs into unified getHack Hackathon objects
 // ---------------------------------------------------------------------------
 
+const normalizeExternalUrl = require("../utils/normalizeExternalUrl");
+
 /**
  * Generate URL slug from title
  */
@@ -54,8 +56,19 @@ function normalize(rawHackathon) {
   const slug = `${slugify(title)}-${rawHackathon.platform || "agg"}-${rawHackathon.externalId || Date.now().toString(36)}`;
   
   const platform = (rawHackathon.platform || "gethack").toLowerCase();
-  const externalUrl = rawHackathon.externalUrl || rawHackathon.registrationUrl || "";
-  const registrationUrl = rawHackathon.registrationUrl || externalUrl;
+  const defaultDomain =
+    platform === "unstop" ? "https://unstop.com"
+    : platform === "devpost" ? "https://devpost.com"
+    : platform === "devfolio" ? "https://devfolio.co"
+    : platform === "dorahacks" ? "https://dorahacks.io"
+    : platform === "kaggle" ? "https://www.kaggle.com"
+    : platform === "hack2skill" ? "https://hack2skill.com"
+    : platform === "mlh" ? "https://mlh.io"
+    : "https://unstop.com";
+
+  const rawExtUrl = rawHackathon.externalUrl || rawHackathon.registrationUrl || "";
+  const externalUrl = normalizeExternalUrl(rawExtUrl, defaultDomain) || defaultDomain;
+  const registrationUrl = normalizeExternalUrl(rawHackathon.registrationUrl, defaultDomain) || externalUrl;
 
   const startDate = normalizeDate(rawHackathon.startDate);
   const endDate = normalizeDate(rawHackathon.endDate);

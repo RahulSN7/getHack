@@ -60,6 +60,9 @@ async function processHackathon(normalizedHackathon) {
       existing.format = normalizedHackathon.format;
       existing.location = normalizedHackathon.location;
       existing.registrationUrl = normalizedHackathon.registrationUrl;
+      if (existing.source) {
+        existing.source.externalUrl = normalizedHackathon.source?.externalUrl || normalizedHackathon.registrationUrl;
+      }
       existing.eligibility = normalizedHackathon.eligibility;
       existing.teamSize = normalizedHackathon.teamSize;
       existing.prizePool = normalizedHackathon.prizePool;
