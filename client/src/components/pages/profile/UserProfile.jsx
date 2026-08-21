@@ -75,7 +75,7 @@ function formatDateOfBirth(dateStr) {
 
 export default function UserProfile() {
   const { id } = useParams();
-  const { user: currentUser, isAuthenticated } = useAuth();
+  const { user: currentUser, isAuthenticated, updateUser } = useAuth();
 
   const [profileUser, setProfileUser] = useState(null);
   const [profileCompletion, setProfileCompletion] = useState(null);
@@ -205,7 +205,15 @@ export default function UserProfile() {
     const res = await userService.updateParticipantProfile(updatedData);
     if (res?.user) {
       setProfileUser(res.user);
-      setProfileCompletion(res.profileCompletion || calculateProfileCompletion(res.user));
+      if (typeof updateUser === "function") {
+        updateUser(res.user);
+      }
+      try {
+        const comp = res.profileCompletion || calculateProfileCompletion(res.user);
+        setProfileCompletion(comp);
+      } catch (calcErr) {
+        console.warn("Notice: Non-critical profile completion calculation notice:", calcErr);
+      }
     }
   };
 

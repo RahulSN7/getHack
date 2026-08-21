@@ -2,62 +2,743 @@
 // server/controllers/userController.js — User & Organizer Profile Controllers
 // ---------------------------------------------------------------------------
 
+
+
+const fs = require("fs");
+const path = require("path");
+
 const User = require("../models/user");
 const Hackathon = require("../models/hackathon");
+const Connection = require("../models/connection");
 
-// Helper to format date cleanly (e.g. "Mar 2026")
+// ============================================================
+// PROFILE COMPLETION
+// ============================================================
+
+function calculateProfileCompletion(user) {
+  const p = user?.profile || {};
+
+  const checks = [
+    Boolean(user?.name?.trim()),
+    Boolean(p.role?.trim()),
+    Boolean(p.gender?.trim()),
+    Boolean(p.dateOfBirth),
+    Boolean(p.location?.trim()),
+    Boolean(p.availability?.trim()),
+    Boolean(p.bio?.trim()),
+    Array.isArray(p.skills) && p.skills.length > 0,
+    Boolean(
+      p.education?.college?.trim() ||
+      p.education?.degree?.trim() ||
+      p.college?.trim() ||
+      p.degree?.trim()
+    ),
+  ];
+
+  const completed = checks.filter(Boolean).length;
+  const total = checks.length;
+
+  return {
+    completed,
+    total,
+    percentage: Math.round((completed / total) * 100),
+    isComplete: completed === total,
+  };
+}
+
+// ============================================================
+// DATE FORMATTER
+// ============================================================
+
 function formatMonthYear(date) {
   if (!date) return "N/A";
+
   try {
     const d = new Date(date);
-    if (isNaN(d.getTime())) return "N/A";
-    return new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(d);
+
+    if (isNaN(d.getTime())) {
+      return "N/A";
+    }
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      year: "numeric",
+    }).format(d);
   } catch {
     return "N/A";
   }
 }
 
-// ---------------------------------------------------------------------------
-// GET /api/users/organizer/:id — Fetch Organizer Profile (Public or Owner)
-// ---------------------------------------------------------------------------
+// ============================================================
+// GET OWN PROFILE
+// ============================================================
+
+const getOwnProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        message: "Unauthenticated.",
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User account not found.",
+      });
+    }
+
+    const profileCompletion = calculateProfileCompletion(user);
+
+    return res.status(200).json({
+      user: user.toSafeUser(),
+      profileCompletion,
+    });
+  } catch (error) {
+    console.error("GET OWN PROFILE ERROR:", error);
+
+    return res.status(500).json({
+      message: "Unable to load profile.",
+    });
+  }
+};
+
+// ============================================================
+// UPDATE PARTICIPANT PROFILE
+// ============================================================
+
+const updateOwnParticipantProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        message: "Unauthenticated.",
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User account not found.",
+      });
+    }
+
+    if (user.role !== "participant") {
+      return res.status(403).json({
+        message: "Only participants can update this profile.",
+      });
+    }
+
+    const currentProfile = user.profile || {};
+    const body = req.body || {};
+
+    const {
+      name,
+      role,
+      gender,
+      dateOfBirth,
+      location,
+      bio,
+      availability,
+      skills,
+      education,
+      experienceLevel,
+      experienceDetails,
+      interests,
+      github,
+      linkedin,
+      portfolio,
+      removePhoto,
+    } = body;
+
+    // ========================================================
+    // NORMALIZE REQUIRED FIELDS
+    // ========================================================
+
+    const cleanName =
+      name !== undefined
+        ? String(name).trim()
+        : String(user.name || "").trim();
+
+    const cleanRole =
+      role !== undefined
+        ? String(role).trim()
+        : String(currentProfile.role || "").trim();
+
+    const cleanGender =
+      gender !== undefined
+        ? String(gender).trim()
+        : String(currentProfile.gender || "").trim();
+
+    const cleanDOB =
+      dateOfBirth !== undefined
+        ? String(dateOfBirth).trim()
+        : String(currentProfile.dateOfBirth || "").trim();
+
+    const cleanLocation =
+      location !== undefined
+        ? String(location).trim()
+        : String(currentProfile.location || "").trim();
+
+    const cleanBio =
+      bio !== undefined
+        ? String(bio).trim()
+        : String(currentProfile.bio || "").trim();
+
+    const cleanAvailability =
+      availability !== undefined
+        ? String(availability).trim()
+        : String(currentProfile.availability || "").trim();
+
+    // ========================================================
+    // REQUIRED FIELD VALIDATION
+    // ========================================================
+
+    const validationErrors = {};
+
+    if (!cleanName) {
+      validationErrors.name = "Full Name is required.";
+    }
+
+    if (!cleanRole) {
+      validationErrors.role = "Role / Headline is required.";
+    }
+
+    const allowedGenders = [
+      "Male",
+      "Female",
+      "Non-binary",
+      "Prefer not to say",
+      "Other",
+    ];
+
+    if (!cleanGender) {
+      validationErrors.gender = "Gender is required.";
+    } else if (!allowedGenders.includes(cleanGender)) {
+      validationErrors.gender = "Invalid gender selection.";
+    }
+
+    if (!cleanDOB) {
+      validationErrors.dateOfBirth = "Date of Birth is required.";
+    } else {
+      const dob = new Date(cleanDOB);
+
+      if (isNaN(dob.getTime())) {
+        validationErrors.dateOfBirth =
+          "Please enter a valid Date of Birth.";
+      } else if (dob > new Date()) {
+        validationErrors.dateOfBirth =
+          "Date of birth cannot be in the future.";
+      }
+    }
+
+    if (!cleanLocation) {
+      validationErrors.location = "Location is required.";
+    }
+
+    if (!cleanAvailability) {
+      validationErrors.availability =
+        "Availability status is required.";
+    }
+
+    if (!cleanBio) {
+      validationErrors.bio = "Bio is required.";
+    } else if (cleanBio.length > 300) {
+      validationErrors.bio =
+        "Bio cannot exceed 300 characters.";
+    }
+
+    // ========================================================
+    // SKILLS
+    // ========================================================
+
+    let parsedSkills = skills;
+
+    if (typeof parsedSkills === "string") {
+      try {
+        parsedSkills = JSON.parse(parsedSkills);
+      } catch {
+        parsedSkills = parsedSkills
+          .split(",")
+          .map((item) => item.trim());
+      }
+    }
+
+    let cleanSkills = Array.isArray(parsedSkills)
+      ? parsedSkills
+          .filter(
+            (skill) =>
+              typeof skill === "string" &&
+              skill.trim().length > 0
+          )
+          .map((skill) => skill.trim())
+      : currentProfile.skills || [];
+
+    // Remove duplicate skills
+    cleanSkills = [...new Map(
+      cleanSkills.map((skill) => [
+        skill.toLowerCase(),
+        skill,
+      ])
+    ).values()];
+
+    if (cleanSkills.length === 0) {
+      validationErrors.skills =
+        "At least one skill is required.";
+    }
+
+    if (cleanSkills.length > 15) {
+      cleanSkills = cleanSkills.slice(0, 15);
+    }
+
+    // ========================================================
+    // EDUCATION
+    // ========================================================
+
+    let cleanEducation = {};
+
+    if (typeof education === "string") {
+      try {
+        cleanEducation = JSON.parse(education);
+      } catch {
+        cleanEducation = {};
+      }
+    } else if (
+      typeof education === "object" &&
+      education !== null
+    ) {
+      cleanEducation = education;
+    }
+
+    const educationCollege = String(
+      cleanEducation.college ??
+        currentProfile.education?.college ??
+        ""
+    ).trim();
+
+    const educationDegree = String(
+      cleanEducation.degree ??
+        currentProfile.education?.degree ??
+        ""
+    ).trim();
+
+    const educationField = String(
+      cleanEducation.fieldOfStudy ??
+        currentProfile.education?.fieldOfStudy ??
+        ""
+    ).trim();
+
+    const educationYear = String(
+      cleanEducation.graduationYear ??
+        currentProfile.education?.graduationYear ??
+        ""
+    ).trim();
+
+    if (!educationCollege && !educationDegree) {
+      validationErrors.education =
+        "College / University or Degree is required.";
+    }
+
+    cleanEducation = {
+      college: educationCollege,
+      degree: educationDegree,
+      fieldOfStudy: educationField,
+      graduationYear: educationYear,
+    };
+
+    // ========================================================
+    // INTERESTS
+    // ========================================================
+
+    let parsedInterests = interests;
+
+    if (typeof parsedInterests === "string") {
+      try {
+        parsedInterests = JSON.parse(parsedInterests);
+      } catch {
+        parsedInterests = parsedInterests
+          .split(",")
+          .map((item) => item.trim());
+      }
+    }
+
+    let cleanInterests = Array.isArray(parsedInterests)
+      ? parsedInterests
+          .filter(
+            (item) =>
+              typeof item === "string" &&
+              item.trim()
+          )
+          .map((item) => item.trim())
+      : currentProfile.interests || [];
+
+    cleanInterests = [
+      ...new Map(
+        cleanInterests.map((item) => [
+          item.toLowerCase(),
+          item,
+        ])
+      ).values(),
+    ];
+
+    // ========================================================
+    // URL SANITIZER
+    // ========================================================
+
+    const sanitizeUrl = (value) => {
+      if (!value || typeof value !== "string") {
+        return "";
+      }
+
+      const clean = value.trim();
+
+      if (!clean) {
+        return "";
+      }
+
+      if (
+        clean.startsWith("http://") ||
+        clean.startsWith("https://")
+      ) {
+        return clean;
+      }
+
+      return `https://${clean}`;
+    };
+
+    // ========================================================
+    // AVATAR HANDLING
+    // ========================================================
+
+    const oldAvatar = currentProfile.avatar || "";
+
+    let newAvatar = oldAvatar;
+
+    if (req.file) {
+      newAvatar = `/uploads/${req.file.filename}`;
+    } else if (
+      removePhoto === "true" ||
+      removePhoto === true
+    ) {
+      newAvatar = "";
+    }
+
+    // ========================================================
+    // UPDATE USER
+    // ========================================================
+
+    user.name = cleanName;
+
+    user.profile = {
+      ...currentProfile,
+
+      avatar: newAvatar,
+
+      role: cleanRole,
+
+      gender: cleanGender,
+
+      dateOfBirth: cleanDOB,
+
+      location: cleanLocation,
+
+      availability: cleanAvailability,
+
+      bio: cleanBio,
+
+      skills: cleanSkills,
+
+      education: cleanEducation,
+
+      // Keep compatibility with older UI
+      college: educationCollege,
+      degree: educationDegree,
+
+      experienceLevel:
+        experienceLevel !== undefined
+          ? String(experienceLevel).trim()
+          : currentProfile.experienceLevel || "",
+
+      experienceDetails:
+        experienceDetails !== undefined
+          ? String(experienceDetails).trim()
+          : currentProfile.experienceDetails || "",
+
+      interests: cleanInterests,
+
+      github:
+        github !== undefined
+          ? sanitizeUrl(github)
+          : currentProfile.github || "",
+
+      linkedin:
+        linkedin !== undefined
+          ? sanitizeUrl(linkedin)
+          : currentProfile.linkedin || "",
+
+      portfolio:
+        portfolio !== undefined
+          ? sanitizeUrl(portfolio)
+          : currentProfile.portfolio || "",
+
+      handle:
+        currentProfile.handle ||
+        `GH-${user._id
+          .toString()
+          .slice(-6)
+          .toUpperCase()}`,
+    };
+
+    // ========================================================
+    // SAVE DATABASE
+    // ========================================================
+
+    try {
+      await user.save();
+    } catch (saveError) {
+      // If DB save fails, remove newly uploaded image.
+      if (req.file?.path) {
+        fs.unlink(req.file.path, () => {});
+      }
+
+      throw saveError;
+    }
+
+    // ========================================================
+    // DELETE OLD AVATAR AFTER SUCCESSFUL SAVE
+    // ========================================================
+
+    if (
+      req.file &&
+      oldAvatar &&
+      oldAvatar !== newAvatar &&
+      oldAvatar.startsWith("/uploads/")
+    ) {
+      const oldFilename = path.basename(oldAvatar);
+
+      const oldFilePath = path.join(
+        __dirname,
+        "../public/uploads",
+        oldFilename
+      );
+
+      fs.unlink(oldFilePath, (error) => {
+        if (
+          error &&
+          error.code !== "ENOENT"
+        ) {
+          console.warn(
+            "Unable to delete old avatar:",
+            error.message
+          );
+        }
+      });
+    }
+
+    // ========================================================
+    // RETURN UPDATED USER
+    // ========================================================
+
+    const profileCompletion =
+      calculateProfileCompletion(user);
+
+    return res.status(200).json({
+      success: true,
+      message: "Participant profile updated successfully.",
+
+      user: user.toSafeUser(),
+
+      profileCompletion,
+    });
+  } catch (error) {
+    console.error(
+      "UPDATE PARTICIPANT PROFILE ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error.message ||
+        "Failed to update participant profile.",
+    });
+  }
+};
+
+// ============================================================
+// GET PARTICIPANT PROFILE
+// ============================================================
+
+const getParticipantProfile = async (req, res) => {
+  try {
+    let { id } = req.params;
+
+    if (id === "me") {
+      if (!req.user) {
+        return res.status(401).json({
+          message: "Unauthenticated.",
+        });
+      }
+
+      id = req.user._id.toString();
+    }
+
+    let targetUser = null;
+
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      targetUser = await User.findById(id);
+    }
+
+    if (!targetUser) {
+      targetUser = await User.findOne({
+        "profile.handle": id,
+      });
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({
+        message: "Participant profile not found.",
+      });
+    }
+
+    if (targetUser.role !== "participant") {
+      return res.status(404).json({
+        message: "Participant profile not found.",
+      });
+    }
+
+    const isOwner =
+      req.user &&
+      req.user._id.toString() ===
+        targetUser._id.toString();
+
+    const profileCompletion =
+      calculateProfileCompletion(targetUser);
+
+    let connectionState = {
+      status: "none",
+      isSender: false,
+      requestId: null,
+      note: null,
+    };
+
+    if (req.user && !isOwner) {
+      const existingConnection =
+        await Connection.findOne({
+          $or: [
+            {
+              sender: req.user._id,
+              receiver: targetUser._id,
+            },
+            {
+              sender: targetUser._id,
+              receiver: req.user._id,
+            },
+          ],
+        });
+
+      if (existingConnection) {
+        connectionState = {
+          status: existingConnection.status,
+          isSender:
+            existingConnection.sender.toString() ===
+            req.user._id.toString(),
+          requestId:
+            existingConnection._id.toString(),
+          note: existingConnection.note || null,
+        };
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+
+      user: targetUser.toSafeUser(),
+
+      profileCompletion,
+
+      isOwner,
+
+      connectionState,
+    });
+  } catch (error) {
+    console.error(
+      "GET PARTICIPANT PROFILE ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Unable to load participant profile.",
+    });
+  }
+};
+
+// ============================================================
+// ORGANIZER PROFILE
+// ============================================================
+
 const getOrganizerProfile = async (req, res) => {
   try {
     let { id } = req.params;
 
-    // Handle 'me' target for logged in user
     if (id === "me") {
       if (!req.user) {
-        return res.status(401).json({ message: "Unauthenticated." });
+        return res.status(401).json({
+          message: "Unauthenticated.",
+        });
       }
+
       id = req.user._id.toString();
     }
 
-    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(404).json({ message: "Organizer profile not found." });
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return res.status(404).json({
+        message: "Organizer profile not found.",
+      });
     }
 
     const organizer = await User.findById(id);
 
-    if (!organizer || organizer.role !== "organizer") {
-      return res.status(404).json({ message: "Organizer profile not found." });
+    if (
+      !organizer ||
+      organizer.role !== "organizer"
+    ) {
+      return res.status(404).json({
+        message: "Organizer profile not found.",
+      });
     }
 
-    const isOwner = req.user && req.user._id.toString() === organizer._id.toString();
+    const isOwner =
+      req.user &&
+      req.user._id.toString() ===
+        organizer._id.toString();
+
     const now = new Date();
 
-    // Calculate real MongoDB statistics
-    const totalHackathons = await Hackathon.countDocuments({ organizer: organizer._id });
-    const completedCount = await Hackathon.countDocuments({
-      organizer: organizer._id,
-      endDate: { $lt: now },
-    });
-    const upcomingCount = await Hackathon.countDocuments({
-      organizer: organizer._id,
-      endDate: { $gte: now },
-    });
+    const totalHackathons =
+      await Hackathon.countDocuments({
+        organizer: organizer._id,
+      });
 
-    // Fetch hackathons created by this organizer
-    const rawHackathons = await Hackathon.find({ organizer: organizer._id }).sort({ createdAt: -1 });
+    const completedCount =
+      await Hackathon.countDocuments({
+        organizer: organizer._id,
+        endDate: { $lt: now },
+      });
+
+    const upcomingCount =
+      await Hackathon.countDocuments({
+        organizer: organizer._id,
+        endDate: { $gte: now },
+      });
+
+    const rawHackathons =
+      await Hackathon.find({
+        organizer: organizer._id,
+      }).sort({
+        createdAt: -1,
+      });
 
     const hackathons = rawHackathons.map((h) => ({
       id: h._id.toString(),
@@ -65,16 +746,21 @@ const getOrganizerProfile = async (req, res) => {
       title: h.title,
       name: h.title,
       description: h.description,
-      shortDescription: h.shortDescription || h.description,
-      organizerName: h.organizerName || organizer.name,
-      registrationOpens: h.registrationOpens,
-      registrationDeadline: h.registrationDeadline,
+      shortDescription:
+        h.shortDescription || h.description,
+      organizerName:
+        h.organizerName || organizer.name,
+      registrationOpens:
+        h.registrationOpens,
+      registrationDeadline:
+        h.registrationDeadline,
       startDate: h.startDate,
       endDate: h.endDate,
       format: h.format,
       mode: h.format,
       location: h.location,
-      registrationUrl: h.registrationUrl,
+      registrationUrl:
+        h.registrationUrl,
       skills: h.skills,
       themes: h.themes,
       eligibility: h.eligibility,
@@ -85,68 +771,119 @@ const getOrganizerProfile = async (req, res) => {
       rules: h.rules,
       contact: h.contact,
       fee: h.fee,
-      status: new Date(h.endDate) < now ? "Completed" : new Date(h.registrationDeadline) >= now ? "Active" : "Upcoming",
+
+      status:
+        new Date(h.endDate) < now
+          ? "Completed"
+          : new Date(h.registrationDeadline) >= now
+          ? "Active"
+          : "Upcoming",
     }));
 
-    const safeUser = organizer.toSafeUser();
+    const safeUser =
+      organizer.toSafeUser();
 
-    // Build safe public profile representation
     const profileData = {
       id: safeUser.id,
       _id: safeUser.id,
       name: safeUser.name,
       role: safeUser.role,
-      handle: safeUser.profile?.handle || `@${safeUser.name.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
-      avatar: safeUser.profile?.avatar || "",
-      bio: safeUser.profile?.bio || "",
-      location: safeUser.profile?.location || "",
-      organizationName: safeUser.profile?.organizationName || safeUser.name,
-      organizationType: safeUser.profile?.organizationType || "Student Club",
-      organizationDescription: safeUser.profile?.organizationDescription || "",
-      website: safeUser.profile?.website || "",
-      github: safeUser.profile?.github || "",
-      linkedin: safeUser.profile?.linkedin || "",
-      twitter: safeUser.profile?.twitter || "",
-      instagram: safeUser.profile?.instagram || "",
-      discord: safeUser.profile?.discord || "",
-      contactNumber: safeUser.profile?.contactNumber || "",
-      isVerified: Boolean(safeUser.profile?.isVerified),
+      handle:
+        safeUser.profile?.handle ||
+        `@${safeUser.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "")}`,
+      avatar:
+        safeUser.profile?.avatar || "",
+      bio:
+        safeUser.profile?.bio || "",
+      location:
+        safeUser.profile?.location || "",
+      organizationName:
+        safeUser.profile?.organizationName ||
+        safeUser.name,
+      organizationType:
+        safeUser.profile?.organizationType ||
+        "Student Club",
+      organizationDescription:
+        safeUser.profile
+          ?.organizationDescription || "",
+      website:
+        safeUser.profile?.website || "",
+      github:
+        safeUser.profile?.github || "",
+      linkedin:
+        safeUser.profile?.linkedin || "",
+      twitter:
+        safeUser.profile?.twitter || "",
+      instagram:
+        safeUser.profile?.instagram || "",
+      discord:
+        safeUser.profile?.discord || "",
+      contactNumber:
+        safeUser.profile?.contactNumber || "",
+      isVerified: Boolean(
+        safeUser.profile?.isVerified
+      ),
       createdAt: safeUser.createdAt,
-      joinedDate: formatMonthYear(safeUser.createdAt),
-      // Include email only if requested by the profile owner
-      email: isOwner ? safeUser.email : undefined,
-    };
+      joinedDate:
+        formatMonthYear(safeUser.createdAt),
 
-    const stats = {
-      totalHackathons,
-      completedCount,
-      upcomingCount,
-      joinedDate: formatMonthYear(safeUser.createdAt),
+      email: isOwner
+        ? safeUser.email
+        : undefined,
     };
 
     return res.status(200).json({
       profile: profileData,
-      stats,
+
+      stats: {
+        totalHackathons,
+        completedCount,
+        upcomingCount,
+        joinedDate:
+          formatMonthYear(
+            safeUser.createdAt
+          ),
+      },
+
       hackathons,
+
       isOwner,
     });
   } catch (error) {
-    console.error("Error in getOrganizerProfile:", error);
-    return res.status(500).json({ message: "Unable to load organizer profile." });
+    console.error(
+      "GET ORGANIZER PROFILE ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      message:
+        "Unable to load organizer profile.",
+    });
   }
 };
 
-// ---------------------------------------------------------------------------
-// PUT /api/users/profile — Update Logged-in Organizer Profile
-// ---------------------------------------------------------------------------
-const updateOwnOrganizerProfile = async (req, res) => {
+// ============================================================
+// UPDATE ORGANIZER PROFILE
+// ============================================================
+
+const updateOwnOrganizerProfile = async (
+  req,
+  res
+) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthenticated." });
+      return res.status(401).json({
+        message: "Unauthenticated.",
+      });
     }
 
     if (req.user.role !== "organizer") {
-      return res.status(403).json({ message: "Forbidden. Organizer profile updates only." });
+      return res.status(403).json({
+        message:
+          "Forbidden. Organizer profile updates only.",
+      });
     }
 
     const {
@@ -167,394 +904,148 @@ const updateOwnOrganizerProfile = async (req, res) => {
       handle,
     } = req.body || {};
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(
+      req.user._id
+    );
+
     if (!user) {
-      return res.status(404).json({ message: "User account not found." });
+      return res.status(404).json({
+        message: "User account not found.",
+      });
     }
 
-    if (name && typeof name === "string" && name.trim()) {
+    if (
+      name &&
+      typeof name === "string" &&
+      name.trim()
+    ) {
       user.name = name.trim();
     }
 
-    // Preserve existing profile properties and safely set editable fields
-    const currentProfile = user.profile || {};
+    const currentProfile =
+      user.profile || {};
 
     user.profile = {
       ...currentProfile,
-      avatar: avatar !== undefined ? String(avatar).trim() : currentProfile.avatar || "",
-      bio: bio !== undefined ? String(bio).trim() : currentProfile.bio || "",
-      location: location !== undefined ? String(location).trim() : currentProfile.location || "",
-      organizationName: organizationName !== undefined ? String(organizationName).trim() : currentProfile.organizationName || "",
-      organizationType: organizationType !== undefined ? String(organizationType).trim() : currentProfile.organizationType || "Student Club",
-      organizationDescription: organizationDescription !== undefined ? String(organizationDescription).trim() : currentProfile.organizationDescription || "",
-      website: website !== undefined ? String(website).trim() : currentProfile.website || "",
-      github: github !== undefined ? String(github).trim() : currentProfile.github || "",
-      linkedin: linkedin !== undefined ? String(linkedin).trim() : currentProfile.linkedin || "",
-      twitter: twitter !== undefined ? String(twitter).trim() : currentProfile.twitter || "",
-      instagram: instagram !== undefined ? String(instagram).trim() : currentProfile.instagram || "",
-      discord: discord !== undefined ? String(discord).trim() : currentProfile.discord || "",
-      contactNumber: contactNumber !== undefined ? String(contactNumber).trim() : currentProfile.contactNumber || "",
-      handle: handle !== undefined ? String(handle).trim() : currentProfile.handle || "",
-      // Explicitly preserve backend-controlled verification status
-      isVerified: currentProfile.isVerified || false,
+
+      avatar:
+        avatar !== undefined
+          ? String(avatar).trim()
+          : currentProfile.avatar || "",
+
+      bio:
+        bio !== undefined
+          ? String(bio).trim()
+          : currentProfile.bio || "",
+
+      location:
+        location !== undefined
+          ? String(location).trim()
+          : currentProfile.location || "",
+
+      organizationName:
+        organizationName !== undefined
+          ? String(
+              organizationName
+            ).trim()
+          : currentProfile.organizationName ||
+            "",
+
+      organizationType:
+        organizationType !== undefined
+          ? String(
+              organizationType
+            ).trim()
+          : currentProfile.organizationType ||
+            "Student Club",
+
+      organizationDescription:
+        organizationDescription !==
+        undefined
+          ? String(
+              organizationDescription
+            ).trim()
+          : currentProfile.organizationDescription ||
+            "",
+
+      website:
+        website !== undefined
+          ? String(website).trim()
+          : currentProfile.website || "",
+
+      github:
+        github !== undefined
+          ? String(github).trim()
+          : currentProfile.github || "",
+
+      linkedin:
+        linkedin !== undefined
+          ? String(linkedin).trim()
+          : currentProfile.linkedin || "",
+
+      twitter:
+        twitter !== undefined
+          ? String(twitter).trim()
+          : currentProfile.twitter || "",
+
+      instagram:
+        instagram !== undefined
+          ? String(instagram).trim()
+          : currentProfile.instagram || "",
+
+      discord:
+        discord !== undefined
+          ? String(discord).trim()
+          : currentProfile.discord || "",
+
+      contactNumber:
+        contactNumber !== undefined
+          ? String(
+              contactNumber
+            ).trim()
+          : currentProfile.contactNumber ||
+            "",
+
+      handle:
+        handle !== undefined
+          ? String(handle).trim()
+          : currentProfile.handle || "",
+
+      isVerified:
+        currentProfile.isVerified ||
+        false,
     };
 
     await user.save();
 
     return res.status(200).json({
-      message: "Profile updated successfully.",
+      message:
+        "Profile updated successfully.",
+
       user: user.toSafeUser(),
     });
   } catch (error) {
-    console.error("Error in updateOwnOrganizerProfile:", error);
-    return res.status(500).json({ message: "Failed to update profile." });
-  }
-};
+    console.error(
+      "UPDATE ORGANIZER PROFILE ERROR:",
+      error
+    );
 
-// ---------------------------------------------------------------------------
-// GET /api/users/profile — Fetch Logged-in User's Own Profile & Completion
-// ---------------------------------------------------------------------------
-const getOwnProfile = async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthenticated." });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: "User account not found." });
-    }
-
-    const profileCompletion = calculateProfileCompletion(user);
-
-    return res.status(200).json({
-      user: user.toSafeUser(),
-      profileCompletion,
+    return res.status(500).json({
+      message:
+        "Failed to update profile.",
     });
-  } catch (error) {
-    console.error("Error in getOwnProfile:", error);
-    return res.status(500).json({ message: "Unable to load profile." });
   }
 };
 
-// ---------------------------------------------------------------------------
-// PUT /api/users/profile/participant — Update Logged-in Participant Profile
-// Supports FormData / file upload (profilePhoto), atomic avatar replacement,
-// gender, DOB, mandatory location, and partial updates
-// ---------------------------------------------------------------------------
-const updateOwnParticipantProfile = async (req, res) => {
-  const fs = require("fs");
-  const path = require("path");
-
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthenticated." });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: "User account not found." });
-    }
-
-    const currentProfile = user.profile || {};
-    const oldAvatarPath = currentProfile.avatar;
-
-    const body = req.body || {};
-
-    let {
-      name,
-      avatar,
-      gender,
-      dateOfBirth,
-      location,
-      role,
-      bio,
-      availability,
-      skills,
-      education,
-      college,
-      degree,
-      fieldOfStudy,
-      graduationYear,
-      experienceLevel,
-      experienceDetails,
-      interests,
-      github,
-      linkedin,
-      portfolio,
-      removePhoto,
-    } = body;
-
-    // Handle file upload via Multer if provided
-    let newAvatar = currentProfile.avatar || "";
-    if (req.file) {
-      newAvatar = `/uploads/${req.file.filename}`;
-    } else if (removePhoto === "true" || removePhoto === true) {
-      newAvatar = "";
-    } else if (avatar !== undefined && String(avatar).trim() !== "") {
-      newAvatar = String(avatar).trim();
-    }
-
-    if (name && typeof name === "string" && name.trim()) {
-      user.name = name.trim();
-    }
-
-    // Mandatory Location Validation
-    let cleanLocation = location !== undefined ? String(location).trim() : currentProfile.location || "";
-    if (location !== undefined && !cleanLocation) {
-      // Clean up uploaded temp file if validation fails
-      if (req.file && req.file.path) {
-        fs.unlink(req.file.path, () => {});
-      }
-      return res.status(400).json({ message: "Location is required." });
-    }
-
-    // Gender Validation
-    const allowedGenders = ["Male", "Female", "Non-binary", "Prefer not to say", "Other"];
-    let cleanGender = gender !== undefined ? String(gender).trim() : currentProfile.gender || "";
-    if (cleanGender && !allowedGenders.includes(cleanGender)) {
-      if (req.file && req.file.path) {
-        fs.unlink(req.file.path, () => {});
-      }
-      return res.status(400).json({ message: "Invalid gender selection." });
-    }
-
-    // Date of Birth Validation (Cannot be in the future)
-    let cleanDOB = dateOfBirth !== undefined ? String(dateOfBirth).trim() : currentProfile.dateOfBirth || "";
-    if (cleanDOB) {
-      const dobDate = new Date(cleanDOB);
-      if (isNaN(dobDate.getTime())) {
-        if (req.file && req.file.path) {
-          fs.unlink(req.file.path, () => {});
-        }
-        return res.status(400).json({ message: "Invalid Date of Birth format." });
-      }
-      if (dobDate > new Date()) {
-        if (req.file && req.file.path) {
-          fs.unlink(req.file.path, () => {});
-        }
-        return res.status(400).json({ message: "Date of birth cannot be in the future." });
-      }
-    }
-
-    // Bio length limit (max 300 chars)
-    let cleanBio = bio !== undefined ? String(bio).trim() : currentProfile.bio || "";
-    if (cleanBio.length > 300) {
-      cleanBio = cleanBio.slice(0, 300);
-    }
-
-    // Parse skills (handles JSON string or array)
-    let cleanSkills = currentProfile.skills || [];
-    if (typeof skills === "string") {
-      try {
-        skills = JSON.parse(skills);
-      } catch {
-        skills = skills.split(",").map((s) => s.trim());
-      }
-    }
-    if (Array.isArray(skills)) {
-      const seen = new Set();
-      cleanSkills = [];
-      for (const s of skills) {
-        if (typeof s === "string" && s.trim().length > 0) {
-          const item = s.trim();
-          const key = item.toLowerCase();
-          if (!seen.has(key)) {
-            seen.add(key);
-            cleanSkills.push(item);
-          }
-        }
-      }
-      if (cleanSkills.length > 15) {
-        cleanSkills = cleanSkills.slice(0, 15);
-      }
-    }
-
-    // Parse interests
-    let cleanInterests = currentProfile.interests || [];
-    if (typeof interests === "string") {
-      try {
-        interests = JSON.parse(interests);
-      } catch {
-        interests = interests.split(",").map((i) => i.trim());
-      }
-    }
-    if (Array.isArray(interests)) {
-      const seen = new Set();
-      cleanInterests = [];
-      for (const i of interests) {
-        if (typeof i === "string" && i.trim().length > 0) {
-          const item = i.trim();
-          const key = item.toLowerCase();
-          if (!seen.has(key)) {
-            seen.add(key);
-            cleanInterests.push(item);
-          }
-        }
-      }
-    }
-
-    // Parse education
-    let cleanEducation = currentProfile.education || {};
-    if (typeof education === "string") {
-      try {
-        cleanEducation = JSON.parse(education);
-      } catch {
-        // fallback
-      }
-    } else if (typeof education === "object" && education !== null) {
-      cleanEducation = education;
-    }
-    if (college !== undefined) cleanEducation.college = String(college).trim();
-    if (degree !== undefined) cleanEducation.degree = String(degree).trim();
-    if (fieldOfStudy !== undefined) cleanEducation.fieldOfStudy = String(fieldOfStudy).trim();
-    if (graduationYear !== undefined) cleanEducation.graduationYear = String(graduationYear).trim();
-
-    // Sanitize availability
-    let cleanAvailability = currentProfile.availability || "Available";
-    if (availability === "Available" || availability === "Not Available") {
-      cleanAvailability = availability;
-    }
-
-    // Sanitize URLs
-    const sanitizeUrl = (val) => {
-      if (!val || typeof val !== "string") return "";
-      const trimmed = val.trim();
-      if (!trimmed) return "";
-      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-      return `https://${trimmed}`;
-    };
-
-    user.profile = {
-      ...currentProfile,
-      avatar: newAvatar,
-      gender: cleanGender,
-      dateOfBirth: cleanDOB,
-      location: cleanLocation,
-      role: role !== undefined ? String(role).trim() : currentProfile.role || "Participant",
-      bio: cleanBio,
-      availability: cleanAvailability,
-      skills: cleanSkills,
-      education: cleanEducation,
-      college: cleanEducation.college || currentProfile.college || "",
-      degree: cleanEducation.degree || currentProfile.degree || "",
-      experienceLevel: experienceLevel !== undefined ? String(experienceLevel).trim() : currentProfile.experienceLevel || "Intermediate",
-      experienceDetails: experienceDetails !== undefined ? String(experienceDetails).trim() : currentProfile.experienceDetails || "",
-      interests: cleanInterests,
-      github: github !== undefined ? sanitizeUrl(github) : currentProfile.github || "",
-      linkedin: linkedin !== undefined ? sanitizeUrl(linkedin) : currentProfile.linkedin || "",
-      portfolio: portfolio !== undefined ? sanitizeUrl(portfolio) : currentProfile.portfolio || "",
-      handle: currentProfile.handle || `GH-${user._id.toString().slice(-6).toUpperCase()}`,
-    };
-
-    try {
-      await user.save();
-    } catch (saveError) {
-      if (req.file && req.file.path) {
-        fs.unlink(req.file.path, () => {});
-      }
-      throw saveError;
-    }
-
-    // Atomic old avatar cleanup AFTER database save succeeds
-    if (oldAvatarPath && oldAvatarPath !== user.profile.avatar && oldAvatarPath.startsWith("/uploads/")) {
-      const oldFilename = path.basename(oldAvatarPath);
-      const oldFilePath = path.join(__dirname, "../public/uploads", oldFilename);
-      fs.unlink(oldFilePath, (unlinkErr) => {
-        if (unlinkErr && unlinkErr.code !== "ENOENT") {
-          console.warn("Old avatar cleanup notice:", oldFilePath, unlinkErr.message);
-        }
-      });
-    }
-
-    const profileCompletion = calculateProfileCompletion(user);
-
-    return res.status(200).json({
-      message: "Participant profile updated successfully.",
-      user: user.toSafeUser(),
-      profileCompletion,
-    });
-  } catch (error) {
-    console.error("Error in updateOwnParticipantProfile:", error);
-    return res.status(500).json({ message: error.message || "Failed to update participant profile." });
-  }
-};
-
-// ---------------------------------------------------------------------------
-// GET /api/users/participant/:id — Fetch Participant Profile (Public View)
-// ---------------------------------------------------------------------------
-const getParticipantProfile = async (req, res) => {
-  try {
-    let { id } = req.params;
-
-    if (id === "me") {
-      if (!req.user) {
-        return res.status(401).json({ message: "Unauthenticated." });
-      }
-      id = req.user._id.toString();
-    }
-
-    let targetUser = null;
-
-    // Search by ObjectId or handle
-    if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      targetUser = await User.findById(id);
-    }
-
-    if (!targetUser) {
-      targetUser = await User.findOne({ "profile.handle": id });
-    }
-
-    if (!targetUser) {
-      return res.status(404).json({ message: "Participant profile not found." });
-    }
-
-    const isOwner = req.user && req.user._id.toString() === targetUser._id.toString();
-    const safeUser = targetUser.toSafeUser();
-    const profileCompletion = calculateProfileCompletion(targetUser);
-
-    let connectionState = {
-      status: "none", // 'none' | 'pending' | 'accepted' | 'rejected'
-      isSender: false,
-      requestId: null,
-      note: null,
-    };
-
-    if (req.user && !isOwner) {
-      const Connection = require("../models/connection");
-      const existingConn = await Connection.findOne({
-        $or: [
-          { sender: req.user._id, receiver: targetUser._id },
-          { sender: targetUser._id, receiver: req.user._id },
-        ],
-      });
-
-      if (existingConn) {
-        connectionState = {
-          status: existingConn.status,
-          isSender: existingConn.sender.toString() === req.user._id.toString(),
-          requestId: existingConn._id.toString(),
-          note: existingConn.note || null,
-        };
-      }
-    }
-
-    return res.status(200).json({
-      user: safeUser,
-      profileCompletion,
-      isOwner,
-      connectionState,
-    });
-  } catch (error) {
-    console.error("Error in getParticipantProfile:", error);
-    return res.status(500).json({ message: "Unable to load participant profile." });
-  }
-};
+// ============================================================
+// EXPORT
+// ============================================================
 
 module.exports = {
-  getOrganizerProfile,
-  updateOwnOrganizerProfile,
+  calculateProfileCompletion,
   getOwnProfile,
   updateOwnParticipantProfile,
   getParticipantProfile,
+  getOrganizerProfile,
+  updateOwnOrganizerProfile,
 };

@@ -7,7 +7,10 @@ require("dotenv").config();
 
 // Configure public DNS fallback to reliably resolve MongoDB Atlas mongodb+srv:// SRV records on Windows networks
 try {
-  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+  if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder("ipv4first");
+  }
+  dns.setServers(["1.1.1.1", "8.8.8.8", "8.8.4.4"]);
 } catch (err) {
   console.warn("Could not set custom DNS fallback servers:", err.message);
 }
@@ -60,12 +63,23 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// MongoDB connection
+// MongoDB connection & buffering options
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/getHack";
+
+mongoose.set("bufferTimeoutMS", 5000);
+
+mongoose.connection.on("disconnected", () => {
+  console.warn("MongoDB connection disconnected. Retrying...");
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB connection event error:", err.message);
+});
 
 mongoose
   .connect(MONGO_URI, {
     serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 10000,
   })
   .then(() => {
     console.log("MongoDB connected successfully to getHack DB");

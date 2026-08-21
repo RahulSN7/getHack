@@ -114,6 +114,8 @@ const signup = async (req, res) => {
   }
 };
 
+const mongoose = require("mongoose");
+
 // ── 2. LOGIN ──
 const login = async (req, res) => {
   try {
@@ -121,6 +123,13 @@ const login = async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json({ message: "Please enter both email and password." });
+    }
+
+    // Database Connection Guard
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: "Database connection is establishing. Please try again in a few seconds.",
+      });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -148,6 +157,11 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Login controller error:", error);
+    if (error.name === "MongooseError" || error.message?.includes("buffering timed out")) {
+      return res.status(503).json({
+        message: "Database query timed out. Please check network connection or MongoDB cluster status.",
+      });
+    }
     return res.status(500).json({ message: "An unexpected server error occurred during login." });
   }
 };

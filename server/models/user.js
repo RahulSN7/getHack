@@ -71,6 +71,8 @@ userSchema.methods.toSafeUser = function () {
     role: this.role,
     profile: {
       avatar: typeof p.avatar === "string" ? p.avatar : "",
+      gender: typeof p.gender === "string" ? p.gender : "",
+      dateOfBirth: typeof p.dateOfBirth === "string" ? p.dateOfBirth : p.dateOfBirth instanceof Date ? p.dateOfBirth.toISOString() : "",
       role: typeof p.role === "string" ? p.role : "Participant",
       bio: typeof p.bio === "string" ? p.bio : "",
       availability: typeof p.availability === "string" ? p.availability : "Available",

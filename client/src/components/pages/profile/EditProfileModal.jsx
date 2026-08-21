@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // EditProfileModal.jsx — Participant Profile Editing Modal Component
 // Supports local file picker for avatar, gender, date of birth, mandatory location,
-// bio length validation (300 char max), skill tags, education, and links.
+// field-level error messages, scroll to first error, bio length validation,
+// skill tags, education, and links.
 // ---------------------------------------------------------------------------
 
 import { useState, useRef, useEffect } from "react";
@@ -21,12 +22,12 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   if (!isOpen) return null;
 
   const profile = currentProfile || currentUser?.profile || {};
-
   const fileInputRef = useRef(null);
+  const modalTopRef = useRef(null);
 
   const [name, setName] = useState(currentUser?.name || "");
   const [role, setRole] = useState(profile.role || "");
-  const [gender, setGender] = useState(profile.gender || "Prefer not to say");
+  const [gender, setGender] = useState(profile.gender || "");
   const [dateOfBirth, setDateOfBirth] = useState(formatDateForInput(profile.dateOfBirth));
   const [location, setLocation] = useState(profile.location || "");
   const [bio, setBio] = useState(profile.bio || "");
@@ -62,6 +63,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Re-sync form state from props whenever modal opens or currentProfile updates
   useEffect(() => {
@@ -69,7 +71,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       const prof = currentProfile || currentUser?.profile || {};
       setName(currentUser?.name || "");
       setRole(prof.role || "");
-      setGender(prof.gender || "Prefer not to say");
+      setGender(prof.gender || "");
       setDateOfBirth(formatDateForInput(prof.dateOfBirth));
       setLocation(prof.location || "");
       setBio(prof.bio || "");
@@ -91,6 +93,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       setLinkedin(prof.linkedin || "");
       setPortfolio(prof.portfolio || "");
       setError(null);
+      setFieldErrors({});
     }
   }, [isOpen, currentProfile, currentUser]);
 
@@ -141,6 +144,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
     setSkills([...skills, clean]);
     setSkillInput("");
     setError(null);
+    setFieldErrors((prev) => ({ ...prev, skills: null }));
   };
 
   const handleRemoveSkill = (skillToRemove) => {
@@ -165,86 +169,246 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
+  e.preventDefault();
 
-    if (!name.trim()) {
-      setError("Full Name is required.");
-      return;
+  setError(null);
+  setFieldErrors({});
+
+  const errors = {};
+
+  // -----------------------------
+  // REQUIRED VALIDATION
+  // -----------------------------
+
+  if (!name.trim()) {
+    errors.name = "Full Name is required.";
+  }
+
+  if (!role.trim()) {
+    errors.role =
+      "Role / Headline is required.";
+  }
+
+  if (!gender) {
+    errors.gender =
+      "Gender is required.";
+  }
+
+  if (!dateOfBirth) {
+    errors.dateOfBirth =
+      "Date of Birth is required.";
+  }
+
+  if (!location.trim()) {
+    errors.location =
+      "Location is required.";
+  }
+
+  if (!availability) {
+    errors.availability =
+      "Availability status is required.";
+  }
+
+  if (!bio.trim()) {
+    errors.bio = "Bio is required.";
+  }
+
+  if (bio.length > 300) {
+    errors.bio =
+      "Bio cannot exceed 300 characters.";
+  }
+
+  if (!skills.length) {
+    errors.skills =
+      "At least one skill is required.";
+  }
+
+  if (
+    !college.trim() &&
+    !degree.trim()
+  ) {
+    errors.education =
+      "College / University or Degree is required.";
+  }
+
+  // -----------------------------
+  // DOB VALIDATION
+  // -----------------------------
+
+  if (dateOfBirth) {
+    const dob = new Date(dateOfBirth);
+
+    if (Number.isNaN(dob.getTime())) {
+      errors.dateOfBirth =
+        "Invalid Date of Birth.";
     }
 
-    // Location is mandatory
-    if (!location.trim()) {
-      setError("Location is required.");
-      return;
+    if (dob > new Date()) {
+      errors.dateOfBirth =
+        "Date of birth cannot be in the future.";
     }
+  }
 
-    // Date of Birth validation
-    if (dateOfBirth) {
-      const dob = new Date(dateOfBirth);
-      if (isNaN(dob.getTime())) {
-        setError("Please enter a valid Date of Birth.");
-        return;
-      }
-      if (dob > new Date()) {
-        setError("Date of birth cannot be in the future.");
-        return;
-      }
-    }
+  // -----------------------------
+  // STOP IF INVALID
+  // -----------------------------
 
-    if (bio.length > 300) {
-      setError("Bio cannot exceed 300 characters.");
-      return;
-    }
+  if (Object.keys(errors).length > 0) {
+    setFieldErrors(errors);
 
-    try {
-      setSaving(true);
+    setError(
+      "Please complete all required profile information."
+    );
 
-      const formData = new FormData();
-      formData.append("name", name.trim());
-      formData.append("role", role.trim() || "Participant");
-      formData.append("gender", gender);
-      formData.append("dateOfBirth", dateOfBirth);
-      formData.append("location", location.trim());
-      formData.append("bio", bio.trim());
-      formData.append("availability", availability);
-      formData.append("skills", JSON.stringify(skills));
+    requestAnimationFrame(() => {
+      modalTopRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    return;
+  }
+
+  // -----------------------------
+  // SAVE
+  // -----------------------------
+
+  try {
+    setSaving(true);
+
+    const formData = new FormData();
+
+    formData.append(
+      "name",
+      name.trim()
+    );
+
+    formData.append(
+      "role",
+      role.trim()
+    );
+
+    formData.append(
+      "gender",
+      gender
+    );
+
+    formData.append(
+      "dateOfBirth",
+      dateOfBirth
+    );
+
+    formData.append(
+      "location",
+      location.trim()
+    );
+
+    formData.append(
+      "availability",
+      availability
+    );
+
+    formData.append(
+      "bio",
+      bio.trim()
+    );
+
+    formData.append(
+      "skills",
+      JSON.stringify(skills)
+    );
+
+    formData.append(
+      "education",
+      JSON.stringify({
+        college: college.trim(),
+        degree: degree.trim(),
+        fieldOfStudy:
+          fieldOfStudy.trim(),
+        graduationYear:
+          graduationYear.trim(),
+      })
+    );
+
+    formData.append(
+      "experienceLevel",
+      experienceLevel
+    );
+
+    formData.append(
+      "experienceDetails",
+      experienceDetails.trim()
+    );
+
+    formData.append(
+      "interests",
+      JSON.stringify(interests)
+    );
+
+    formData.append(
+      "github",
+      github.trim()
+    );
+
+    formData.append(
+      "linkedin",
+      linkedin.trim()
+    );
+
+    formData.append(
+      "portfolio",
+      portfolio.trim()
+    );
+
+    if (photoFile) {
       formData.append(
-        "education",
-        JSON.stringify({
-          college: college.trim(),
-          degree: degree.trim(),
-          fieldOfStudy: fieldOfStudy.trim(),
-          graduationYear: graduationYear.trim(),
-        })
+        "profilePhoto",
+        photoFile
       );
-      formData.append("experienceLevel", experienceLevel);
-      formData.append("experienceDetails", experienceDetails.trim());
-      formData.append("interests", JSON.stringify(interests));
-      formData.append("github", github.trim());
-      formData.append("linkedin", linkedin.trim());
-      formData.append("portfolio", portfolio.trim());
-
-      if (photoFile) {
-        formData.append("profilePhoto", photoFile);
-      }
-      if (removePhoto) {
-        formData.append("removePhoto", "true");
-      }
-
-      await onSave(formData);
-      onClose();
-    } catch (err) {
-      console.error("Failed to save profile:", err);
-      setError(err.message || "Failed to update profile. Please try again.");
-    } finally {
-      setSaving(false);
     }
-  };
+
+    if (removePhoto) {
+      formData.append(
+        "removePhoto",
+        "true"
+      );
+    }
+
+    // IMPORTANT:
+    // onSave must return the API response.
+    const response = await onSave(
+      formData
+    );
+
+    console.log(
+      "PROFILE SAVED:",
+      response
+    );
+
+    // Don't manually construct profile here.
+    // Parent receives the updated user.
+
+    onClose();
+  } catch (err) {
+    console.error(
+      "PROFILE SAVE ERROR:",
+      err
+    );
+
+    setError(
+      err?.message ||
+        "Failed to update participant profile."
+    );
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-neutral-950/60 p-4 backdrop-blur-xs">
       <div className="relative w-full max-w-2xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 max-h-[90vh] overflow-y-auto">
+        <div ref={modalTopRef} />
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-100 pb-4 dark:border-neutral-800">
           <div>
@@ -334,12 +498,19 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 </label>
                 <input
                   type="text"
-                  required
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, name: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.name ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. Rahul Sharma"
                 />
+                {fieldErrors.name && (
+                  <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.name}</p>
+                )}
               </div>
 
               <div>
@@ -348,59 +519,108 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 </label>
                 <input
                   type="text"
-                  required
                   value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setRole(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, role: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.role ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. Full Stack Developer | AI Enthusiast"
                 />
+                {fieldErrors.role && (
+                  <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.role}</p>
+                )}
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Gender
+                  Gender *
                 </label>
                 <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Non-binary">Non-binary</option>
-                  <option value="Prefer not to say">Prefer not to say</option>
-                  <option value="Other">Other</option>
-                </select>
+  value={gender}
+  onChange={(e) => {
+    setGender(e.target.value);
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      gender: null,
+    }));
+  }}
+>
+  <option value="">
+    Select gender
+  </option>
+
+  <option value="Male">
+    Male
+  </option>
+
+  <option value="Female">
+    Female
+  </option>
+
+  <option value="Non-binary">
+    Non-binary
+  </option>
+
+  <option value="Prefer not to say">
+    Prefer not to say
+  </option>
+
+  <option value="Other">
+    Other
+  </option>
+</select>
+                {fieldErrors.gender && (
+                  <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.gender}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Date of Birth
+                  Date of Birth *
                 </label>
                 <input
                   type="date"
                   value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setDateOfBirth(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, dateOfBirth: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.dateOfBirth ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 />
+                {fieldErrors.dateOfBirth && (
+                  <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.dateOfBirth}</p>
+                )}
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Location * 
+                  Location *
                 </label>
                 <input
                   type="text"
-                  required
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, location: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.location ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. Mumbai, Maharashtra, India"
                 />
+                {fieldErrors.location && (
+                  <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.location}</p>
+                )}
               </div>
 
               <div>
@@ -409,12 +629,20 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 </label>
                 <select
                   value={availability}
-                  onChange={(e) => setAvailability(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setAvailability(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, availability: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.availability ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 >
                   <option value="Available">● Available for Teammates</option>
                   <option value="Not Available">○ Not Available</option>
                 </select>
+                {fieldErrors.availability && (
+                  <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.availability}</p>
+                )}
               </div>
             </div>
 
@@ -431,10 +659,18 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 rows={3}
                 maxLength={300}
                 value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                onChange={(e) => {
+                  setBio(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, bio: null }));
+                }}
+                className={`mt-1 w-full rounded-lg border ${
+                  fieldErrors.bio ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 placeholder="Brief summary of your skills, background, and what you enjoy building..."
               />
+              {fieldErrors.bio && (
+                <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.bio}</p>
+              )}
             </div>
           </div>
 
@@ -448,86 +684,121 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 type="text"
                 value={skillInput}
                 onChange={(e) => setSkillInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAddSkill(e);
-                }}
-                className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                placeholder="Type a skill (e.g. React, Node.js, Python) and press Enter"
+                onKeyDown={(e) => e.key === "Enter" && handleAddSkill(e)}
+                className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                placeholder="Type a skill (e.g. React, C++, Python) and press Add or Enter..."
               />
               <button
                 type="button"
                 onClick={handleAddSkill}
-                className="shrink-0 rounded-lg bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                className="rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
               >
-                + Add
+                Add
               </button>
             </div>
+            {fieldErrors.skills && (
+              <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.skills}</p>
+            )}
 
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
-                >
-                  <span>{skill}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSkill(skill)}
-                    className="text-indigo-400 hover:text-indigo-600 dark:hover:text-white"
+            {skills.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
                   >
-                    ✕
-                  </button>
-                </span>
-              ))}
-              {skills.length === 0 && (
-                <p className="text-xs text-neutral-400 italic">No skills added yet. Add at least 1 skill.</p>
-              )}
-            </div>
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="text-indigo-400 hover:text-indigo-600 dark:hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* SECTION 4: Education */}
-          <div className="space-y-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+          <div className="space-y-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Education *
             </h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+            {fieldErrors.education && (
+              <p className="text-[11px] font-medium text-red-500">⚠ {fieldErrors.education}</p>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
                   College / University *
                 </label>
                 <input
                   type="text"
                   value={college}
-                  onChange={(e) => setCollege(e.target.value)}
+                  onChange={(e) => {
+                    setCollege(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, education: null }));
+                  }}
                   className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  placeholder="e.g. Stanford University"
+                  placeholder="e.g. IIT Bombay / Stanford University"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Degree / Field of Study
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  Degree
                 </label>
                 <input
                   type="text"
                   value={degree}
                   onChange={(e) => setDegree(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  placeholder="e.g. B.S. Computer Science"
+                  placeholder="e.g. B.Tech Computer Science"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  Field of Study
+                </label>
+                <input
+                  type="text"
+                  value={fieldOfStudy}
+                  onChange={(e) => setFieldOfStudy(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  placeholder="e.g. Artificial Intelligence / Data Science"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  Graduation Year
+                </label>
+                <input
+                  type="text"
+                  value={graduationYear}
+                  onChange={(e) => setGraduationYear(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  placeholder="e.g. 2026"
                 />
               </div>
             </div>
           </div>
 
-          {/* SECTION 5: Experience & Interests */}
-          <div className="space-y-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+          {/* SECTION 5: Experience */}
+          <div className="space-y-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              Experience & Interests
+              Experience Level
             </h3>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
                   Experience Level
                 </label>
                 <select
@@ -535,128 +806,132 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                   onChange={(e) => setExperienceLevel(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                 >
-                  <option value="Beginner">Beginner (0 - 1 years)</option>
-                  <option value="Intermediate">Intermediate (1 - 3 years)</option>
-                  <option value="Advanced">Advanced (3+ years)</option>
+                  <option value="Beginner">Beginner (0-1 hackathons / new to coding)</option>
+                  <option value="Intermediate">Intermediate (Built projects / 2+ hackathons)</option>
+                  <option value="Advanced">Advanced (Experienced dev / hackathon winner)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Previous Hackathons / Highlights
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  Experience Highlights (Optional)
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={experienceDetails}
                   onChange={(e) => setExperienceDetails(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  placeholder="e.g. 3 hackathons completed, Winner @ BuildWithAI 2025"
+                  placeholder="Mention previous hackathons, internships, or notable projects..."
                 />
               </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Interests
-              </label>
-              <div className="mt-1 flex items-center gap-2">
-                <input
-                  type="text"
-                  value={interestInput}
-                  onChange={(e) => setInterestInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddInterest(e);
-                  }}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  placeholder="Add interest (e.g. AI Agents, Web3, Cloud) and press Enter"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddInterest}
-                  className="shrink-0 rounded-lg bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-                >
-                  + Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5 pt-2">
+          {/* SECTION 6: Interests */}
+          <div className="space-y-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              Interests & Domains
+            </h3>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={interestInput}
+                onChange={(e) => setInterestInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddInterest(e)}
+                className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                placeholder="Type an interest (e.g. AI/ML, Web3, FinTech) and press Add or Enter..."
+              />
+              <button
+                type="button"
+                onClick={handleAddInterest}
+                className="rounded-lg bg-neutral-100 px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+              >
+                Add
+              </button>
+            </div>
+
+            {interests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
                 {interests.map((interest) => (
                   <span
                     key={interest}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                    className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
                   >
-                    <span>{interest}</span>
+                    {interest}
                     <button
                       type="button"
                       onClick={() => handleRemoveInterest(interest)}
                       className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
                     >
-                      ✕
+                      ×
                     </button>
                   </span>
                 ))}
               </div>
-            </div>
+            )}
           </div>
 
-          {/* SECTION 6: Professional Links */}
-          <div className="space-y-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+          {/* SECTION 7: Professional Links */}
+          <div className="space-y-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              Professional Links * (At least 1 required)
+              Professional Links
             </h3>
 
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                GitHub URL
-              </label>
-              <input
-                type="url"
-                value={github}
-                onChange={(e) => setGithub(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                placeholder="https://github.com/yourusername"
-              />
-            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  GitHub URL
+                </label>
+                <input
+                  type="text"
+                  value={github}
+                  onChange={(e) => setGithub(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  placeholder="github.com/username"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                LinkedIn URL
-              </label>
-              <input
-                type="url"
-                value={linkedin}
-                onChange={(e) => setLinkedin(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                placeholder="https://linkedin.com/in/yourusername"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  LinkedIn URL
+                </label>
+                <input
+                  type="text"
+                  value={linkedin}
+                  onChange={(e) => setLinkedin(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  placeholder="linkedin.com/in/username"
+                />
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Portfolio URL
-              </label>
-              <input
-                type="url"
-                value={portfolio}
-                onChange={(e) => setPortfolio(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                placeholder="https://yourportfolio.dev"
-              />
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  Portfolio / Website
+                </label>
+                <input
+                  type="text"
+                  value={portfolio}
+                  onChange={(e) => setPortfolio(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  placeholder="yourportfolio.com"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Footer Actions */}
+          {/* Form Actions */}
           <div className="flex items-center justify-end gap-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-indigo-500 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
             >
               {saving ? "Saving..." : "Save Profile"}
             </button>
