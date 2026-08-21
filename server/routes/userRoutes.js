@@ -21,6 +21,9 @@ router.put(
   userController.updateOwnParticipantProfile
 );
 
+// Get all participants for Find Teammates discovery
+router.get("/participants", optionalAuth, userController.getAllParticipants);
+
 // Public or optionally-authenticated participant profile view
 router.get("/participant/:id", optionalAuth, userController.getParticipantProfile);
 

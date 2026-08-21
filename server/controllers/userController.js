@@ -12,41 +12,6 @@ const Hackathon = require("../models/hackathon");
 const Connection = require("../models/connection");
 
 // ============================================================
-// PROFILE COMPLETION
-// ============================================================
-
-function calculateProfileCompletion(user) {
-  const p = user?.profile || {};
-
-  const checks = [
-    Boolean(user?.name?.trim()),
-    Boolean(p.role?.trim()),
-    Boolean(p.gender?.trim()),
-    Boolean(p.dateOfBirth),
-    Boolean(p.location?.trim()),
-    Boolean(p.availability?.trim()),
-    Boolean(p.bio?.trim()),
-    Array.isArray(p.skills) && p.skills.length > 0,
-    Boolean(
-      p.education?.college?.trim() ||
-      p.education?.degree?.trim() ||
-      p.college?.trim() ||
-      p.degree?.trim()
-    ),
-  ];
-
-  const completed = checks.filter(Boolean).length;
-  const total = checks.length;
-
-  return {
-    completed,
-    total,
-    percentage: Math.round((completed / total) * 100),
-    isComplete: completed === total,
-  };
-}
-
-// ============================================================
 // DATE FORMATTER
 // ============================================================
 
@@ -89,11 +54,8 @@ const getOwnProfile = async (req, res) => {
       });
     }
 
-    const profileCompletion = calculateProfileCompletion(user);
-
     return res.status(200).json({
       user: user.toSafeUser(),
-      profileCompletion,
     });
   } catch (error) {
     console.error("GET OWN PROFILE ERROR:", error);
@@ -267,12 +229,9 @@ const updateOwnParticipantProfile = async (req, res) => {
 
     let cleanSkills = Array.isArray(parsedSkills)
       ? parsedSkills
-          .filter(
-            (skill) =>
-              typeof skill === "string" &&
-              skill.trim().length > 0
-          )
+          .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
           .map((skill) => skill.trim())
+          .filter((skill) => skill.length > 0)
       : currentProfile.skills || [];
 
     // Remove duplicate skills
@@ -365,12 +324,9 @@ const updateOwnParticipantProfile = async (req, res) => {
 
     let cleanInterests = Array.isArray(parsedInterests)
       ? parsedInterests
-          .filter(
-            (item) =>
-              typeof item === "string" &&
-              item.trim()
-          )
+          .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
           .map((item) => item.trim())
+          .filter((item) => item.length > 0)
       : currentProfile.interests || [];
 
     cleanInterests = [
@@ -382,8 +338,12 @@ const updateOwnParticipantProfile = async (req, res) => {
       ).values(),
     ];
 
+    if (cleanInterests.length === 0) {
+      validationErrors.interests = "Please select at least one interest.";
+    }
+
     // ========================================================
-    // URL SANITIZER
+    // URL SANITIZER & LINKS VALIDATION
     // ========================================================
 
     const sanitizeUrl = (value) => {
@@ -406,6 +366,27 @@ const updateOwnParticipantProfile = async (req, res) => {
 
       return `https://${clean}`;
     };
+
+    const cleanGithub = github !== undefined ? sanitizeUrl(github) : currentProfile.github || "";
+    const cleanLinkedin = linkedin !== undefined ? sanitizeUrl(linkedin) : currentProfile.linkedin || "";
+    const cleanPortfolio = portfolio !== undefined ? sanitizeUrl(portfolio) : currentProfile.portfolio || "";
+
+    if (!cleanGithub && !cleanLinkedin && !cleanPortfolio) {
+      validationErrors.links = "Please provide at least one professional link (GitHub, LinkedIn, or Portfolio).";
+    }
+
+    // Check if any validation errors occurred
+    if (Object.keys(validationErrors).length > 0) {
+      if (req.file && req.file.path) {
+        fs.unlink(req.file.path, () => {});
+      }
+      const firstErrorKey = Object.keys(validationErrors)[0];
+      return res.status(400).json({
+        success: false,
+        message: validationErrors[firstErrorKey],
+        errors: validationErrors,
+      });
+    }
 
     // ========================================================
     // AVATAR HANDLING
@@ -540,16 +521,10 @@ const updateOwnParticipantProfile = async (req, res) => {
     // RETURN UPDATED USER
     // ========================================================
 
-    const profileCompletion =
-      calculateProfileCompletion(user);
-
     return res.status(200).json({
       success: true,
       message: "Participant profile updated successfully.",
-
       user: user.toSafeUser(),
-
-      profileCompletion,
     });
   } catch (error) {
     console.error(
@@ -613,9 +588,6 @@ const getParticipantProfile = async (req, res) => {
       req.user._id.toString() ===
         targetUser._id.toString();
 
-    const profileCompletion =
-      calculateProfileCompletion(targetUser);
-
     let connectionState = {
       status: "none",
       isSender: false,
@@ -624,28 +596,18 @@ const getParticipantProfile = async (req, res) => {
     };
 
     if (req.user && !isOwner) {
-      const existingConnection =
-        await Connection.findOne({
-          $or: [
-            {
-              sender: req.user._id,
-              receiver: targetUser._id,
-            },
-            {
-              sender: targetUser._id,
-              receiver: req.user._id,
-            },
-          ],
-        });
+      const existingConnection = await Connection.findOne({
+        $or: [
+          { sender: req.user._id, receiver: targetUser._id },
+          { sender: targetUser._id, receiver: req.user._id },
+        ],
+      });
 
       if (existingConnection) {
         connectionState = {
           status: existingConnection.status,
-          isSender:
-            existingConnection.sender.toString() ===
-            req.user._id.toString(),
-          requestId:
-            existingConnection._id.toString(),
+          isSender: existingConnection.sender.toString() === req.user._id.toString(),
+          requestId: existingConnection._id.toString(),
           note: existingConnection.note || null,
         };
       }
@@ -653,13 +615,8 @@ const getParticipantProfile = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       user: targetUser.toSafeUser(),
-
-      profileCompletion,
-
       isOwner,
-
       connectionState,
     });
   } catch (error) {
@@ -1038,14 +995,71 @@ const updateOwnOrganizerProfile = async (
 };
 
 // ============================================================
+// GET ALL PARTICIPANTS (For Find Teammates discovery)
+// ============================================================
+
+const getAllParticipants = async (req, res) => {
+  try {
+    const currentUserId = req.user?._id ? req.user._id.toString() : null;
+
+    // Fetch all users with role 'participant'
+    const users = await User.find({ role: "participant" }).sort({ createdAt: -1 });
+
+    // Filter out current user
+    const otherUsers = currentUserId
+      ? users.filter((u) => u._id.toString() !== currentUserId)
+      : users;
+
+    // Fetch connection states for current user if logged in
+    let connectionsMap = {};
+    if (currentUserId) {
+      const connections = await Connection.find({
+        $or: [{ sender: req.user._id }, { receiver: req.user._id }],
+      });
+
+      connections.forEach((c) => {
+        const senderId = c.sender.toString();
+        const receiverId = c.receiver.toString();
+        const otherId = senderId === currentUserId ? receiverId : senderId;
+        connectionsMap[otherId] = {
+          status: c.status,
+          isSender: senderId === currentUserId,
+          requestId: c._id.toString(),
+        };
+      });
+    }
+
+    const participants = otherUsers.map((u) => {
+      const safe = u.toSafeUser();
+      const conn = connectionsMap[u._id.toString()] || { status: "none" };
+      return {
+        ...safe,
+        connectionState: conn,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: participants.length,
+      participants,
+    });
+  } catch (error) {
+    console.error("GET ALL PARTICIPANTS ERROR:", error);
+    return res.status(500).json({
+      message: "Failed to fetch participants.",
+    });
+  }
+};
+
+// ============================================================
 // EXPORT
 // ============================================================
 
 module.exports = {
-  calculateProfileCompletion,
   getOwnProfile,
   updateOwnParticipantProfile,
   getParticipantProfile,
   getOrganizerProfile,
   updateOwnOrganizerProfile,
+  getAllParticipants,
 };

@@ -5,7 +5,7 @@
 
 const Connection = require("../models/connection");
 const User = require("../models/user");
-const { calculateProfileCompletion } = require("../utils/profileCompletion");
+const { isProfileComplete } = require("../utils/profileValidation");
 
 // ---------------------------------------------------------------------------
 // POST /api/network/requests — Send Connection Request
@@ -21,13 +21,11 @@ const sendConnectionRequest = async (req, res) => {
       return res.status(404).json({ message: "Sender account not found." });
     }
 
-    // Backend Profile Completion Gate
-    const profileCompletion = calculateProfileCompletion(sender);
-    if (!profileCompletion.isComplete) {
-      return res.status(403).json({
-        error: "PROFILE_INCOMPLETE",
-        message: "Complete your profile first. A complete profile helps other participants understand your skills and interests before connecting with you.",
-        profileCompletion,
+    if (!isProfileComplete(sender)) {
+      return res.status(400).json({
+        success: false,
+        code: "PROFILE_INCOMPLETE",
+        message: "Please complete your profile before connecting with other users.",
       });
     }
 
@@ -146,7 +144,7 @@ const getNetworkRequests = async (req, res) => {
         bio: safePartner.profile?.bio || "",
         skills: safePartner.profile?.skills || [],
         location: safePartner.profile?.location || "",
-        availability: safePartner.profile?.availability || "Available",
+        availability: safePartner.profile?.availability || "",
         connectedAt: c.updatedAt,
       };
     });
@@ -171,7 +169,7 @@ const getNetworkRequests = async (req, res) => {
         bio: safeSender.profile?.bio || "",
         skills: safeSender.profile?.skills || [],
         location: safeSender.profile?.location || "",
-        availability: safeSender.profile?.availability || "Available",
+        availability: safeSender.profile?.availability || "",
         note: c.note || null,
         createdAt: c.createdAt,
       };
@@ -197,7 +195,7 @@ const getNetworkRequests = async (req, res) => {
         bio: safeReceiver.profile?.bio || "",
         skills: safeReceiver.profile?.skills || [],
         location: safeReceiver.profile?.location || "",
-        availability: safeReceiver.profile?.availability || "Available",
+        availability: safeReceiver.profile?.availability || "",
         note: c.note || null,
         createdAt: c.createdAt,
       };

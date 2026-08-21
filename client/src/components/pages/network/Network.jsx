@@ -3,14 +3,8 @@
 // Professional community hub for managing connections, incoming requests, and sent requests
 // ---------------------------------------------------------------------------
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { TEAMMATES } from "../../../data/teammates";
-import {
-  INITIAL_CONNECTIONS,
-  INITIAL_REQUESTS,
-  INITIAL_SENT,
-} from "../../../data/networkData";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 
 import NetworkFilters from "./NetworkFilters";
@@ -81,30 +75,27 @@ function matchesUserSearch(user, query) {
 // Main Network Component
 // ---------------------------------------------------------------------------
 
-import { useEffect } from "react";
 import { userService } from "../../../services/userService";
 
 function Network() {
   const [activeTab, setActiveTab] = useState("connections"); // 'connections' | 'requests' | 'sent'
   const [searchQuery, setSearchQuery] = useState("");
-  const [connections, setConnections] = useState(INITIAL_CONNECTIONS);
-  const [requests, setRequests] = useState(INITIAL_REQUESTS);
-  const [sent, setSent] = useState(INITIAL_SENT);
+  const [connections, setConnections] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [sent, setSent] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
 
   // Load real network requests from backend API on mount
-  useEffect(() => {
-    let isMounted = true;
-    async function loadNetworkData() {
-      try {
-        const data = await userService.getNetworkRequests();
-        if (isMounted && data) {
-          if (Array.isArray(data.connections) && data.connections.length > 0) {
-            setConnections(data.connections);
-          }
-          if (Array.isArray(data.incoming)) {
-            setRequests(
-              data.incoming.map((req) => ({
+  const loadNetworkData = async (isMounted = true) => {
+    setLoading(true);
+    try {
+      const data = await userService.getNetworkRequests();
+      if (isMounted && data) {
+        setConnections(Array.isArray(data.connections) ? data.connections : []);
+        setRequests(
+          Array.isArray(data.incoming)
+            ? data.incoming.map((req) => ({
                 id: req.id || req.requestId,
                 fromUserId: req.senderId,
                 name: req.name,
@@ -116,11 +107,11 @@ function Network() {
                 note: req.note,
                 createdAt: req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "Just now",
               }))
-            );
-          }
-          if (Array.isArray(data.outgoing)) {
-            setSent(
-              data.outgoing.map((s) => ({
+            : []
+        );
+        setSent(
+          Array.isArray(data.outgoing)
+            ? data.outgoing.map((s) => ({
                 id: s.id || s.requestId,
                 toUserId: s.receiverId,
                 name: s.name,
@@ -129,14 +120,19 @@ function Network() {
                 note: s.note,
                 createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Just now",
               }))
-            );
-          }
-        }
-      } catch (err) {
-        // Fallback to local data if unauthenticated or offline
+            : []
+        );
       }
+    } catch (err) {
+      console.error("Failed to load network requests:", err);
+    } finally {
+      if (isMounted) setLoading(false);
     }
-    loadNetworkData();
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    loadNetworkData(isMounted);
     return () => {
       isMounted = false;
     };
@@ -159,25 +155,11 @@ function Network() {
   const handleAcceptRequest = async (requestItem) => {
     try {
       await userService.respondToConnectionRequest(requestItem.id, "accept");
-    } catch {
-      // Proceed with UI update
+      await loadNetworkData(true);
+      setToastMessage(`Connection request from ${requestItem.name || "builder"} accepted!`);
+    } catch (err) {
+      setToastMessage("Failed to accept request.");
     }
-    // Remove from requests
-    setRequests((prev) => prev.filter((r) => r.id !== requestItem.id));
-    // Add to connections
-    setConnections((prev) => [
-      {
-        id: `conn-${Date.now()}`,
-        userId: requestItem.fromUserId || requestItem.id,
-        name: requestItem.name,
-        role: requestItem.role,
-        avatar: requestItem.avatar,
-        skills: requestItem.skills || [],
-        connectedAt: "Just now",
-      },
-      ...prev,
-    ]);
-    setToastMessage(`Connection request from ${requestItem.name || "builder"} accepted!`);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
@@ -185,11 +167,11 @@ function Network() {
     const reqId = typeof requestItem === "string" ? requestItem : requestItem.id;
     try {
       await userService.respondToConnectionRequest(reqId, "decline");
+      await loadNetworkData(true);
+      setToastMessage("Connection request declined.");
     } catch {
-      // Proceed with UI update
+      setRequests((prev) => prev.filter((r) => r.id !== reqId));
     }
-    setRequests((prev) => prev.filter((r) => r.id !== reqId));
-    setToastMessage("Connection request declined.");
     setTimeout(() => setToastMessage(null), 3000);
   };
 
@@ -254,51 +236,33 @@ function Network() {
   // ── Derived Pipeline: Search → Filter → Sort ──
 
   const displayedConnections = useMemo(() => {
-    let list = connections.filter((conn) => {
-      const u = TEAMMATES.find((m) => m.id === conn.userId);
-      return matchesUserSearch(u, searchQuery);
-    });
+    let list = connections.filter((conn) => matchesUserSearch(conn, searchQuery));
 
     if (connAvailability !== "all") {
-      list = list.filter((conn) => {
-        const u = TEAMMATES.find((m) => m.id === conn.userId);
-        return u?.availability === connAvailability;
-      });
+      list = list.filter((conn) => conn.availability === connAvailability);
     }
 
     if (connRole !== "all") {
-      list = list.filter((conn) => {
-        const u = TEAMMATES.find((m) => m.id === conn.userId);
-        return u?.role === connRole;
-      });
+      list = list.filter((conn) => conn.role === connRole);
     }
 
     if (connSkills.length > 0) {
-      list = list.filter((conn) => {
-        const u = TEAMMATES.find((m) => m.id === conn.userId);
-        return u?.skills && connSkills.some((s) => u.skills.includes(s));
-      });
+      list = list.filter((conn) => conn.skills && connSkills.some((s) => conn.skills.includes(s)));
     }
 
     return [...list].sort((a, b) => {
-      const uA = TEAMMATES.find((m) => m.id === a.userId);
-      const uB = TEAMMATES.find((m) => m.id === b.userId);
-
       if (connSort === "name-asc") {
-        return (uA?.name || "").localeCompare(uB?.name || "");
+        return (a.name || "").localeCompare(b.name || "");
       }
       if (connSort === "name-desc") {
-        return (uB?.name || "").localeCompare(uA?.name || "");
+        return (b.name || "").localeCompare(a.name || "");
       }
       return getDaysAgo(a.connectedAt) - getDaysAgo(b.connectedAt);
     });
   }, [connections, searchQuery, connAvailability, connRole, connSkills, connSort]);
 
   const displayedRequests = useMemo(() => {
-    let list = requests.filter((req) => {
-      const u = TEAMMATES.find((m) => m.id === req.fromUserId);
-      return matchesUserSearch(u, searchQuery);
-    });
+    let list = requests.filter((req) => matchesUserSearch(req, searchQuery));
 
     if (requestAge === "recent") {
       list = list.filter((req) => getDaysAgo(req.createdAt) <= 7);
@@ -307,24 +271,18 @@ function Network() {
     }
 
     return [...list].sort((a, b) => {
-      const uA = TEAMMATES.find((m) => m.id === a.fromUserId);
-      const uB = TEAMMATES.find((m) => m.id === b.fromUserId);
-
       if (requestSort === "oldest") {
         return getDaysAgo(b.createdAt) - getDaysAgo(a.createdAt);
       }
       if (requestSort === "name-asc") {
-        return (uA?.name || "").localeCompare(uB?.name || "");
+        return (a.name || "").localeCompare(b.name || "");
       }
       return getDaysAgo(a.createdAt) - getDaysAgo(b.createdAt);
     });
   }, [requests, searchQuery, requestAge, requestSort]);
 
   const displayedSent = useMemo(() => {
-    let list = sent.filter((s) => {
-      const u = TEAMMATES.find((m) => m.id === s.toUserId);
-      return matchesUserSearch(u, searchQuery);
-    });
+    let list = sent.filter((s) => matchesUserSearch(s, searchQuery));
 
     if (sentAge === "recent") {
       list = list.filter((s) => getDaysAgo(s.createdAt) <= 7);
@@ -333,14 +291,11 @@ function Network() {
     }
 
     return [...list].sort((a, b) => {
-      const uA = TEAMMATES.find((m) => m.id === a.toUserId);
-      const uB = TEAMMATES.find((m) => m.id === b.toUserId);
-
       if (sentSort === "oldest") {
         return getDaysAgo(b.createdAt) - getDaysAgo(a.createdAt);
       }
       if (sentSort === "name-asc") {
-        return (uA?.name || "").localeCompare(uB?.name || "");
+        return (a.name || "").localeCompare(b.name || "");
       }
       return getDaysAgo(a.createdAt) - getDaysAgo(b.createdAt);
     });
@@ -719,8 +674,17 @@ function Network() {
           </div>
         )}
 
-        {/* ── TAB 1: CONNECTIONS ── */}
-        {activeTab === "connections" && (
+        {/* Loading State or Tab Content */}
+        {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-48 animate-pulse rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* ── TAB 1: CONNECTIONS ── */}
+            {activeTab === "connections" && (
           <div>
             {displayedConnections.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -933,7 +897,7 @@ function Network() {
                   const role = user.role || "Developer";
                   const skills = Array.isArray(user.skills) ? user.skills : [];
                   const location = user.location || "";
-                  const availability = user.availability || "Available";
+                  const availability = user.availability || "";
                   const accent = user.accent || "indigo";
                   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
                   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
@@ -1337,6 +1301,8 @@ function Network() {
               </div>
             )}
           </div>
+        )}
+        </>
         )}
       </main>
     </div>

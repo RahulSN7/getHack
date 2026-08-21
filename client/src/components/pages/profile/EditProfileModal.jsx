@@ -18,20 +18,72 @@ function formatDateForInput(dateStr) {
   }
 }
 
+function parseCommaSeparatedValues(inputString, existingList = []) {
+  if (!inputString || typeof inputString !== "string") return [];
+  const rawItems = inputString.split(",");
+  const existingSet = new Set(existingList.map((item) => item.toLowerCase()));
+  const newItems = [];
+
+  for (const item of rawItems) {
+    const trimmed = item.trim();
+    if (!trimmed) continue;
+    const lowerKey = trimmed.toLowerCase();
+    if (!existingSet.has(lowerKey)) {
+      existingSet.add(lowerKey);
+      newItems.push(trimmed);
+    }
+  }
+  return newItems;
+}
+
+function normalizeTagArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    return val
+      .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  if (typeof val === "string") {
+    return val
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+const GENDER_OPTIONS = ["Male", "Female", "Prefer not to say", "Other"];
+
 export default function EditProfileModal({ isOpen, onClose, currentProfile, currentUser, onSave }) {
   if (!isOpen) return null;
 
   const profile = currentProfile || currentUser?.profile || {};
   const fileInputRef = useRef(null);
   const modalTopRef = useRef(null);
+  const genderRef = useRef(null);
 
   const [name, setName] = useState(currentUser?.name || "");
   const [role, setRole] = useState(profile.role || "");
   const [gender, setGender] = useState(profile.gender || "");
+  const [genderOpen, setGenderOpen] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState(formatDateForInput(profile.dateOfBirth));
   const [location, setLocation] = useState(profile.location || "");
   const [bio, setBio] = useState(profile.bio || "");
-  const [availability, setAvailability] = useState(profile.availability || "Available");
+  const [availability, setAvailability] = useState(profile.availability || "");
+
+  // Close gender dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (genderRef.current && !genderRef.current.contains(event.target)) {
+        setGenderOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Profile Photo File & Preview state
   const [photoFile, setPhotoFile] = useState(null);
@@ -39,7 +91,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   const [removePhoto, setRemovePhoto] = useState(false);
 
   // Skills state
-  const [skills, setSkills] = useState(Array.isArray(profile.skills) ? profile.skills : []);
+  const [skills, setSkills] = useState(normalizeTagArray(profile.skills));
   const [skillInput, setSkillInput] = useState("");
 
   // Education state
@@ -53,7 +105,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   const [experienceDetails, setExperienceDetails] = useState(profile.experienceDetails || "");
 
   // Interests state
-  const [interests, setInterests] = useState(Array.isArray(profile.interests) ? profile.interests : []);
+  const [interests, setInterests] = useState(normalizeTagArray(profile.interests));
   const [interestInput, setInterestInput] = useState("");
 
   // Links state
@@ -72,14 +124,15 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       setName(currentUser?.name || "");
       setRole(prof.role || "");
       setGender(prof.gender || "");
+      setGenderOpen(false);
       setDateOfBirth(formatDateForInput(prof.dateOfBirth));
       setLocation(prof.location || "");
       setBio(prof.bio || "");
-      setAvailability(prof.availability || "Available");
+      setAvailability(prof.availability || "");
       setPhotoFile(null);
       setPhotoPreview(prof.avatar || "");
       setRemovePhoto(false);
-      setSkills(Array.isArray(prof.skills) ? prof.skills : []);
+      setSkills(normalizeTagArray(prof.skills));
       setSkillInput("");
       setCollege(prof.college || prof.education?.college || "");
       setDegree(prof.degree || prof.education?.degree || "");
@@ -87,7 +140,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       setGraduationYear(prof.education?.graduationYear || "");
       setExperienceLevel(prof.experienceLevel || "Intermediate");
       setExperienceDetails(prof.experienceDetails || "");
-      setInterests(Array.isArray(prof.interests) ? prof.interests : []);
+      setInterests(normalizeTagArray(prof.interests));
       setInterestInput("");
       setGithub(prof.github || "");
       setLinkedin(prof.linkedin || "");
@@ -128,22 +181,26 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
     }
   };
 
-  // Skill tag handlers
+  // Skill tag handlers (supports comma-separated multi-input)
   const handleAddSkill = (e) => {
     e?.preventDefault();
-    const clean = skillInput.trim();
-    if (!clean) return;
-    if (skills.some((s) => s.toLowerCase() === clean.toLowerCase())) {
+    if (!skillInput || !skillInput.trim()) return;
+
+    const newSkills = parseCommaSeparatedValues(skillInput, skills);
+    if (newSkills.length === 0) {
       setSkillInput("");
       return;
     }
-    if (skills.length >= 15) {
+
+    const updatedSkills = [...skills, ...newSkills];
+    if (updatedSkills.length > 15) {
+      setSkills(updatedSkills.slice(0, 15));
       setError("Maximum 15 skills allowed.");
-      return;
+    } else {
+      setSkills(updatedSkills);
+      setError(null);
     }
-    setSkills([...skills, clean]);
     setSkillInput("");
-    setError(null);
     setFieldErrors((prev) => ({ ...prev, skills: null }));
   };
 
@@ -151,21 +208,31 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
     setSkills(skills.filter((s) => s !== skillToRemove));
   };
 
-  // Interest tag handlers
+  // Interest tag handlers (supports comma-separated multi-input)
   const handleAddInterest = (e) => {
     e?.preventDefault();
-    const clean = interestInput.trim();
-    if (!clean) return;
-    if (interests.some((i) => i.toLowerCase() === clean.toLowerCase())) {
+    if (!interestInput || !interestInput.trim()) return;
+
+    const newInterests = parseCommaSeparatedValues(interestInput, interests);
+    if (newInterests.length === 0) {
       setInterestInput("");
       return;
     }
-    setInterests([...interests, clean]);
+
+    const updatedInterests = [...interests, ...newInterests];
+    setInterests(updatedInterests);
     setInterestInput("");
+    setFieldErrors((prev) => ({ ...prev, interests: null }));
   };
 
   const handleRemoveInterest = (interestToRemove) => {
-    setInterests(interests.filter((i) => i !== interestToRemove));
+    const updated = interests.filter((i) => i !== interestToRemove);
+    setInterests(updated);
+    if (updated.length === 0) {
+      setFieldErrors((prev) => ({ ...prev, interests: "Please select at least one interest." }));
+    } else {
+      setFieldErrors((prev) => ({ ...prev, interests: null }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -229,6 +296,20 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   ) {
     errors.education =
       "College / University or Degree is required.";
+  }
+
+  if (!interests || interests.length === 0) {
+    errors.interests = "Please select at least one interest.";
+  }
+
+  const hasProfessionalLink =
+    Boolean(github?.trim()) ||
+    Boolean(linkedin?.trim()) ||
+    Boolean(portfolio?.trim());
+
+  if (!hasProfessionalLink) {
+    errors.links =
+      "Please provide at least one professional link (GitHub, LinkedIn, or Portfolio).";
   }
 
   // -----------------------------
@@ -536,45 +617,93 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
+              <div className="relative" ref={genderRef}>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
                   Gender *
                 </label>
-                <select
-  value={gender}
-  onChange={(e) => {
-    setGender(e.target.value);
 
-    setFieldErrors((prev) => ({
-      ...prev,
-      gender: null,
-    }));
-  }}
->
-  <option value="">
-    Select gender
-  </option>
+                <button
+                  type="button"
+                  role="combobox"
+                  aria-expanded={genderOpen}
+                  aria-haspopup="listbox"
+                  aria-controls="gender-listbox"
+                  onClick={() => setGenderOpen((prev) => !prev)}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setGenderOpen((prev) => !prev);
+                    } else if (e.key === "Escape") {
+                      setGenderOpen(false);
+                    }
+                  }}
+                  className={`mt-1 flex h-[38px] w-full items-center justify-between rounded-lg border ${
+                    fieldErrors.gender ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs shadow-2xs transition-colors hover:border-neutral-400 focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:hover:border-neutral-600`}
+                >
+                  <span className={gender ? "font-medium text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500"}>
+                    {gender || "Select gender"}
+                  </span>
 
-  <option value="Male">
-    Male
-  </option>
+                  <svg
+                    className={`h-4 w-4 text-neutral-500 transition-transform duration-200 dark:text-neutral-400 ${
+                      genderOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-  <option value="Female">
-    Female
-  </option>
+                {genderOpen && (
+                  <ul
+                    id="gender-listbox"
+                    role="listbox"
+                    className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-auto rounded-lg border border-neutral-200 bg-white py-1 text-xs text-neutral-900 shadow-lg ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  >
+                    {GENDER_OPTIONS.map((option) => {
+                      const isSelected = gender === option;
+                      return (
+                        <li
+                          key={option}
+                          role="option"
+                          aria-selected={isSelected}
+                          tabIndex={0}
+                          onClick={() => {
+                            setGender(option);
+                            setFieldErrors((prev) => ({ ...prev, gender: null }));
+                            setGenderOpen(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setGender(option);
+                              setFieldErrors((prev) => ({ ...prev, gender: null }));
+                              setGenderOpen(false);
+                            } else if (e.key === "Escape") {
+                              setGenderOpen(false);
+                            }
+                          }}
+                          className={`flex cursor-pointer items-center justify-between px-3 py-2.5 transition-colors ${
+                            isSelected
+                              ? "bg-indigo-50 font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400"
+                              : "text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/80"
+                          }`}
+                        >
+                          <span>{option}</span>
+                          {isSelected && (
+                            <svg className="h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
 
-  <option value="Non-binary">
-    Non-binary
-  </option>
-
-  <option value="Prefer not to say">
-    Prefer not to say
-  </option>
-
-  <option value="Other">
-    Other
-  </option>
-</select>
                 {fieldErrors.gender && (
                   <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.gender}</p>
                 )}
@@ -637,6 +766,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     fieldErrors.availability ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
                   } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 >
+                  <option value="" disabled hidden>Select availability status...</option>
                   <option value="Available">● Available for Teammates</option>
                   <option value="Not Available">○ Not Available</option>
                 </select>
@@ -829,16 +959,23 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
 
           {/* SECTION 6: Interests */}
           <div className="space-y-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              Interests & Domains
-            </h3>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Interests & Domains *
+              </h3>
+              <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                Select at least one interest domain.
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={interestInput}
                 onChange={(e) => setInterestInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddInterest(e)}
-                className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                className={`flex-1 rounded-lg border ${
+                  fieldErrors.interests ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 placeholder="Type an interest (e.g. AI/ML, Web3, FinTech) and press Add or Enter..."
               />
               <button
@@ -869,13 +1006,21 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 ))}
               </div>
             )}
+            {fieldErrors.interests && (
+              <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.interests}</p>
+            )}
           </div>
 
           {/* SECTION 7: Professional Links */}
           <div className="space-y-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              Professional Links
-            </h3>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Professional Links *
+              </h3>
+              <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                Add at least one professional link (GitHub, LinkedIn, or Portfolio).
+              </p>
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
@@ -885,8 +1030,13 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 <input
                   type="text"
                   value={github}
-                  onChange={(e) => setGithub(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setGithub(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, links: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="github.com/username"
                 />
               </div>
@@ -898,8 +1048,13 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 <input
                   type="text"
                   value={linkedin}
-                  onChange={(e) => setLinkedin(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setLinkedin(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, links: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="linkedin.com/in/username"
                 />
               </div>
@@ -911,12 +1066,20 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 <input
                   type="text"
                   value={portfolio}
-                  onChange={(e) => setPortfolio(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    setPortfolio(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, links: null }));
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="yourportfolio.com"
                 />
               </div>
             </div>
+            {fieldErrors.links && (
+              <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.links}</p>
+            )}
           </div>
 
           {/* Form Actions */}

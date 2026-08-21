@@ -71,6 +71,10 @@ export const userService = {
       );
     },
 
+  getParticipants: async () => {
+    return request("/users/participants");
+  },
+
   getParticipantProfile:
     async (id) => {
       return request(

@@ -62,8 +62,14 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 // Instance method to return safe user object without password
+const { isProfileComplete } = require("../utils/profileValidation");
+
 userSchema.methods.toSafeUser = function () {
   const p = this.profile || {};
+  const complete = isProfileComplete(this);
+  const rawAvailability = typeof p.availability === "string" ? p.availability : "";
+  const safeAvailability = !complete && rawAvailability === "Available" ? "" : rawAvailability;
+
   return {
     id: this._id.toString(),
     name: this.name,
@@ -75,7 +81,7 @@ userSchema.methods.toSafeUser = function () {
       dateOfBirth: typeof p.dateOfBirth === "string" ? p.dateOfBirth : p.dateOfBirth instanceof Date ? p.dateOfBirth.toISOString() : "",
       role: typeof p.role === "string" ? p.role : "Participant",
       bio: typeof p.bio === "string" ? p.bio : "",
-      availability: typeof p.availability === "string" ? p.availability : "Available",
+      availability: safeAvailability,
       skills: Array.isArray(p.skills) ? p.skills : [],
       education: typeof p.education === "object" && p.education !== null ? p.education : {},
       college: typeof p.college === "string" ? p.college : p.education?.college || "",

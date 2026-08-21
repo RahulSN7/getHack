@@ -3,11 +3,19 @@ import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
 import { TEAMMATES } from "../../../data/teammates";
-import { calculateProfileCompletion } from "../../../utils/profileCompletion";
-import ProfileCompletionBar from "./ProfileCompletionBar";
 import EditProfileModal from "./EditProfileModal";
+import { isProfileComplete } from "../../../utils/profileValidation";
 
-function AvailabilityBadge({ availability }) {
+function AvailabilityBadge({ availability, isComplete }) {
+  if (!isComplete) {
+    return (
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500">
+        <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-600" />
+        Not Set
+      </span>
+    );
+  }
+
   const isAvailable = availability === "Available";
 
   if (isAvailable) {
@@ -78,7 +86,6 @@ export default function UserProfile() {
   const { user: currentUser, isAuthenticated, updateUser } = useAuth();
 
   const [profileUser, setProfileUser] = useState(null);
-  const [profileCompletion, setProfileCompletion] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
   const [connectionState, setConnectionState] = useState({ status: "none" });
 
@@ -119,14 +126,12 @@ export default function UserProfile() {
             const data = await userService.getOwnProfile();
             if (isMounted && data?.user) {
               setProfileUser(data.user);
-              setProfileCompletion(data.profileCompletion || calculateProfileCompletion(data.user));
               setIsOwner(true);
               return;
             }
           } catch {
             if (currentUser && isMounted) {
               setProfileUser(currentUser);
-              setProfileCompletion(calculateProfileCompletion(currentUser));
               setIsOwner(true);
               return;
             }
@@ -138,7 +143,6 @@ export default function UserProfile() {
             const data = await userService.getParticipantProfile(targetId);
             if (isMounted && data?.user) {
               setProfileUser(data.user);
-              setProfileCompletion(data.profileCompletion || calculateProfileCompletion(data.user));
               setIsOwner(Boolean(data.isOwner));
               setConnectionState(data.connectionState || { status: "none" });
               return;
@@ -160,7 +164,7 @@ export default function UserProfile() {
                   role: teammate.role,
                   bio: teammate.bio || "",
                   skills: teammate.skills || [],
-                  availability: teammate.availability || "Available",
+                  availability: teammate.availability || "",
                   college: teammate.college || "",
                   degree: teammate.degree || "",
                   education: { college: teammate.college || "", degree: teammate.degree || "" },
@@ -177,7 +181,6 @@ export default function UserProfile() {
                 },
               };
               setProfileUser(fallbackUser);
-              setProfileCompletion(calculateProfileCompletion(fallbackUser));
               setIsOwner(false);
               return;
             }
@@ -208,12 +211,6 @@ export default function UserProfile() {
       if (typeof updateUser === "function") {
         updateUser(res.user);
       }
-      try {
-        const comp = res.profileCompletion || calculateProfileCompletion(res.user);
-        setProfileCompletion(comp);
-      } catch (calcErr) {
-        console.warn("Notice: Non-critical profile completion calculation notice:", calcErr);
-      }
     }
   };
 
@@ -224,16 +221,20 @@ export default function UserProfile() {
       return;
     }
 
+    let userToCheck = currentUser;
     try {
       const ownData = await userService.getOwnProfile();
-      if (!ownData.profileCompletion?.isComplete) {
-        setIsCompletePromptOpen(true);
-        return;
-      }
-      setIsConnectModalOpen(true);
+      if (ownData?.user) userToCheck = ownData.user;
     } catch {
-      setIsCompletePromptOpen(true);
+      // fallback
     }
+
+    if (!isProfileComplete(userToCheck)) {
+      setIsCompletePromptOpen(true);
+      return;
+    }
+
+    setIsConnectModalOpen(true);
   };
 
   // Submit Connection Request with optional note
@@ -248,6 +249,11 @@ export default function UserProfile() {
       setConnectNote("");
     } catch (err) {
       console.error("Failed to send connection request:", err);
+      if (err.code === "PROFILE_INCOMPLETE" || err.message?.toLowerCase().includes("complete your profile")) {
+        setIsConnectModalOpen(false);
+        setIsCompletePromptOpen(true);
+        return;
+      }
       setRequestError(err.message || "Failed to send request.");
     } finally {
       setSendingRequest(false);
@@ -322,7 +328,7 @@ export default function UserProfile() {
   const avatar = profile.avatar || "";
   const role = profile.role || "Participant";
   const bio = profile.bio || "";
-  const availability = profile.availability || "Available";
+  const availability = profile.availability || "";
   const skills = Array.isArray(profile.skills) ? profile.skills : [];
   const education = profile.education || {};
   const college = profile.college || education.college || "";
@@ -356,7 +362,7 @@ export default function UserProfile() {
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
                     {name}
                   </h1>
-                  <AvailabilityBadge availability={availability} />
+                  <AvailabilityBadge availability={availability} isComplete={isProfileComplete(profileUser)} />
                 </div>
 
                 <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
@@ -449,15 +455,7 @@ export default function UserProfile() {
           </div>
         </section>
 
-        {/* ── 2. Profile Completion Bar (Owner only) ── */}
-        {isOwner && (
-          <ProfileCompletionBar
-            profileCompletion={profileCompletion}
-            onEditClick={() => setIsEditOpen(true)}
-          />
-        )}
-
-        {/* ── 3. Main 2-Column Grid Layout ── */}
+        {/* ── 2. Main 2-Column Grid Layout ── */}
         <div className="grid gap-6 md:grid-cols-3">
           {/* LEFT / MAIN COLUMN (2 Cols) */}
           <div className="space-y-6 md:col-span-2">
@@ -530,7 +528,7 @@ export default function UserProfile() {
                   </p>
                   {education.graduationYear && (
                     <p className="text-[11px] font-mono text-neutral-400">
-                      Class of {education.graduationYear}
+                      Graduation Year {education.graduationYear}
                     </p>
                   )}
                 </div>
@@ -673,36 +671,7 @@ export default function UserProfile() {
         />
       )}
 
-      {/* Complete Profile Prompt Modal */}
-      {isCompletePromptOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
-            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-              Complete your profile first
-            </h3>
-            <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
-              Your profile needs more information before you can connect with teammates. Complete your profile details (Name, Photo, Gender, Date of Birth, Location, Bio, Skills, Education, and Link) to send connection requests.
-            </p>
 
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsCompletePromptOpen(false)}
-                className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
-              >
-                Cancel
-              </button>
-              <Link
-                to="/profile"
-                onClick={() => setIsCompletePromptOpen(false)}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-              >
-                Complete Profile
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Connection Request Modal */}
       {isConnectModalOpen && (
@@ -761,6 +730,43 @@ export default function UserProfile() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Complete Profile Required Prompt Modal */}
+      {isCompletePromptOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 p-4 backdrop-blur-xs">
+          <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Complete your profile first
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+              Please complete your profile before connecting with other users. A complete profile helps other developers understand your skills, interests, and professional background.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCompletePromptOpen(false)}
+                className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCompletePromptOpen(false);
+                  if (isOwner) {
+                    setIsEditOpen(true);
+                  } else {
+                    window.location.href = "/profile";
+                  }
+                }}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              >
+                Complete Profile
+              </button>
+            </div>
           </div>
         </div>
       )}

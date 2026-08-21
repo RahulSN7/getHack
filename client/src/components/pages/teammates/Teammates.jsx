@@ -8,9 +8,10 @@
 // Same architecture as Hackathons.jsx
 // ---------------------------------------------------------------------------
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
+import { isProfileComplete } from "../../../utils/profileValidation";
 import { TEAMMATES } from "../../../data/teammates";
 import { TEAMS } from "../../../data/teams";
 import TeammateSearch from "./TeammateSearch";
@@ -73,7 +74,13 @@ function filterMembers(members, { roleFilter, experienceFilter, availabilityFilt
     result = result.filter((m) => m.experience === experienceFilter);
   }
   if (availabilityFilter !== "all") {
-    result = result.filter((m) => m.availability === availabilityFilter);
+    if (availabilityFilter === "Available") {
+      result = result.filter(
+        (m) => isProfileComplete(m) && m.availability === "Available"
+      );
+    } else {
+      result = result.filter((m) => m.availability === availabilityFilter);
+    }
   }
 
   return result;
@@ -214,6 +221,11 @@ function EmptyState({ hasFilters, onClear, message }) {
 function Teammates() {
   const { user: currentUser, isAuthenticated } = useAuth();
 
+  // Dynamic participants state
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // Tab state
   const [activeTab, setActiveTab] = useState("members");
 
@@ -235,19 +247,23 @@ function Teammates() {
       return;
     }
 
+    let userToCheck = currentUser;
     try {
       const ownData = await userService.getOwnProfile();
-      if (!ownData.profileCompletion?.isComplete) {
-        setIsCompletePromptOpen(true);
-        return;
-      }
-      setConnectTarget(member);
-      setConnectNote("");
-      setRequestError(null);
-      setIsConnectModalOpen(true);
+      if (ownData?.user) userToCheck = ownData.user;
     } catch {
-      setIsCompletePromptOpen(true);
+      // fallback
     }
+
+    if (!isProfileComplete(userToCheck)) {
+      setIsCompletePromptOpen(true);
+      return;
+    }
+
+    setConnectTarget(member);
+    setConnectNote("");
+    setRequestError(null);
+    setIsConnectModalOpen(true);
   };
 
   const handleSendRequest = async (e) => {
@@ -263,11 +279,56 @@ function Teammates() {
       setConnectNote("");
     } catch (err) {
       console.error("Failed to send request:", err);
+      if (err.code === "PROFILE_INCOMPLETE" || err.message?.toLowerCase().includes("complete your profile")) {
+        setIsConnectModalOpen(false);
+        setIsCompletePromptOpen(true);
+        return;
+      }
       setRequestError(err.message || "Failed to send connection request.");
     } finally {
       setSendingRequest(false);
     }
   };
+
+  // Load dynamic participants from backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchParticipants() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await userService.getParticipants();
+        if (isMounted && data?.participants) {
+          const normalized = data.participants.map((p) => ({
+            id: p.id,
+            _id: p.id,
+            name: p.name,
+            role: p.profile?.role || "Participant",
+            bio: p.profile?.bio || "",
+            skills: p.profile?.skills || [],
+            experience: p.profile?.experienceLevel || "Intermediate",
+            location: p.profile?.location || "",
+            availability: p.profile?.availability || "",
+            username: p.profile?.handle?.replace(/^@/, "") || `user_${p.id.slice(-4)}`,
+            avatar: p.profile?.avatar || "",
+            education: p.profile?.education || {},
+            connectionState: p.connectionState || { status: "none" },
+            profile: p.profile,
+          }));
+          setMembers(normalized);
+        }
+      } catch (err) {
+        console.error("Failed to load participants:", err);
+        if (isMounted) setError("Failed to load participants.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchParticipants();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -304,10 +365,10 @@ function Teammates() {
 
   // Pipeline: Members
   const memberResults = useMemo(() => {
-    const searched = searchMembers(TEAMMATES, searchQuery);
+    const searched = searchMembers(members, searchQuery);
     const filtered = filterMembers(searched, { roleFilter, experienceFilter, availabilityFilter });
     return sortMembers(filtered, memberSort);
-  }, [searchQuery, roleFilter, experienceFilter, availabilityFilter, memberSort]);
+  }, [members, searchQuery, roleFilter, experienceFilter, availabilityFilter, memberSort]);
 
   // Pipeline: Teams
   const teamResults = useMemo(() => {
@@ -549,8 +610,14 @@ function Teammates() {
           </div>
         </div>
 
-        {/* Card Grid or Empty State */}
-        {results.length > 0 ? (
+        {/* Card Grid, Loading Skeleton, or Empty State */}
+        {activeTab === "members" && loading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-64 animate-pulse rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />
+            ))}
+          </div>
+        ) : results.length > 0 ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {activeTab === "members"
               ? results.map((member) => (
@@ -558,14 +625,14 @@ function Teammates() {
                     key={member.id || member._id}
                     teammate={member}
                     onConnect={handleConnectClick}
-                    connectionStatus={sentMap[member.id || member._id]}
+                    connectionStatus={sentMap[member.id || member._id] || member.connectionState?.status}
                   />
                 ))
               : results.map((team) => (
                   <TeamCard
                     key={team.id}
                     team={team}
-                    onSelectTeam={setSelectedTeam}
+                    onViewDetails={(t) => setSelectedTeam(t)}
                   />
                 ))}
           </div>
@@ -590,39 +657,7 @@ function Teammates() {
         />
       )}
 
-      {/* ── Complete Profile Required Prompt Modal ── */}
-      {isCompletePromptOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
-            <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-              Complete your profile first
-            </h3>
-            <p className="mt-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
-              A complete profile helps other participants understand your skills and interests before connecting with you. Complete your profile to continue.
-            </p>
 
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsCompletePromptOpen(false)}
-                className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCompletePromptOpen(false);
-                  window.location.href = "/profile";
-                }}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-              >
-                Complete Profile
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Send Connection Request Modal (with optional note) ── */}
       {isConnectModalOpen && connectTarget && (
@@ -698,6 +733,39 @@ function Teammates() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Complete Profile Required Prompt Modal */}
+      {isCompletePromptOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 p-4 backdrop-blur-xs">
+          <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Complete your profile first
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+              Please complete your profile before connecting with other users. A complete profile helps other developers understand your skills, interests, and professional background.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCompletePromptOpen(false)}
+                className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCompletePromptOpen(false);
+                  window.location.href = "/profile";
+                }}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              >
+                Complete Profile
+              </button>
+            </div>
           </div>
         </div>
       )}

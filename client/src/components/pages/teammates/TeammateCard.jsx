@@ -5,12 +5,22 @@
 
 import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
+import { isProfileComplete } from "../../../utils/profileValidation";
 
 // ---------------------------------------------------------------------------
 // Availability badge rendering
 // ---------------------------------------------------------------------------
 
-function AvailabilityBadge({ availability }) {
+function AvailabilityBadge({ availability, isComplete }) {
+  if (!isComplete) {
+    return (
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500">
+        <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-600" />
+        Not Set
+      </span>
+    );
+  }
+
   const isAvailable = availability === "Available";
 
   if (isAvailable) {
@@ -117,7 +127,7 @@ function TeammateCard({ teammate, onConnect, connectionStatus }) {
             </div>
           </div>
 
-          <AvailabilityBadge availability={availability} />
+          <AvailabilityBadge availability={availability} isComplete={isProfileComplete(teammate)} />
         </div>
 
         {/* ── 2. Bio ── */}
@@ -217,30 +227,9 @@ function TeammateCard({ teammate, onConnect, connectionStatus }) {
           )}
         </span>
 
-        {/* Actions: Connect & View Profile */}
+        {/* Action View Profile */}
         <div className="flex items-center gap-2">
-          {connectionStatus === "accepted" ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-              ✓ Connected
-            </span>
-          ) : connectionStatus === "pending" ? (
-            <button
-              type="button"
-              disabled
-              className="cursor-not-allowed inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500"
-            >
-              Request Sent
-            </button>
-          ) : onConnect ? (
-            <button
-              type="button"
-              onClick={() => onConnect(teammate)}
-              className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-2xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-            >
-              + Connect
-            </button>
-          ) : null}
-
+        
           <Link
             to={`/profile/${teammate.id || teammate._id}`}
             className="
