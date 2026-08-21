@@ -1,15 +1,9 @@
-// ---------------------------------------------------------------------------
-// UserProfile.jsx — Production Participant Developer Profile Component
-// Unified profile view for /profile (own profile) and /profile/:id (public view)
-// Includes 2-column layout, large avatar with fallback, gender, DOB, mandatory location,
-// experience level without "Level:" prefix, and safe links opening in new tab.
-// ---------------------------------------------------------------------------
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
 import { TEAMMATES } from "../../../data/teammates";
+import { calculateProfileCompletion } from "../../../utils/profileCompletion";
 import ProfileCompletionBar from "./ProfileCompletionBar";
 import EditProfileModal from "./EditProfileModal";
 
@@ -125,13 +119,14 @@ export default function UserProfile() {
             const data = await userService.getOwnProfile();
             if (isMounted && data?.user) {
               setProfileUser(data.user);
-              setProfileCompletion(data.profileCompletion);
+              setProfileCompletion(data.profileCompletion || calculateProfileCompletion(data.user));
               setIsOwner(true);
               return;
             }
           } catch {
             if (currentUser && isMounted) {
               setProfileUser(currentUser);
+              setProfileCompletion(calculateProfileCompletion(currentUser));
               setIsOwner(true);
               return;
             }
@@ -143,7 +138,7 @@ export default function UserProfile() {
             const data = await userService.getParticipantProfile(targetId);
             if (isMounted && data?.user) {
               setProfileUser(data.user);
-              setProfileCompletion(data.profileCompletion);
+              setProfileCompletion(data.profileCompletion || calculateProfileCompletion(data.user));
               setIsOwner(Boolean(data.isOwner));
               setConnectionState(data.connectionState || { status: "none" });
               return;
@@ -155,7 +150,7 @@ export default function UserProfile() {
             );
 
             if (teammate && isMounted) {
-              setProfileUser({
+              const fallbackUser = {
                 id: teammate.id,
                 name: teammate.name,
                 email: teammate.email || "",
@@ -180,8 +175,9 @@ export default function UserProfile() {
                   dateOfBirth: "",
                   handle: teammate.username ? `@${teammate.username}` : `GH-${teammate.id.toUpperCase()}`,
                 },
-              });
-              setProfileCompletion({ percentage: 100, isComplete: true, missingFields: [] });
+              };
+              setProfileUser(fallbackUser);
+              setProfileCompletion(calculateProfileCompletion(fallbackUser));
               setIsOwner(false);
               return;
             }
@@ -209,7 +205,7 @@ export default function UserProfile() {
     const res = await userService.updateParticipantProfile(updatedData);
     if (res?.user) {
       setProfileUser(res.user);
-      setProfileCompletion(res.profileCompletion);
+      setProfileCompletion(res.profileCompletion || calculateProfileCompletion(res.user));
     }
   };
 

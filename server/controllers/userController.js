@@ -239,9 +239,13 @@ const getOwnProfile = async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // PUT /api/users/profile/participant — Update Logged-in Participant Profile
-// Supports FormData / file upload (profilePhoto), gender, DOB, mandatory location
+// Supports FormData / file upload (profilePhoto), atomic avatar replacement,
+// gender, DOB, mandatory location, and partial updates
 // ---------------------------------------------------------------------------
 const updateOwnParticipantProfile = async (req, res) => {
+  const fs = require("fs");
+  const path = require("path");
+
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthenticated." });
@@ -251,6 +255,9 @@ const updateOwnParticipantProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User account not found." });
     }
+
+    const currentProfile = user.profile || {};
+    const oldAvatarPath = currentProfile.avatar;
 
     const body = req.body || {};
 
@@ -279,10 +286,13 @@ const updateOwnParticipantProfile = async (req, res) => {
     } = body;
 
     // Handle file upload via Multer if provided
+    let newAvatar = currentProfile.avatar || "";
     if (req.file) {
-      avatar = `/uploads/${req.file.filename}`;
+      newAvatar = `/uploads/${req.file.filename}`;
     } else if (removePhoto === "true" || removePhoto === true) {
-      avatar = "";
+      newAvatar = "";
+    } else if (avatar !== undefined && String(avatar).trim() !== "") {
+      newAvatar = String(avatar).trim();
     }
 
     if (name && typeof name === "string" && name.trim()) {
@@ -290,38 +300,51 @@ const updateOwnParticipantProfile = async (req, res) => {
     }
 
     // Mandatory Location Validation
-    let cleanLocation = location !== undefined ? String(location).trim() : user.profile?.location || "";
+    let cleanLocation = location !== undefined ? String(location).trim() : currentProfile.location || "";
     if (location !== undefined && !cleanLocation) {
+      // Clean up uploaded temp file if validation fails
+      if (req.file && req.file.path) {
+        fs.unlink(req.file.path, () => {});
+      }
       return res.status(400).json({ message: "Location is required." });
     }
 
     // Gender Validation
     const allowedGenders = ["Male", "Female", "Non-binary", "Prefer not to say", "Other"];
-    let cleanGender = gender !== undefined ? String(gender).trim() : user.profile?.gender || "";
+    let cleanGender = gender !== undefined ? String(gender).trim() : currentProfile.gender || "";
     if (cleanGender && !allowedGenders.includes(cleanGender)) {
+      if (req.file && req.file.path) {
+        fs.unlink(req.file.path, () => {});
+      }
       return res.status(400).json({ message: "Invalid gender selection." });
     }
 
     // Date of Birth Validation (Cannot be in the future)
-    let cleanDOB = dateOfBirth !== undefined ? String(dateOfBirth).trim() : user.profile?.dateOfBirth || "";
+    let cleanDOB = dateOfBirth !== undefined ? String(dateOfBirth).trim() : currentProfile.dateOfBirth || "";
     if (cleanDOB) {
       const dobDate = new Date(cleanDOB);
       if (isNaN(dobDate.getTime())) {
+        if (req.file && req.file.path) {
+          fs.unlink(req.file.path, () => {});
+        }
         return res.status(400).json({ message: "Invalid Date of Birth format." });
       }
       if (dobDate > new Date()) {
+        if (req.file && req.file.path) {
+          fs.unlink(req.file.path, () => {});
+        }
         return res.status(400).json({ message: "Date of birth cannot be in the future." });
       }
     }
 
     // Bio length limit (max 300 chars)
-    let cleanBio = bio !== undefined ? String(bio).trim() : user.profile?.bio || "";
+    let cleanBio = bio !== undefined ? String(bio).trim() : currentProfile.bio || "";
     if (cleanBio.length > 300) {
       cleanBio = cleanBio.slice(0, 300);
     }
 
     // Parse skills (handles JSON string or array)
-    let cleanSkills = user.profile?.skills || [];
+    let cleanSkills = currentProfile.skills || [];
     if (typeof skills === "string") {
       try {
         skills = JSON.parse(skills);
@@ -348,7 +371,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     }
 
     // Parse interests
-    let cleanInterests = user.profile?.interests || [];
+    let cleanInterests = currentProfile.interests || [];
     if (typeof interests === "string") {
       try {
         interests = JSON.parse(interests);
@@ -372,7 +395,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     }
 
     // Parse education
-    let cleanEducation = user.profile?.education || {};
+    let cleanEducation = currentProfile.education || {};
     if (typeof education === "string") {
       try {
         cleanEducation = JSON.parse(education);
@@ -388,7 +411,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     if (graduationYear !== undefined) cleanEducation.graduationYear = String(graduationYear).trim();
 
     // Sanitize availability
-    let cleanAvailability = user.profile?.availability || "Available";
+    let cleanAvailability = currentProfile.availability || "Available";
     if (availability === "Available" || availability === "Not Available") {
       cleanAvailability = availability;
     }
@@ -402,11 +425,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       return `https://${trimmed}`;
     };
 
-    const currentProfile = user.profile || {};
-
     user.profile = {
       ...currentProfile,
-      avatar: avatar !== undefined ? String(avatar).trim() : currentProfile.avatar || "",
+      avatar: newAvatar,
       gender: cleanGender,
       dateOfBirth: cleanDOB,
       location: cleanLocation,
@@ -420,13 +441,31 @@ const updateOwnParticipantProfile = async (req, res) => {
       experienceLevel: experienceLevel !== undefined ? String(experienceLevel).trim() : currentProfile.experienceLevel || "Intermediate",
       experienceDetails: experienceDetails !== undefined ? String(experienceDetails).trim() : currentProfile.experienceDetails || "",
       interests: cleanInterests,
-      github: sanitizeUrl(github !== undefined ? github : currentProfile.github),
-      linkedin: sanitizeUrl(linkedin !== undefined ? linkedin : currentProfile.linkedin),
-      portfolio: sanitizeUrl(portfolio !== undefined ? portfolio : currentProfile.portfolio),
+      github: github !== undefined ? sanitizeUrl(github) : currentProfile.github || "",
+      linkedin: linkedin !== undefined ? sanitizeUrl(linkedin) : currentProfile.linkedin || "",
+      portfolio: portfolio !== undefined ? sanitizeUrl(portfolio) : currentProfile.portfolio || "",
       handle: currentProfile.handle || `GH-${user._id.toString().slice(-6).toUpperCase()}`,
     };
 
-    await user.save();
+    try {
+      await user.save();
+    } catch (saveError) {
+      if (req.file && req.file.path) {
+        fs.unlink(req.file.path, () => {});
+      }
+      throw saveError;
+    }
+
+    // Atomic old avatar cleanup AFTER database save succeeds
+    if (oldAvatarPath && oldAvatarPath !== user.profile.avatar && oldAvatarPath.startsWith("/uploads/")) {
+      const oldFilename = path.basename(oldAvatarPath);
+      const oldFilePath = path.join(__dirname, "../public/uploads", oldFilename);
+      fs.unlink(oldFilePath, (unlinkErr) => {
+        if (unlinkErr && unlinkErr.code !== "ENOENT") {
+          console.warn("Old avatar cleanup notice:", oldFilePath, unlinkErr.message);
+        }
+      });
+    }
 
     const profileCompletion = calculateProfileCompletion(user);
 
@@ -437,7 +476,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in updateOwnParticipantProfile:", error);
-    return res.status(500).json({ message: "Failed to update participant profile." });
+    return res.status(500).json({ message: error.message || "Failed to update participant profile." });
   }
 };
 

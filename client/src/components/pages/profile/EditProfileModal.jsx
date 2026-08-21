@@ -4,7 +4,18 @@
 // bio length validation (300 char max), skill tags, education, and links.
 // ---------------------------------------------------------------------------
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+function formatDateForInput(dateStr) {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 10);
+  } catch {
+    return "";
+  }
+}
 
 export default function EditProfileModal({ isOpen, onClose, currentProfile, currentUser, onSave }) {
   if (!isOpen) return null;
@@ -16,7 +27,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   const [name, setName] = useState(currentUser?.name || "");
   const [role, setRole] = useState(profile.role || "");
   const [gender, setGender] = useState(profile.gender || "Prefer not to say");
-  const [dateOfBirth, setDateOfBirth] = useState(profile.dateOfBirth || "");
+  const [dateOfBirth, setDateOfBirth] = useState(formatDateForInput(profile.dateOfBirth));
   const [location, setLocation] = useState(profile.location || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [availability, setAvailability] = useState(profile.availability || "Available");
@@ -51,6 +62,37 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  // Re-sync form state from props whenever modal opens or currentProfile updates
+  useEffect(() => {
+    if (isOpen) {
+      const prof = currentProfile || currentUser?.profile || {};
+      setName(currentUser?.name || "");
+      setRole(prof.role || "");
+      setGender(prof.gender || "Prefer not to say");
+      setDateOfBirth(formatDateForInput(prof.dateOfBirth));
+      setLocation(prof.location || "");
+      setBio(prof.bio || "");
+      setAvailability(prof.availability || "Available");
+      setPhotoFile(null);
+      setPhotoPreview(prof.avatar || "");
+      setRemovePhoto(false);
+      setSkills(Array.isArray(prof.skills) ? prof.skills : []);
+      setSkillInput("");
+      setCollege(prof.college || prof.education?.college || "");
+      setDegree(prof.degree || prof.education?.degree || "");
+      setFieldOfStudy(prof.education?.fieldOfStudy || "");
+      setGraduationYear(prof.education?.graduationYear || "");
+      setExperienceLevel(prof.experienceLevel || "Intermediate");
+      setExperienceDetails(prof.experienceDetails || "");
+      setInterests(Array.isArray(prof.interests) ? prof.interests : []);
+      setInterestInput("");
+      setGithub(prof.github || "");
+      setLinkedin(prof.linkedin || "");
+      setPortfolio(prof.portfolio || "");
+      setError(null);
+    }
+  }, [isOpen, currentProfile, currentUser]);
 
   // Profile photo local file selection handler
   const handlePhotoSelect = (e) => {
