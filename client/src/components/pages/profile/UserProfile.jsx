@@ -283,6 +283,8 @@ export default function UserProfile() {
   const linkedin = profile.linkedin || "";
   const portfolio = profile.portfolio || "";
   const location = profile.location || "";
+  const gender = profile.gender || "";
+  const dateOfBirth = profile.dateOfBirth || "";
   const getHackId = profile.handle || `GH-${(profileUser.id || profileUser._id || "000000").slice(-6).toUpperCase()}`;
 
   const initials = name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "GH";
@@ -328,6 +330,14 @@ export default function UserProfile() {
                   <p className="mt-2 flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
                     <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <span>{location}</span>
+                  </p>
+                )}
+
+                {isOwner && (gender || dateOfBirth) && (
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-400 dark:text-neutral-500">
+                    {gender && <span>Gender: {gender}</span>}
+                    {gender && dateOfBirth && <span>•</span>}
+                    {dateOfBirth && <span>DOB: {dateOfBirth}</span>}
                   </p>
                 )}
               </div>

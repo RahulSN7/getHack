@@ -12,6 +12,7 @@ try {
   console.warn("Could not set custom DNS fallback servers:", err.message);
 }
 
+const path = require("path");
 const authRoutes = require("./routes/authRoutes");
 const hackathonRoutes = require("./routes/hackathonRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -31,6 +32,9 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static profile uploads
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);

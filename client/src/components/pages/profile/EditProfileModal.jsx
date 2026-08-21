@@ -1,20 +1,30 @@
 // ---------------------------------------------------------------------------
 // EditProfileModal.jsx — Participant Profile Editing Modal Component
-// Validates bio length (300 char max), skills, education, links, and availability
+// Supports local file picker for avatar, gender, date of birth, mandatory location,
+// bio length validation (300 char max), skill tags, education, and links.
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function EditProfileModal({ isOpen, onClose, currentProfile, currentUser, onSave }) {
   if (!isOpen) return null;
 
   const profile = currentProfile || currentUser?.profile || {};
 
+  const fileInputRef = useRef(null);
+
   const [name, setName] = useState(currentUser?.name || "");
-  const [avatar, setAvatar] = useState(profile.avatar || "");
   const [role, setRole] = useState(profile.role || "");
+  const [gender, setGender] = useState(profile.gender || "Prefer not to say");
+  const [dateOfBirth, setDateOfBirth] = useState(profile.dateOfBirth || "");
+  const [location, setLocation] = useState(profile.location || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [availability, setAvailability] = useState(profile.availability || "Available");
+
+  // Profile Photo File & Preview state
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(profile.avatar || "");
+  const [removePhoto, setRemovePhoto] = useState(false);
 
   // Skills state
   const [skills, setSkills] = useState(Array.isArray(profile.skills) ? profile.skills : []);
@@ -38,10 +48,40 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   const [github, setGithub] = useState(profile.github || "");
   const [linkedin, setLinkedin] = useState(profile.linkedin || "");
   const [portfolio, setPortfolio] = useState(profile.portfolio || "");
-  const [location, setLocation] = useState(profile.location || "");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  // Profile photo local file selection handler
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Please select a PNG, JPG, JPEG, or WEBP image.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be smaller than 5 MB.");
+      return;
+    }
+
+    setError(null);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setRemovePhoto(false);
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview("");
+    setRemovePhoto(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   // Skill tag handlers
   const handleAddSkill = (e) => {
@@ -87,8 +127,27 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
     setError(null);
 
     if (!name.trim()) {
-      setError("Name is required.");
+      setError("Full Name is required.");
       return;
+    }
+
+    // Location is mandatory
+    if (!location.trim()) {
+      setError("Location is required.");
+      return;
+    }
+
+    // Date of Birth validation
+    if (dateOfBirth) {
+      const dob = new Date(dateOfBirth);
+      if (isNaN(dob.getTime())) {
+        setError("Please enter a valid Date of Birth.");
+        return;
+      }
+      if (dob > new Date()) {
+        setError("Date of birth cannot be in the future.");
+        return;
+      }
     }
 
     if (bio.length > 300) {
@@ -98,27 +157,40 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
 
     try {
       setSaving(true);
-      await onSave({
-        name: name.trim(),
-        avatar: avatar.trim(),
-        role: role.trim() || "Participant",
-        bio: bio.trim(),
-        availability,
-        skills,
-        education: {
+
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("role", role.trim() || "Participant");
+      formData.append("gender", gender);
+      formData.append("dateOfBirth", dateOfBirth);
+      formData.append("location", location.trim());
+      formData.append("bio", bio.trim());
+      formData.append("availability", availability);
+      formData.append("skills", JSON.stringify(skills));
+      formData.append(
+        "education",
+        JSON.stringify({
           college: college.trim(),
           degree: degree.trim(),
           fieldOfStudy: fieldOfStudy.trim(),
           graduationYear: graduationYear.trim(),
-        },
-        experienceLevel,
-        experienceDetails: experienceDetails.trim(),
-        interests,
-        github: github.trim(),
-        linkedin: linkedin.trim(),
-        portfolio: portfolio.trim(),
-        location: location.trim(),
-      });
+        })
+      );
+      formData.append("experienceLevel", experienceLevel);
+      formData.append("experienceDetails", experienceDetails.trim());
+      formData.append("interests", JSON.stringify(interests));
+      formData.append("github", github.trim());
+      formData.append("linkedin", linkedin.trim());
+      formData.append("portfolio", portfolio.trim());
+
+      if (photoFile) {
+        formData.append("profilePhoto", photoFile);
+      }
+      if (removePhoto) {
+        formData.append("removePhoto", "true");
+      }
+
+      await onSave(formData);
       onClose();
     } catch (err) {
       console.error("Failed to save profile:", err);
@@ -157,8 +229,58 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
         )}
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-6">
-          {/* SECTION 1: Identity & Basic Info */}
-          <div className="space-y-4">
+          {/* SECTION 1: Profile Photo File Upload */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              Profile Photo
+            </h3>
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Avatar preview" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg font-bold text-neutral-500 dark:text-neutral-400">
+                    {name ? name.charAt(0).toUpperCase() : "P"}
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                  >
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Choose Photo
+                  </button>
+                  {photoPreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                    >
+                      Remove Photo
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                  Select a local PNG, JPG, JPEG, or WEBP image (max 5 MB).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2: Identity & Basic Info */}
+          <div className="space-y-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Basic Information
             </h3>
@@ -196,14 +318,46 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                  Profile Photo URL
+                  Gender
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-binary">Non-binary</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Date of Birth
                 </label>
                 <input
-                  type="url"
-                  value={avatar}
-                  onChange={(e) => setAvatar(e.target.value)}
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                  Location * 
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  placeholder="e.g. Mumbai, Maharashtra, India"
                 />
               </div>
 
@@ -240,22 +394,9 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 placeholder="Brief summary of your skills, background, and what you enjoy building..."
               />
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-                placeholder="e.g. San Francisco, CA or Remote"
-              />
-            </div>
           </div>
 
-          {/* SECTION 2: Skills */}
+          {/* SECTION 3: Skills */}
           <div className="space-y-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Skills *
@@ -302,7 +443,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             </div>
           </div>
 
-          {/* SECTION 3: Education */}
+          {/* SECTION 4: Education */}
           <div className="space-y-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Education *
@@ -336,7 +477,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             </div>
           </div>
 
-          {/* SECTION 4: Experience & Interests */}
+          {/* SECTION 5: Experience & Interests */}
           <div className="space-y-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Experience & Interests
@@ -415,7 +556,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             </div>
           </div>
 
-          {/* SECTION 5: Professional Links */}
+          {/* SECTION 6: Professional Links */}
           <div className="space-y-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
             <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               Professional Links * (At least 1 required)

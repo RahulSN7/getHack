@@ -239,6 +239,7 @@ const getOwnProfile = async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // PUT /api/users/profile/participant — Update Logged-in Participant Profile
+// Supports FormData / file upload (profilePhoto), gender, DOB, mandatory location
 // ---------------------------------------------------------------------------
 const updateOwnParticipantProfile = async (req, res) => {
   try {
@@ -251,35 +252,83 @@ const updateOwnParticipantProfile = async (req, res) => {
       return res.status(404).json({ message: "User account not found." });
     }
 
-    const {
+    const body = req.body || {};
+
+    let {
       name,
       avatar,
+      gender,
+      dateOfBirth,
+      location,
       role,
       bio,
       availability,
       skills,
       education,
+      college,
+      degree,
+      fieldOfStudy,
+      graduationYear,
       experienceLevel,
       experienceDetails,
       interests,
       github,
       linkedin,
       portfolio,
-      location,
-    } = req.body || {};
+      removePhoto,
+    } = body;
+
+    // Handle file upload via Multer if provided
+    if (req.file) {
+      avatar = `/uploads/${req.file.filename}`;
+    } else if (removePhoto === "true" || removePhoto === true) {
+      avatar = "";
+    }
 
     if (name && typeof name === "string" && name.trim()) {
       user.name = name.trim();
     }
 
-    // Sanitize bio length (max 300 characters)
+    // Mandatory Location Validation
+    let cleanLocation = location !== undefined ? String(location).trim() : user.profile?.location || "";
+    if (location !== undefined && !cleanLocation) {
+      return res.status(400).json({ message: "Location is required." });
+    }
+
+    // Gender Validation
+    const allowedGenders = ["Male", "Female", "Non-binary", "Prefer not to say", "Other"];
+    let cleanGender = gender !== undefined ? String(gender).trim() : user.profile?.gender || "";
+    if (cleanGender && !allowedGenders.includes(cleanGender)) {
+      return res.status(400).json({ message: "Invalid gender selection." });
+    }
+
+    // Date of Birth Validation (Cannot be in the future)
+    let cleanDOB = dateOfBirth !== undefined ? String(dateOfBirth).trim() : user.profile?.dateOfBirth || "";
+    if (cleanDOB) {
+      const dobDate = new Date(cleanDOB);
+      if (isNaN(dobDate.getTime())) {
+        return res.status(400).json({ message: "Invalid Date of Birth format." });
+      }
+      if (dobDate > new Date()) {
+        return res.status(400).json({ message: "Date of birth cannot be in the future." });
+      }
+    }
+
+    // Bio length limit (max 300 chars)
     let cleanBio = bio !== undefined ? String(bio).trim() : user.profile?.bio || "";
     if (cleanBio.length > 300) {
       cleanBio = cleanBio.slice(0, 300);
     }
 
-    // Sanitize skills array (max 15 skills, deduplicated)
+    // Parse skills (handles JSON string or array)
     let cleanSkills = user.profile?.skills || [];
+    if (typeof skills === "string") {
+      try {
+        skills = JSON.parse(skills);
+      } catch {
+        skills = skills.split(",").map((s) => s.trim());
+      }
+    }
     if (Array.isArray(skills)) {
       const seen = new Set();
       cleanSkills = [];
@@ -298,8 +347,15 @@ const updateOwnParticipantProfile = async (req, res) => {
       }
     }
 
-    // Sanitize interests array
+    // Parse interests
     let cleanInterests = user.profile?.interests || [];
+    if (typeof interests === "string") {
+      try {
+        interests = JSON.parse(interests);
+      } catch {
+        interests = interests.split(",").map((i) => i.trim());
+      }
+    }
     if (Array.isArray(interests)) {
       const seen = new Set();
       cleanInterests = [];
@@ -315,13 +371,29 @@ const updateOwnParticipantProfile = async (req, res) => {
       }
     }
 
+    // Parse education
+    let cleanEducation = user.profile?.education || {};
+    if (typeof education === "string") {
+      try {
+        cleanEducation = JSON.parse(education);
+      } catch {
+        // fallback
+      }
+    } else if (typeof education === "object" && education !== null) {
+      cleanEducation = education;
+    }
+    if (college !== undefined) cleanEducation.college = String(college).trim();
+    if (degree !== undefined) cleanEducation.degree = String(degree).trim();
+    if (fieldOfStudy !== undefined) cleanEducation.fieldOfStudy = String(fieldOfStudy).trim();
+    if (graduationYear !== undefined) cleanEducation.graduationYear = String(graduationYear).trim();
+
     // Sanitize availability
     let cleanAvailability = user.profile?.availability || "Available";
     if (availability === "Available" || availability === "Not Available") {
       cleanAvailability = availability;
     }
 
-    // Sanitize URL strings
+    // Sanitize URLs
     const sanitizeUrl = (val) => {
       if (!val || typeof val !== "string") return "";
       const trimmed = val.trim();
@@ -335,18 +407,22 @@ const updateOwnParticipantProfile = async (req, res) => {
     user.profile = {
       ...currentProfile,
       avatar: avatar !== undefined ? String(avatar).trim() : currentProfile.avatar || "",
+      gender: cleanGender,
+      dateOfBirth: cleanDOB,
+      location: cleanLocation,
       role: role !== undefined ? String(role).trim() : currentProfile.role || "Participant",
       bio: cleanBio,
       availability: cleanAvailability,
       skills: cleanSkills,
-      education: typeof education === "object" && education !== null ? education : currentProfile.education || {},
+      education: cleanEducation,
+      college: cleanEducation.college || currentProfile.college || "",
+      degree: cleanEducation.degree || currentProfile.degree || "",
       experienceLevel: experienceLevel !== undefined ? String(experienceLevel).trim() : currentProfile.experienceLevel || "Intermediate",
       experienceDetails: experienceDetails !== undefined ? String(experienceDetails).trim() : currentProfile.experienceDetails || "",
       interests: cleanInterests,
       github: sanitizeUrl(github !== undefined ? github : currentProfile.github),
       linkedin: sanitizeUrl(linkedin !== undefined ? linkedin : currentProfile.linkedin),
       portfolio: sanitizeUrl(portfolio !== undefined ? portfolio : currentProfile.portfolio),
-      location: location !== undefined ? String(location).trim() : currentProfile.location || "",
       handle: currentProfile.handle || `GH-${user._id.toString().slice(-6).toUpperCase()}`,
     };
 

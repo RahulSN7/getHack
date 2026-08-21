@@ -37,8 +37,22 @@ export const userService = {
     return request("/users/profile");
   },
 
-  // Update current user's participant profile
+  // Update current user's participant profile (supports FormData or JSON)
   updateParticipantProfile: async (profileData) => {
+    if (typeof FormData !== "undefined" && profileData instanceof FormData) {
+      const response = await fetch(`${API_BASE_URL}/users/profile/participant`, {
+        method: "PUT",
+        body: profileData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(data.message || "An unexpected error occurred.");
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    }
     return request("/users/profile/participant", {
       method: "PUT",
       body: JSON.stringify(profileData),

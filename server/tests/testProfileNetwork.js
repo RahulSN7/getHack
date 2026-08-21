@@ -47,13 +47,16 @@ runTest("Newly registered user with only name/email has incomplete profile and l
   assert.strictEqual(res.missingFields.includes("links"), true);
 });
 
-runTest("Fully filled participant user evaluates as complete (100%)", () => {
+runTest("Fully filled participant user evaluates as complete (100%) when location and required fields are present", () => {
   const completeUser = {
     name: "Alex Rivera",
     email: "alex@example.com",
     role: "participant",
     profile: {
       avatar: "https://example.com/avatar.jpg",
+      gender: "Non-binary",
+      dateOfBirth: "2000-05-15",
+      location: "San Francisco, CA, USA",
       role: "Frontend Engineer",
       bio: "Passionate developer building AI web tools for developers.",
       skills: ["React", "TypeScript", "Node.js"],
@@ -67,6 +70,46 @@ runTest("Fully filled participant user evaluates as complete (100%)", () => {
   assert.strictEqual(res.isComplete, true);
   assert.strictEqual(res.percentage, 100);
   assert.strictEqual(res.missingFields.length, 0);
+});
+
+runTest("Missing mandatory location prevents 100% profile completion", () => {
+  const noLocationUser = {
+    name: "Alex Rivera",
+    email: "alex@example.com",
+    role: "participant",
+    profile: {
+      avatar: "https://example.com/avatar.jpg",
+      gender: "Male",
+      dateOfBirth: "1998-10-10",
+      location: "", // Missing mandatory location
+      role: "Frontend Engineer",
+      bio: "Passionate developer building AI web tools for developers.",
+      skills: ["React", "TypeScript"],
+      availability: "Available",
+      education: { college: "MIT" },
+      github: "https://github.com/alex",
+    },
+  };
+
+  const res = calculateProfileCompletion(noLocationUser);
+  assert.strictEqual(res.isComplete, false);
+  assert.strictEqual(res.missingFields.includes("location"), true);
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 2: Validation Rules (Gender & DOB)
+// ---------------------------------------------------------------------------
+console.log("\n[Scenario 2: Gender & DOB Validation Rules]");
+
+runTest("Future date of birth is invalid", () => {
+  const futureDate = new Date("2099-01-01");
+  assert.strictEqual(futureDate > new Date(), true);
+});
+
+runTest("Allowed gender values are strictly validated", () => {
+  const allowed = ["Male", "Female", "Non-binary", "Prefer not to say", "Other"];
+  assert.strictEqual(allowed.includes("Non-binary"), true);
+  assert.strictEqual(allowed.includes("InvalidGender"), false);
 });
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 // server/utils/profileCompletion.js — Profile Completion Utility
 // Calculates real participant profile completion percentage and status
+// Location is strictly mandatory for a complete profile.
 // ---------------------------------------------------------------------------
 
 function calculateProfileCompletion(user) {
@@ -8,7 +9,19 @@ function calculateProfileCompletion(user) {
     return {
       percentage: 0,
       isComplete: false,
-      missingFields: ["name", "avatar", "role", "bio", "skills", "availability", "education", "links"],
+      missingFields: [
+        "name",
+        "location",
+        "profilePhoto",
+        "gender",
+        "dateOfBirth",
+        "role",
+        "bio",
+        "skills",
+        "availability",
+        "education",
+        "links",
+      ],
     };
   }
 
@@ -16,6 +29,9 @@ function calculateProfileCompletion(user) {
 
   const name = typeof user.name === "string" ? user.name.trim() : "";
   const avatar = typeof profile.avatar === "string" ? profile.avatar.trim() : "";
+  const gender = typeof profile.gender === "string" ? profile.gender.trim() : "";
+  const dateOfBirth = typeof profile.dateOfBirth === "string" ? profile.dateOfBirth.trim() : "";
+  const location = typeof profile.location === "string" ? profile.location.trim() : "";
   const role = typeof profile.role === "string" ? profile.role.trim() : "";
   const bio = typeof profile.bio === "string" ? profile.bio.trim() : "";
 
@@ -35,14 +51,17 @@ function calculateProfileCompletion(user) {
   const hasLink = Boolean(github || linkedin || portfolio);
 
   const checks = [
-    { key: "name", label: "Name", score: 15, isFilled: Boolean(name) },
-    { key: "avatar", label: "Profile Photo", score: 10, isFilled: Boolean(avatar) },
-    { key: "role", label: "Role / Headline", score: 15, isFilled: Boolean(role) },
-    { key: "bio", label: "Bio", score: 15, isFilled: Boolean(bio && bio.length >= 10) },
-    { key: "skills", label: "Skills", score: 15, isFilled: skills.length > 0 },
-    { key: "availability", label: "Availability", score: 10, isFilled: Boolean(availability) },
-    { key: "education", label: "Education / College", score: 10, isFilled: hasEducation },
-    { key: "links", label: "GitHub, LinkedIn or Portfolio Link", score: 10, isFilled: hasLink },
+    { key: "name", label: "Name", score: 10, isFilled: Boolean(name) },
+    { key: "location", label: "Location (Mandatory)", score: 15, isFilled: Boolean(location) },
+    { key: "profilePhoto", label: "Profile Photo", score: 10, isFilled: Boolean(avatar) },
+    { key: "gender", label: "Gender", score: 10, isFilled: Boolean(gender) },
+    { key: "dateOfBirth", label: "Date of Birth", score: 10, isFilled: Boolean(dateOfBirth) },
+    { key: "role", label: "Role / Headline", score: 10, isFilled: Boolean(role) },
+    { key: "bio", label: "Bio", score: 10, isFilled: Boolean(bio && bio.length >= 10) },
+    { key: "skills", label: "Skills", score: 10, isFilled: skills.length > 0 },
+    { key: "availability", label: "Availability", score: 5, isFilled: Boolean(availability) },
+    { key: "education", label: "Education / College", score: 5, isFilled: hasEducation },
+    { key: "links", label: "GitHub, LinkedIn or Portfolio Link", score: 5, isFilled: hasLink },
   ];
 
   let percentage = 0;
@@ -56,13 +75,16 @@ function calculateProfileCompletion(user) {
     }
   }
 
-  // Ensure percentage cap at 100
   percentage = Math.min(100, Math.max(0, percentage));
 
   // Required criteria for profile completion before sending connection requests
+  // Location is strictly mandatory!
   const isComplete =
     Boolean(name) &&
+    Boolean(location) &&
     Boolean(avatar) &&
+    Boolean(gender) &&
+    Boolean(dateOfBirth) &&
     Boolean(role) &&
     Boolean(bio && bio.length >= 10) &&
     skills.length > 0 &&

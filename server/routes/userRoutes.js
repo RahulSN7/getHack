@@ -8,11 +8,18 @@ const userController = require("../controllers/userController");
 const { requireAuth, optionalAuth } = require("../middleware/authMiddleware");
 const { requireOrganizer } = require("../middleware/roleMiddleware");
 
+const upload = require("../middleware/uploadMiddleware");
+
 // Logged-in user's own profile & completion stats
 router.get("/profile", requireAuth, userController.getOwnProfile);
 
-// Authenticated participant profile update
-router.put("/profile/participant", requireAuth, userController.updateOwnParticipantProfile);
+// Authenticated participant profile update (supports Multer file upload)
+router.put(
+  "/profile/participant",
+  requireAuth,
+  upload.single("profilePhoto"),
+  userController.updateOwnParticipantProfile
+);
 
 // Public or optionally-authenticated participant profile view
 router.get("/participant/:id", optionalAuth, userController.getParticipantProfile);
