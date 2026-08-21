@@ -11,6 +11,7 @@ async function request(endpoint, options = {}) {
   };
 
   const config = {
+    credentials: "include",
     ...options,
     headers: {
       ...defaultHeaders,
@@ -42,6 +43,7 @@ export const userService = {
     if (typeof FormData !== "undefined" && profileData instanceof FormData) {
       const response = await fetch(`${API_BASE_URL}/users/profile/participant`, {
         method: "PUT",
+        credentials: "include",
         body: profileData,
       });
       const data = await response.json().catch(() => ({}));
