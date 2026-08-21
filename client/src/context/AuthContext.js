@@ -1,8 +1,11 @@
-// ---------------------------------------------------------------------------
-// AuthContext.js — React Context Definition
-// Separated to satisfy react-refresh/only-export-components rule.
-// ---------------------------------------------------------------------------
-
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 
 export const AuthContext = createContext(null);
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

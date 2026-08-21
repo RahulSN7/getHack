@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { useMemo, useState } from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
 import { TEAMMATES } from "../../../data/teammates";
 import { TEAMS } from "../../../data/teams";

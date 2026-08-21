@@ -6,8 +6,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
+import { TEAMMATES } from "../../../data/teammates";
 import ProfileCompletionBar from "./ProfileCompletionBar";
 import EditProfileModal from "./EditProfileModal";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
@@ -43,6 +44,7 @@ export default function UserProfile() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isUnauthenticated, setIsUnauthenticated] = useState(false);
 
   // Edit Profile Modal state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -61,21 +63,81 @@ export default function UserProfile() {
     async function loadProfile() {
       setLoading(true);
       setError(null);
+      setIsUnauthenticated(false);
+
       try {
         if (targetId === "me" || (currentUser && (currentUser.id === targetId || currentUser._id === targetId))) {
-          const data = await userService.getOwnProfile();
-          if (isMounted) {
-            setProfileUser(data.user);
-            setProfileCompletion(data.profileCompletion);
-            setIsOwner(true);
+          if (!currentUser && !isAuthenticated) {
+            if (isMounted) {
+              setIsUnauthenticated(true);
+              setLoading(false);
+            }
+            return;
+          }
+
+          try {
+            const data = await userService.getOwnProfile();
+            if (isMounted && data?.user) {
+              setProfileUser(data.user);
+              setProfileCompletion(data.profileCompletion);
+              setIsOwner(true);
+              return;
+            }
+          } catch {
+            if (currentUser && isMounted) {
+              setProfileUser(currentUser);
+              setIsOwner(true);
+              return;
+            }
+            if (isMounted) setIsUnauthenticated(true);
+            return;
           }
         } else {
-          const data = await userService.getParticipantProfile(targetId);
-          if (isMounted) {
-            setProfileUser(data.user);
-            setProfileCompletion(data.profileCompletion);
-            setIsOwner(Boolean(data.isOwner));
-            setConnectionState(data.connectionState || { status: "none" });
+          try {
+            const data = await userService.getParticipantProfile(targetId);
+            if (isMounted && data?.user) {
+              setProfileUser(data.user);
+              setProfileCompletion(data.profileCompletion);
+              setIsOwner(Boolean(data.isOwner));
+              setConnectionState(data.connectionState || { status: "none" });
+              return;
+            }
+          } catch (apiErr) {
+            // Check fallback TEAMMATES list by ID or username
+            const teammate = TEAMMATES.find(
+              (m) => m.id === targetId || (m.username && m.username.toLowerCase() === targetId.toLowerCase())
+            );
+
+            if (teammate && isMounted) {
+              setProfileUser({
+                id: teammate.id,
+                name: teammate.name,
+                email: teammate.email || "",
+                role: teammate.role,
+                profile: {
+                  avatar: teammate.avatar || "",
+                  role: teammate.role,
+                  bio: teammate.bio || "",
+                  skills: teammate.skills || [],
+                  availability: teammate.availability || "Available",
+                  college: teammate.college || "",
+                  degree: teammate.degree || "",
+                  education: { college: teammate.college || "", degree: teammate.degree || "" },
+                  experienceLevel: teammate.experience || "Intermediate",
+                  experienceDetails: teammate.headline || "",
+                  interests: teammate.interests || [],
+                  github: teammate.github || "",
+                  linkedin: teammate.linkedin || "",
+                  portfolio: teammate.portfolio || "",
+                  location: teammate.location || "",
+                  handle: teammate.username ? `@${teammate.username}` : `GH-${teammate.id.toUpperCase()}`,
+                },
+              });
+              setProfileCompletion({ percentage: 100, isComplete: true, missingFields: [] });
+              setIsOwner(false);
+              return;
+            }
+            throw apiErr;
           }
         }
       } catch (err) {
@@ -92,7 +154,7 @@ export default function UserProfile() {
     return () => {
       isMounted = false;
     };
-  }, [targetId, currentUser]);
+  }, [targetId, currentUser, isAuthenticated]);
 
   // Handle saving profile changes
   const handleSaveProfile = async (updatedData) => {
@@ -151,6 +213,29 @@ export default function UserProfile() {
             <div className="h-48 rounded-xl bg-neutral-200 dark:bg-neutral-800" />
           </div>
         </main>
+      </div>
+    );
+  }
+
+  if (isUnauthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+        <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            Please log in to view your profile
+          </h1>
+          <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+            You need to be signed in as a getHack participant to access your profile.
+          </p>
+          <div className="mt-6">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+            >
+              Log In
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

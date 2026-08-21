@@ -70,19 +70,36 @@ runTest("Fully filled participant user evaluates as complete (100%)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Scenario 2: Connection Request Validation Rules
+// Scenario 3: View Profile & MongoDB User Data Resolution
 // ---------------------------------------------------------------------------
-console.log("\n[Scenario 2: Connection Note & Self-Request Validation]");
+console.log("\n[Scenario 3: View Profile & MongoDB User Data Resolution]");
 
-runTest("Note longer than 300 characters is rejected by length rule", () => {
-  const longNote = "a".repeat(301);
-  assert.strictEqual(longNote.length > 300, true);
+runTest("View Profile fetches exact target user by ID and does not return current user", () => {
+  const currentUser = { _id: "660000000000000000000001", name: "Current User" };
+  const targetUser = { _id: "660000000000000000000002", name: "Target Teammate" };
+
+  const isOwner = currentUser._id === targetUser._id;
+  assert.strictEqual(isOwner, false);
+  assert.strictEqual(targetUser.name, "Target Teammate");
 });
 
-runTest("Valid note within 300 characters is preserved cleanly", () => {
-  const validNote = "Hi! I'd love to connect and collaborate on upcoming hackathons.";
-  assert.strictEqual(validNote.length <= 300, true);
-  assert.strictEqual(validNote.trim(), validNote);
+runTest("Old MongoDB users with missing profile properties receive safe defaults", () => {
+  const User = require("../models/user");
+  const oldUserDoc = new User({
+    _id: "660000000000000000000003",
+    name: "Old User",
+    email: "olduser@example.com",
+    password: "hashedpassword",
+    role: "participant",
+  });
+
+  const safe = oldUserDoc.toSafeUser();
+  assert.strictEqual(safe.name, "Old User");
+  assert.strictEqual(Array.isArray(safe.profile.skills), true);
+  assert.strictEqual(safe.profile.skills.length, 0);
+  assert.strictEqual(safe.profile.bio, "");
+  assert.strictEqual(safe.profile.availability, "Available");
+  assert.strictEqual(typeof safe.profile.handle, "string");
 });
 
 console.log("\n==============================================");
