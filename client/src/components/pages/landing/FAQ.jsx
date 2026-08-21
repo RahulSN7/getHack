@@ -24,7 +24,7 @@ const faqData = [
   {
     question: "Can I join hackathons remotely?",
     answer:
-      "Yes. getHack lists hackathons across all formats: Online/Virtual, In-Person (Offline), and Hybrid events. You can easily filter by your preferred participation format.",
+      "Yes. getHack aggregates hackathons hosted globally. For detailed venue, platform, and participation requirements, check the official registration page.",
   },
   {
     question: "How does team matching work?",

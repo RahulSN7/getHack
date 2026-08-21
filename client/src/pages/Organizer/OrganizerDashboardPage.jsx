@@ -273,9 +273,6 @@ function OrganizerDashboardPage() {
                           >
                             {badge.label}
                           </span>
-                          <span className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                            {h.format || h.mode || "Online"}
-                          </span>
                         </div>
 
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">

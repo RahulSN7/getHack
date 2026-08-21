@@ -761,13 +761,6 @@ function OrganizerProfilePage() {
                         </svg>
                         <span>{formatDateRange(h.startDate, h.endDate)}</span>
                       </p>
-                      <p className="flex items-center gap-1.5">
-                        <svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="2" y1="12" x2="22" y2="12" />
-                        </svg>
-                        <span>{h.format || h.mode || "Online"}</span>
-                      </p>
                     </div>
 
                     {(h.prizes || h.prizePool) && (

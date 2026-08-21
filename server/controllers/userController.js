@@ -211,7 +211,235 @@ const updateOwnOrganizerProfile = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// GET /api/users/profile — Fetch Logged-in User's Own Profile & Completion
+// ---------------------------------------------------------------------------
+const getOwnProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthenticated." });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User account not found." });
+    }
+
+    const profileCompletion = calculateProfileCompletion(user);
+
+    return res.status(200).json({
+      user: user.toSafeUser(),
+      profileCompletion,
+    });
+  } catch (error) {
+    console.error("Error in getOwnProfile:", error);
+    return res.status(500).json({ message: "Unable to load profile." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// PUT /api/users/profile/participant — Update Logged-in Participant Profile
+// ---------------------------------------------------------------------------
+const updateOwnParticipantProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthenticated." });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User account not found." });
+    }
+
+    const {
+      name,
+      avatar,
+      role,
+      bio,
+      availability,
+      skills,
+      education,
+      experienceLevel,
+      experienceDetails,
+      interests,
+      github,
+      linkedin,
+      portfolio,
+      location,
+    } = req.body || {};
+
+    if (name && typeof name === "string" && name.trim()) {
+      user.name = name.trim();
+    }
+
+    // Sanitize bio length (max 300 characters)
+    let cleanBio = bio !== undefined ? String(bio).trim() : user.profile?.bio || "";
+    if (cleanBio.length > 300) {
+      cleanBio = cleanBio.slice(0, 300);
+    }
+
+    // Sanitize skills array (max 15 skills, deduplicated)
+    let cleanSkills = user.profile?.skills || [];
+    if (Array.isArray(skills)) {
+      const seen = new Set();
+      cleanSkills = [];
+      for (const s of skills) {
+        if (typeof s === "string" && s.trim().length > 0) {
+          const item = s.trim();
+          const key = item.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            cleanSkills.push(item);
+          }
+        }
+      }
+      if (cleanSkills.length > 15) {
+        cleanSkills = cleanSkills.slice(0, 15);
+      }
+    }
+
+    // Sanitize interests array
+    let cleanInterests = user.profile?.interests || [];
+    if (Array.isArray(interests)) {
+      const seen = new Set();
+      cleanInterests = [];
+      for (const i of interests) {
+        if (typeof i === "string" && i.trim().length > 0) {
+          const item = i.trim();
+          const key = item.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            cleanInterests.push(item);
+          }
+        }
+      }
+    }
+
+    // Sanitize availability
+    let cleanAvailability = user.profile?.availability || "Available";
+    if (availability === "Available" || availability === "Not Available") {
+      cleanAvailability = availability;
+    }
+
+    // Sanitize URL strings
+    const sanitizeUrl = (val) => {
+      if (!val || typeof val !== "string") return "";
+      const trimmed = val.trim();
+      if (!trimmed) return "";
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+      return `https://${trimmed}`;
+    };
+
+    const currentProfile = user.profile || {};
+
+    user.profile = {
+      ...currentProfile,
+      avatar: avatar !== undefined ? String(avatar).trim() : currentProfile.avatar || "",
+      role: role !== undefined ? String(role).trim() : currentProfile.role || "Participant",
+      bio: cleanBio,
+      availability: cleanAvailability,
+      skills: cleanSkills,
+      education: typeof education === "object" && education !== null ? education : currentProfile.education || {},
+      experienceLevel: experienceLevel !== undefined ? String(experienceLevel).trim() : currentProfile.experienceLevel || "Intermediate",
+      experienceDetails: experienceDetails !== undefined ? String(experienceDetails).trim() : currentProfile.experienceDetails || "",
+      interests: cleanInterests,
+      github: sanitizeUrl(github !== undefined ? github : currentProfile.github),
+      linkedin: sanitizeUrl(linkedin !== undefined ? linkedin : currentProfile.linkedin),
+      portfolio: sanitizeUrl(portfolio !== undefined ? portfolio : currentProfile.portfolio),
+      location: location !== undefined ? String(location).trim() : currentProfile.location || "",
+      handle: currentProfile.handle || `GH-${user._id.toString().slice(-6).toUpperCase()}`,
+    };
+
+    await user.save();
+
+    const profileCompletion = calculateProfileCompletion(user);
+
+    return res.status(200).json({
+      message: "Participant profile updated successfully.",
+      user: user.toSafeUser(),
+      profileCompletion,
+    });
+  } catch (error) {
+    console.error("Error in updateOwnParticipantProfile:", error);
+    return res.status(500).json({ message: "Failed to update participant profile." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /api/users/participant/:id — Fetch Participant Profile (Public View)
+// ---------------------------------------------------------------------------
+const getParticipantProfile = async (req, res) => {
+  try {
+    let { id } = req.params;
+
+    if (id === "me") {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthenticated." });
+      }
+      id = req.user._id.toString();
+    }
+
+    let targetUser = null;
+
+    // Search by ObjectId or handle
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      targetUser = await User.findById(id);
+    }
+
+    if (!targetUser) {
+      targetUser = await User.findOne({ "profile.handle": id });
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "Participant profile not found." });
+    }
+
+    const isOwner = req.user && req.user._id.toString() === targetUser._id.toString();
+    const safeUser = targetUser.toSafeUser();
+    const profileCompletion = calculateProfileCompletion(targetUser);
+
+    let connectionState = {
+      status: "none", // 'none' | 'pending' | 'accepted' | 'rejected'
+      isSender: false,
+      requestId: null,
+      note: null,
+    };
+
+    if (req.user && !isOwner) {
+      const Connection = require("../models/connection");
+      const existingConn = await Connection.findOne({
+        $or: [
+          { sender: req.user._id, receiver: targetUser._id },
+          { sender: targetUser._id, receiver: req.user._id },
+        ],
+      });
+
+      if (existingConn) {
+        connectionState = {
+          status: existingConn.status,
+          isSender: existingConn.sender.toString() === req.user._id.toString(),
+          requestId: existingConn._id.toString(),
+          note: existingConn.note || null,
+        };
+      }
+    }
+
+    return res.status(200).json({
+      user: safeUser,
+      profileCompletion,
+      isOwner,
+      connectionState,
+    });
+  } catch (error) {
+    console.error("Error in getParticipantProfile:", error);
+    return res.status(500).json({ message: "Unable to load participant profile." });
+  }
+};
+
 module.exports = {
   getOrganizerProfile,
   updateOwnOrganizerProfile,
+  getOwnProfile,
+  updateOwnParticipantProfile,
+  getParticipantProfile,
 };

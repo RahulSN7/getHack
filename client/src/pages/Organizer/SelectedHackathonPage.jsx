@@ -49,7 +49,7 @@ function SelectedHackathonPage() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                Mode: {hackathon.mode} · Dates: {hackathon.hackathonDate} · Prize: {hackathon.prizePool}
+                Dates: {hackathon.hackathonDate} · Prize: {hackathon.prizePool}
               </p>
             </div>
 
@@ -153,9 +153,9 @@ function SelectedHackathonPage() {
             {/* Overview Stats */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Event Mode & Schedule</p>
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Event Schedule</p>
                 <p className="mt-2 text-base font-bold tracking-tight text-neutral-900 dark:text-white">
-                  {hackathon.mode} · {hackathon.hackathonDate}
+                  {hackathon.hackathonDate}
                 </p>
               </div>
 

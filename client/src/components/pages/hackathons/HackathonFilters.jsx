@@ -14,12 +14,6 @@ const STATUS_OPTIONS = [
   { id: "registration-closed", label: "Registration Closed" },
 ];
 
-const FORMAT_OPTIONS = [
-  { id: "all", label: "All Formats" },
-  { id: "online", label: "Online" },
-  { id: "offline", label: "Offline / Hybrid" },
-];
-
 const PLATFORM_OPTIONS = [
   { id: "all", label: "All Platforms" },
   { id: "devpost", label: "Devpost" },
@@ -33,14 +27,12 @@ const PLATFORM_OPTIONS = [
 
 function HackathonFilters({
   statusFilter = "all",
-  formatFilter = "all",
   platformFilter = "all",
   onApply,
   onClear,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [draftStatus, setDraftStatus] = useState(statusFilter);
-  const [draftFormat, setDraftFormat] = useState(formatFilter);
   const [draftPlatform, setDraftPlatform] = useState(platformFilter);
 
   const popoverRef = useRef(null);
@@ -49,7 +41,6 @@ function HackathonFilters({
   const handleToggleOpen = () => {
     if (!isOpen) {
       setDraftStatus(statusFilter);
-      setDraftFormat(formatFilter);
       setDraftPlatform(platformFilter);
     }
     setIsOpen((prev) => !prev);
@@ -57,7 +48,6 @@ function HackathonFilters({
 
   const activeCount =
     (statusFilter !== "all" ? 1 : 0) +
-    (formatFilter !== "all" ? 1 : 0) +
     (platformFilter !== "all" ? 1 : 0);
   const hasActiveFilters = activeCount > 0;
 
@@ -92,7 +82,6 @@ function HackathonFilters({
   const handleApply = () => {
     onApply({
       statusFilter: draftStatus,
-      formatFilter: draftFormat,
       platformFilter: draftPlatform,
     });
     setIsOpen(false);
@@ -100,7 +89,6 @@ function HackathonFilters({
 
   const handleClear = () => {
     setDraftStatus("all");
-    setDraftFormat("all");
     setDraftPlatform("all");
     onClear();
     setIsOpen(false);
@@ -272,48 +260,6 @@ function HackathonFilters({
                       `}
                     >
                       {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Format Section */}
-            <div className="border-t border-neutral-100 pt-3 dark:border-neutral-800">
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Format
-              </label>
-              <div className="mt-2 space-y-1">
-                {FORMAT_OPTIONS.map((option) => {
-                  const isSelected = draftFormat === option.id;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setDraftFormat(option.id)}
-                      className={`
-                        flex
-                        w-full
-                        items-center
-                        justify-between
-                        rounded-lg
-                        px-2.5
-                        py-1.5
-                        text-xs
-                        font-medium
-                        transition-colors
-                        duration-150
-                        ${
-                          isSelected
-                            ? `${accentBgSoft} ${accentText}`
-                            : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-                        }
-                      `}
-                    >
-                      <span>{option.label}</span>
-                      {isSelected && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
-                      )}
                     </button>
                   );
                 })}

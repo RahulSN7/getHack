@@ -36,6 +36,23 @@ function formatDate(dateStr) {
   }
 }
 
+// Helper to check valid HTTP/HTTPS registration URL
+function isValidRegistrationUrl(urlStr) {
+  if (!urlStr || typeof urlStr !== "string") return false;
+  const clean = urlStr.trim();
+  if (
+    !clean ||
+    clean === "#" ||
+    clean.toLowerCase() === "none" ||
+    clean.toLowerCase() === "not available" ||
+    clean.toLowerCase() === "null" ||
+    clean.toLowerCase() === "undefined"
+  ) {
+    return false;
+  }
+  return clean.startsWith("http://") || clean.startsWith("https://");
+}
+
 function HackathonDetailsPage() {
   const { id } = useParams();
   const { isSaved, toggleSave } = useSaved();
@@ -52,11 +69,14 @@ function HackathonDetailsPage() {
         const data = await hackathonService.getHackathonById(id);
         if (isMounted && (data?.hackathon || data?.data)) {
           const h = data.hackathon || data.data;
-          const extUrl = typeof h.source === "object" ? h.source?.externalUrl : h.registration?.url || h.registrationUrl || h.url || "#";
+          const regUrlCandidate = h.registrationUrl || h.registration?.url || (typeof h.source === "object" ? h.source?.externalUrl : h.externalUrl) || h.url || "";
+          const hasValidUrl = isValidRegistrationUrl(regUrlCandidate);
+          const extUrl = hasValidUrl ? regUrlCandidate.trim() : null;
+
           const orgStr = formatOrganizer(h.organizerName, h.organizer);
           const modeStr = formatMode(h.mode, h.format, h.event);
           const locStr = formatLocation(h.location, h.event);
-          const prizeStr = formatPrize(h.prizePool, h.prizes, h.prize || "N/A");
+          const prizeStr = formatPrize(h.prizePool, h.prizes, h.prize || "See official registration page");
           const feeStr = formatFee(h.fee, h.registrationFee);
           const teamSizeStr = formatTeamSize(h.teamSize, h.minTeamSize, h.maxTeamSize);
 
@@ -70,7 +90,9 @@ function HackathonDetailsPage() {
             hackathonDate: h.event?.startDate || h.startDate || h.hackathonDate,
             eventEndDate: h.event?.endDate || h.endDate || h.eventEndDate,
             registrationDeadline: h.registration?.deadline || h.registrationDeadline,
-            url: typeof extUrl === "string" ? extUrl : "#",
+            registrationUrl: extUrl,
+            url: extUrl,
+            hasValidRegistrationUrl: hasValidUrl,
             fee: feeStr,
             teamSize: teamSizeStr,
             prize: prizeStr,
@@ -168,9 +190,10 @@ function HackathonDetailsPage() {
     minTeamSize,
     maxTeamSize,
     teamSize,
-    prize = "N/A",
+    prize = "See official registration page",
     accent = "indigo",
-    url = "#",
+    registrationUrl,
+    hasValidRegistrationUrl,
     description,
     tags = [],
     themes,
@@ -194,7 +217,7 @@ function HackathonDetailsPage() {
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
   const initial = name ? name.charAt(0).toUpperCase() : "H";
-  const teamSizeLabel = formatTeamSize(minTeamSize, maxTeamSize, teamSize);
+  const teamSizeLabel = formatTeamSize(teamSize, minTeamSize, maxTeamSize);
   const formattedEventDate = formatDate(hackathonDate);
   const formattedEndDate = formatDate(eventEndDate);
 
@@ -203,15 +226,13 @@ function HackathonDetailsPage() {
 
   // Resolution for Eligibility text
   const eligibilityText =
-    eligibility ||
-    "Students, developers, designers, and technology enthusiasts are welcome to participate.";
+    typeof eligibility === "string" && eligibility.trim() && eligibility !== "Not specified"
+      ? eligibility
+      : "Check official registration page";
 
   const handleSaveToggle = () => {
     toggleSave(id);
   };
-
-  const isOnlineMode = mode === "Online" || mode === "Hybrid";
-  const isOfflineMode = mode === "Offline" || mode === "Hybrid";
 
   const submissionText =
     typeof submission === "string"
@@ -221,8 +242,8 @@ function HackathonDetailsPage() {
         : null;
 
   // Check if any event details specs exist
-  const hasOnlineSpecs = isOnlineMode && (platform || duration || timezone || submissionText);
-  const hasOfflineSpecs = isOfflineMode && (venue || address || checkIn || mapUrl);
+  const hasOnlineSpecs = Boolean(platform || duration || timezone || submissionText);
+  const hasOfflineSpecs = Boolean(venue || address || checkIn || mapUrl);
   const hasEventDetails = hasOnlineSpecs || hasOfflineSpecs;
 
   return (
@@ -303,7 +324,7 @@ function HackathonDetailsPage() {
                   </Link>
                 </p>
 
-                {/* Status & Mode badges */}
+                {/* Status & Location badge */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {isOpen ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
@@ -317,17 +338,7 @@ function HackathonDetailsPage() {
                     </span>
                   )}
 
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                    {mode === "Online" ? (
-                      <svg className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></svg>
-                    ) : (
-                      <svg className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    )}
-                    <span>
-                      {mode}
-                      {location ? ` · ${location}` : ""}
-                    </span>
-                  </span>
+                 
                 </div>
               </div>
             </div>
@@ -377,28 +388,8 @@ function HackathonDetailsPage() {
           </div>
         </div>
 
-        {/* ── 3. Quick Overview Bar ── */}
-        <div className="mt-6 divide-y divide-neutral-200/80 rounded-xl border border-neutral-200/90 bg-white shadow-xs sm:grid sm:grid-cols-4 sm:divide-x sm:divide-y-0 dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
-          {/* Fee */}
-          <div className="px-5 py-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              Registration Fee
-            </span>
-            <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white">
-              {fee}
-            </p>
-          </div>
-
-          {/* Team Size */}
-          <div className="px-5 py-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              Team Size
-            </span>
-            <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white">
-              {teamSizeLabel}
-            </p>
-          </div>
-
+        {/* ── 3. Quick Overview Bar (2 Columns: Deadline & Event Date) ── */}
+        <div className="mt-6 divide-y divide-neutral-200/80 rounded-xl border border-neutral-200/90 bg-white shadow-xs sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0 dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
           {/* Deadline */}
           <div className="px-5 py-3.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
@@ -425,7 +416,7 @@ function HackathonDetailsPage() {
 
         {/* ── 4. Balanced Two-Column Content Layout ── */}
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
-          {/* LEFT COLUMN (Main Content: Approx 65–70%) */}
+          {/* LEFT COLUMN (Main Content) */}
           <div className="space-y-8 lg:col-span-2">
             {/* About Section */}
             <section className="space-y-2.5">
@@ -438,7 +429,7 @@ function HackathonDetailsPage() {
               </p>
             </section>
 
-            {/* Themes Section (Area section completely removed) */}
+            {/* Themes Section */}
             {themeList.length > 0 && (
               <section className="space-y-3 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
                 <div className="flex items-center gap-2">
@@ -474,16 +465,6 @@ function HackathonDetailsPage() {
                 </div>
               </section>
             )}
-
-            {/* Eligibility Section */}
-            <section className="space-y-3 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                ELIGIBILITY
-              </h2>
-              <p className="pt-1 text-sm font-medium leading-relaxed text-neutral-800 dark:text-neutral-200">
-                {eligibilityText}
-              </p>
-            </section>
 
             {/* Event Timeline Section */}
             <section className="space-y-4 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
@@ -540,9 +521,54 @@ function HackathonDetailsPage() {
                 </div>
               </div>
             </section>
+
+            {/* Registration & Participation Section */}
+            <section className="space-y-3 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
+              <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+                Registration & Participation
+              </h2>
+              <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+                For the latest eligibility, team size, registration fee, rules, and participation requirements, visit the official registration page.
+              </p>
+              <div className="pt-2">
+                {hasValidRegistrationUrl ? (
+                  <a
+                    href={registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="
+                      inline-flex
+                      items-center
+                      gap-2
+                      rounded-lg
+                      bg-indigo-600
+                      px-5
+                      py-2.5
+                      text-xs
+                      font-semibold
+                      text-white
+                      shadow-xs
+                      transition-colors
+                      hover:bg-indigo-500
+                      focus-visible:outline
+                      focus-visible:outline-2
+                      focus-visible:outline-indigo-500
+                      dark:bg-indigo-500
+                      dark:hover:bg-indigo-400
+                    "
+                  >
+                    <span>View Official Registration ↗</span>
+                  </a>
+                ) : (
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-neutral-100 px-4 py-2.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                    <span>Official registration link unavailable</span>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
 
-          {/* RIGHT SIDEBAR (Contextual Rail: Approx 30–35%, Unified Card Panel) */}
+          {/* RIGHT SIDEBAR (Contextual Rail) */}
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
               {/* 1. Single Prize Pool Representation */}
@@ -558,7 +584,7 @@ function HackathonDetailsPage() {
                 </p>
               </div>
 
-              {/* 2. Event Details Section (Mode-Specific Specifications) */}
+              {/* 2. Event Details Section */}
               {hasEventDetails && (
                 <>
                   <div className="my-5 border-t border-neutral-200/80 dark:border-neutral-800" />
@@ -571,11 +597,6 @@ function HackathonDetailsPage() {
                     {/* Online Specs */}
                     {hasOnlineSpecs && (
                       <div className="space-y-2 text-xs">
-                        {mode === "Hybrid" && (
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 dark:text-neutral-500 pt-1">
-                            Online
-                          </p>
-                        )}
                         {platform && (
                           <div className="flex items-center justify-between py-1">
                             <span className="text-neutral-500 dark:text-neutral-400">Platform</span>
@@ -606,11 +627,6 @@ function HackathonDetailsPage() {
                     {/* Offline Specs */}
                     {hasOfflineSpecs && (
                       <div className={`space-y-2 text-xs ${hasOnlineSpecs ? "mt-4 pt-3 border-t border-neutral-200/60 dark:border-neutral-800/60" : ""}`}>
-                        {mode === "Hybrid" && (
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 dark:text-neutral-500 pt-1">
-                            Offline
-                          </p>
-                        )}
                         {venue && (
                           <div className="flex items-start justify-between gap-2 py-1">
                             <span className="shrink-0 text-neutral-500 dark:text-neutral-400">Venue</span>
@@ -648,87 +664,6 @@ function HackathonDetailsPage() {
                   </div>
                 </>
               )}
-
-              {/* 3. Registration CTA Section */}
-              <div className="my-5 border-t border-neutral-200/80 dark:border-neutral-800" />
-
-              <div>
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-                  Ready to participate?
-                </h3>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  {isOpen
-                    ? "Register through the official organizer portal."
-                    : "Registration for this hackathon is currently closed."}
-                </p>
-
-                <div className="mt-4">
-                  {isOpen ? (
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="
-                        inline-flex
-                        w-full
-                        items-center
-                        justify-center
-                        gap-2
-                        rounded-lg
-                        bg-indigo-600
-                        px-4
-                        py-2.5
-                        text-xs
-                        font-semibold
-                        text-white
-                        shadow-sm
-                        transition-colors
-                        hover:bg-indigo-500
-                        focus-visible:outline
-                        focus-visible:outline-2
-                        focus-visible:outline-indigo-500
-                        dark:bg-indigo-500
-                        dark:hover:bg-indigo-400
-                      "
-                    >
-                      <span>Register on Organizer&apos;s Platform</span>
-                      <svg
-                        className="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
-                    </a>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="
-                        w-full
-                        cursor-not-allowed
-                        rounded-lg
-                        bg-neutral-100
-                        px-4
-                        py-2.5
-                        text-xs
-                        font-semibold
-                        text-neutral-400
-                        dark:bg-neutral-800
-                        dark:text-neutral-500
-                      "
-                    >
-                      Registration Closed
-                    </button>
-                  )}
-                </div>
-              </div>
             </div>
           </aside>
         </div>

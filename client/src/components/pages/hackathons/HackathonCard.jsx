@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // HackathonCard — compact, information-first card design with Save / Bookmark
-// Safe rendering for all structured MongoDB data fields.
+// Displays Platform, Themes, Prize Pool & Deadline. Zero Mode/Fee/TeamSize/Eligibility fields.
 // ---------------------------------------------------------------------------
 
 import { Link } from "react-router-dom";
@@ -8,98 +8,130 @@ import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
 import DeadlineDisplay from "./DeadlineDisplay";
 import {
-  formatTeamSize,
   formatPrize,
   formatOrganizer,
-  formatLocation,
-  formatFee,
-  formatMode,
 } from "../../../utils/hackathonFormatters";
 
-// Platform Badge helper
-function PlatformBadge({ platform }) {
-  if (!platform || platform === "gethack") return null;
+// Platform normalization helper
+function formatPlatformName(platformInput, sourceObj, urlInput) {
+  let raw = platformInput;
+  if (!raw && sourceObj && typeof sourceObj === "object") {
+    raw = sourceObj.platform || sourceObj.name;
+  }
+  if (!raw && typeof sourceObj === "string") {
+    raw = sourceObj;
+  }
+  if (!raw && urlInput && typeof urlInput === "string") {
+    raw = urlInput;
+  }
 
-  const labels = {
-    devpost: { label: "Devpost", color: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400" },
-    devfolio: { label: "Devfolio", color: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400" },
-    mlh: { label: "MLH", color: "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400" },
-    unstop: { label: "Unstop", color: "bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400" },
-    dorahacks: { label: "DoraHacks", color: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400" },
-    kaggle: { label: "Kaggle", color: "bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400" },
-    hack2skill: { label: "Hack2Skill", color: "bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400" },
-  };
+  if (!raw || typeof raw !== "string") return null;
 
-  const pKey = String(platform).toLowerCase();
-  const info = labels[pKey] || { label: String(platform), color: "bg-neutral-500/10 text-neutral-600 dark:bg-neutral-500/20 dark:text-neutral-400" };
+  const str = raw.trim().toLowerCase();
 
-  return (
-    <span className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${info.color}`}>
-      {info.label}
-    </span>
-  );
+  // Exclude mode values or generic placeholder strings
+  if (
+    str === "gethack" ||
+    str === "unknown" ||
+    str === "none" ||
+    str === "n/a" ||
+    str === "online" ||
+    str === "offline" ||
+    str === "hybrid"
+  ) {
+    return null;
+  }
+
+  // Known platform matches
+  if (str.includes("unstop")) return "Unstop";
+  if (str.includes("devpost")) return "Devpost";
+  if (str.includes("devfolio")) return "Devfolio";
+  if (str.includes("dorahacks")) return "DoraHacks";
+  if (str.includes("hackerearth")) return "HackerEarth";
+  if (str.includes("kaggle")) return "Kaggle";
+  if (str.includes("mlh") || str.includes("major league hacking")) return "MLH";
+  if (str.includes("hack2skill")) return "Hack2Skill";
+
+  // If URL string passed, attempt hostname matching
+  if (str.startsWith("http://") || str.startsWith("https://")) {
+    try {
+      const host = new URL(raw).hostname.replace(/^www\./, "");
+      if (host.includes("unstop")) return "Unstop";
+      if (host.includes("devpost")) return "Devpost";
+      if (host.includes("devfolio")) return "Devfolio";
+      if (host.includes("dorahacks")) return "DoraHacks";
+      if (host.includes("hackerearth")) return "HackerEarth";
+      if (host.includes("kaggle")) return "Kaggle";
+      if (host.includes("mlh")) return "MLH";
+      if (host.includes("hack2skill")) return "Hack2Skill";
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Capitalize clean single word platform if valid string
+  if (raw.length <= 25 && !raw.includes("/") && !raw.includes("http")) {
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+
+  return null;
 }
 
-// Mode & location icon display
-function ModeDisplay({ mode, location }) {
-  const isOnline = mode === "Online";
+// Clean & deduplicated themes extractor
+function getCleanThemes(hackathon) {
+  const raw = Array.isArray(hackathon.themes) && hackathon.themes.length > 0
+    ? hackathon.themes
+    : Array.isArray(hackathon.tags) && hackathon.tags.length > 0
+    ? hackathon.tags
+    : Array.isArray(hackathon.skills) && hackathon.skills.length > 0
+    ? hackathon.skills
+    : [];
 
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-      {isOnline ? (
-        <svg
-          className="h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M2 12h20" />
-          <path
-            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"
-          />
-        </svg>
-      ) : (
-        <svg
-          className="h-3.5 w-3.5 shrink-0 text-neutral-400 dark:text-neutral-500"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
-      )}
-      <span>
-        {mode}
-        {location ? ` · ${location}` : ""}
-      </span>
-    </span>
-  );
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+
+  const seen = new Set();
+  const unique = [];
+
+  for (const item of raw) {
+    if (typeof item === "string" && item.trim().length > 0) {
+      const clean = item.trim();
+      const key = clean.toLowerCase();
+      if (
+        key !== "online" &&
+        key !== "offline" &&
+        key !== "hybrid" &&
+        key !== "hackathon" &&
+        !seen.has(key)
+      ) {
+        seen.add(key);
+        unique.push(clean);
+      }
+    }
+  }
+
+  return unique;
 }
 
 function HackathonCard({ hackathon }) {
   const id = hackathon.id || hackathon._id;
   const name = typeof hackathon.name === "string" ? hackathon.name : typeof hackathon.title === "string" ? hackathon.title : "Untitled Hackathon";
   const organizer = formatOrganizer(hackathon.organizerName, hackathon.organizer);
-  const mode = formatMode(hackathon.mode, hackathon.format, hackathon.event);
-  const location = formatLocation(hackathon.location, hackathon.event);
 
   const registrationDeadline = hackathon.registrationDeadline || hackathon.registration?.deadline;
   const registrationOpen = hackathon.registrationOpen ?? (registrationDeadline ? new Date(registrationDeadline) > new Date() : true);
 
-  const fee = formatFee(hackathon.fee, hackathon.registrationFee);
-  const teamSizeLabel = formatTeamSize(hackathon.teamSize, hackathon.minTeamSize, hackathon.maxTeamSize);
   const prize = formatPrize(hackathon.prizePool, hackathon.prizes, hackathon.prize);
 
   const source = hackathon.source || {};
-  const platform = typeof source === "object" ? source.platform : hackathon.platform;
+  const rawPlatform = typeof source === "object" ? source.platform : hackathon.platform;
+  const externalUrl = typeof source === "object" ? source.externalUrl : hackathon.url || hackathon.registrationUrl;
+  const formattedPlatform = formatPlatformName(rawPlatform, source, externalUrl);
+
+  const allThemes = getCleanThemes(hackathon);
+  const displayThemes = allThemes.slice(0, 3);
+  const remainingThemesCount = allThemes.length - 3;
+
   const accent = hackathon.accent || "indigo";
 
   const { isSaved, toggleSave } = useSaved();
@@ -169,12 +201,9 @@ function HackathonCard({ hackathon }) {
 
             {/* Name & Organizer */}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
-                  {name}
-                </h3>
-                <PlatformBadge platform={platform} />
-              </div>
+              <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
+                {name}
+              </h3>
               <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
                 {organizer}
               </p>
@@ -235,38 +264,43 @@ function HackathonCard({ hackathon }) {
           </div>
         </div>
 
-        {/* ── 2. Meta row: Online/Offline (Left) & Deadline (Right) ── */}
-        <div className="mt-4 flex items-center justify-between gap-2 text-xs">
-          <ModeDisplay mode={mode} location={location} />
+        {/* ── 2. Platform ── */}
+        {formattedPlatform && (
+          <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+            Hosted on <span className="font-semibold text-neutral-700 dark:text-neutral-200">{formattedPlatform}</span>
+          </p>
+        )}
 
+        {/* ── 3. Themes ── */}
+        {displayThemes.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {displayThemes.map((theme, idx) => (
+              <span
+                key={idx}
+                className="max-w-[130px] truncate rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+                title={theme}
+              >
+                {theme}
+              </span>
+            ))}
+            {remainingThemesCount > 0 && (
+              <span className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                +{remainingThemesCount}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* ── 4. Deadline ── */}
+        <div className="mt-3 flex items-center justify-between gap-2 text-xs">
           <DeadlineDisplay
             registrationDeadline={registrationDeadline}
             registrationOpen={registrationOpen}
           />
         </div>
-
-        {/* ── 3. Team Size & Registration Fee ── */}
-        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              TEAM SIZE
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-              {teamSizeLabel}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              REGISTRATION FEE
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-              {fee}
-            </p>
-          </div>
-        </div>
       </div>
 
-      {/* ── 4. Footer: Prize (Left) & View Details CTA (Right) ── */}
+      {/* ── 5. Footer: Prize (Left) & View Details CTA (Right) ── */}
       <div className="mt-4 flex items-end justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">

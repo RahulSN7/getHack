@@ -81,6 +81,9 @@ function matchesUserSearch(user, query) {
 // Main Network Component
 // ---------------------------------------------------------------------------
 
+import { useEffect } from "react";
+import { userService } from "../../../services/userService";
+
 function Network() {
   const [activeTab, setActiveTab] = useState("connections"); // 'connections' | 'requests' | 'sent'
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,6 +91,56 @@ function Network() {
   const [requests, setRequests] = useState(INITIAL_REQUESTS);
   const [sent, setSent] = useState(INITIAL_SENT);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Load real network requests from backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadNetworkData() {
+      try {
+        const data = await userService.getNetworkRequests();
+        if (isMounted && data) {
+          if (Array.isArray(data.connections) && data.connections.length > 0) {
+            setConnections(data.connections);
+          }
+          if (Array.isArray(data.incoming)) {
+            setRequests(
+              data.incoming.map((req) => ({
+                id: req.id || req.requestId,
+                fromUserId: req.senderId,
+                name: req.name,
+                role: req.role,
+                avatar: req.avatar,
+                skills: req.skills,
+                location: req.location,
+                availability: req.availability,
+                note: req.note,
+                createdAt: req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "Just now",
+              }))
+            );
+          }
+          if (Array.isArray(data.outgoing)) {
+            setSent(
+              data.outgoing.map((s) => ({
+                id: s.id || s.requestId,
+                toUserId: s.receiverId,
+                name: s.name,
+                role: s.role,
+                avatar: s.avatar,
+                note: s.note,
+                createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Just now",
+              }))
+            );
+          }
+        }
+      } catch (err) {
+        // Fallback to local data if unauthenticated or offline
+      }
+    }
+    loadNetworkData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Filter states
   const [connAvailability, setConnAvailability] = useState("all");
@@ -103,22 +156,41 @@ function Network() {
 
   // ── Action Handlers ──
 
-  const handleAcceptRequest = (requestItem) => {
+  const handleAcceptRequest = async (requestItem) => {
+    try {
+      await userService.respondToConnectionRequest(requestItem.id, "accept");
+    } catch {
+      // Proceed with UI update
+    }
     // Remove from requests
     setRequests((prev) => prev.filter((r) => r.id !== requestItem.id));
     // Add to connections
     setConnections((prev) => [
       {
         id: `conn-${Date.now()}`,
-        userId: requestItem.fromUserId,
+        userId: requestItem.fromUserId || requestItem.id,
+        name: requestItem.name,
+        role: requestItem.role,
+        avatar: requestItem.avatar,
+        skills: requestItem.skills || [],
         connectedAt: "Just now",
       },
       ...prev,
     ]);
+    setToastMessage(`Connection request from ${requestItem.name || "builder"} accepted!`);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleDeclineRequest = (requestId) => {
-    setRequests((prev) => prev.filter((r) => r.id !== requestId));
+  const handleDeclineRequest = async (requestItem) => {
+    const reqId = typeof requestItem === "string" ? requestItem : requestItem.id;
+    try {
+      await userService.respondToConnectionRequest(reqId, "decline");
+    } catch {
+      // Proceed with UI update
+    }
+    setRequests((prev) => prev.filter((r) => r.id !== reqId));
+    setToastMessage("Connection request declined.");
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleCancelSentRequest = (sentId) => {
@@ -854,14 +926,20 @@ function Network() {
             {displayedRequests.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {displayedRequests.map((req) => {
-                  const user = TEAMMATES.find((m) => m.id === req.fromUserId);
-                  if (!user) return null;
+                  const user = TEAMMATES.find((m) => m.id === req.fromUserId) || req;
 
-                  const { name, username, role, skills = [], location, availability, accent = "indigo" } = user;
+                  const name = user.name || "Participant";
+                  const username = user.username || "";
+                  const role = user.role || "Developer";
+                  const skills = Array.isArray(user.skills) ? user.skills : [];
+                  const location = user.location || "";
+                  const availability = user.availability || "Available";
+                  const accent = user.accent || "indigo";
                   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
                   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
                   const initial = name ? name.charAt(0).toUpperCase() : "?";
                   const visibleSkills = skills.slice(0, 3);
+                  const note = req.note || req.message;
 
                   return (
                     <div
@@ -934,10 +1012,11 @@ function Network() {
                           </div>
                         )}
 
-                        {/* Optional Message */}
-                        {req.message && (
-                          <div className="rounded-lg bg-neutral-50 p-3 text-xs italic text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-300">
-                            &quot;{req.message}&quot;
+                        {/* Optional Message / Note */}
+                        {note && (
+                          <div className="rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-300">
+                            <span className="font-semibold text-neutral-900 dark:text-white">Note: </span>
+                            &quot;{note}&quot;
                           </div>
                         )}
 

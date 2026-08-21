@@ -51,6 +51,14 @@ const router = createBrowserRouter([
         element: <TeammatesPage />,
       },
       {
+        path: "profile",
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "profile/:id",
         element: <ProfilePage />,
       },

@@ -111,19 +111,6 @@ function applyPlatformFilter(hackathons, platformId) {
   );
 }
 
-// Format Filter
-function applyFormatFilter(hackathons, formatId) {
-  switch (formatId) {
-    case "online":
-      return hackathons.filter((h) => h.mode === "Online");
-    case "offline":
-      return hackathons.filter((h) => h.mode === "Offline" || h.mode === "Hybrid");
-    case "all":
-    default:
-      return hackathons;
-  }
-}
-
 // Saved Filter
 function applySavedFilter(hackathons, showSavedOnly, isSaved) {
   if (!showSavedOnly) return hackathons;
@@ -153,7 +140,6 @@ function applySort(hackathons, sortId) {
 function Hackathons() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [formatFilter, setFormatFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("deadline-asc");
@@ -187,33 +173,29 @@ function Hackathons() {
   const hasFilters =
     searchQuery.trim() !== "" ||
     statusFilter !== "all" ||
-    formatFilter !== "all" ||
     platformFilter !== "all" ||
     showSavedOnly;
 
   const handleClearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
-    setFormatFilter("all");
     setPlatformFilter("all");
     setShowSavedOnly(false);
   };
 
-  const handleApplyFilterPopover = ({ statusFilter: nextStatus, formatFilter: nextFormat, platformFilter: nextPlatform }) => {
+  const handleApplyFilterPopover = ({ statusFilter: nextStatus, platformFilter: nextPlatform }) => {
     setStatusFilter(nextStatus);
-    setFormatFilter(nextFormat);
     if (nextPlatform) setPlatformFilter(nextPlatform);
   };
 
-  // Pipeline: search → status filter → platform filter → format filter → saved filter → sort
+  // Pipeline: search → status filter → platform filter → saved filter → sort
   const results = useMemo(() => {
     const searched = applySearch(allHackathons, searchQuery);
     const statusFiltered = applyStatusFilter(searched, statusFilter);
     const platformFiltered = applyPlatformFilter(statusFiltered, platformFilter);
-    const formatFiltered = applyFormatFilter(platformFiltered, formatFilter);
-    const savedFiltered = applySavedFilter(formatFiltered, showSavedOnly, isSaved);
+    const savedFiltered = applySavedFilter(platformFiltered, showSavedOnly, isSaved);
     return applySort(savedFiltered, sortBy);
-  }, [allHackathons, searchQuery, statusFilter, platformFilter, formatFilter, showSavedOnly, isSaved, sortBy]);
+  }, [allHackathons, searchQuery, statusFilter, platformFilter, showSavedOnly, isSaved, sortBy]);
 
   const accentText = ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT.indigo;
@@ -326,12 +308,10 @@ function Hackathons() {
               {/* Filter Popover Trigger */}
               <HackathonFilters
                 statusFilter={statusFilter}
-                formatFilter={formatFilter}
                 platformFilter={platformFilter}
                 onApply={handleApplyFilterPopover}
                 onClear={() => {
                   setStatusFilter("all");
-                  setFormatFilter("all");
                   setPlatformFilter("all");
                 }}
               />

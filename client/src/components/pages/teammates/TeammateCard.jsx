@@ -34,7 +34,7 @@ function AvailabilityBadge({ availability }) {
 // TeammateCard Component
 // ---------------------------------------------------------------------------
 
-function TeammateCard({ teammate }) {
+function TeammateCard({ teammate, onConnect, connectionStatus }) {
   const {
     name,
     role,
@@ -217,37 +217,61 @@ function TeammateCard({ teammate }) {
           )}
         </span>
 
-        {/* View Profile */}
-        <Link
-          to={`/profile/${teammate.id}`}
-          className="
-            inline-flex
-            items-center
-            gap-1.5
-            text-xs
-            font-semibold
-            text-indigo-600
-            transition-colors
-            duration-150
-            hover:text-indigo-700
-            dark:text-indigo-400
-            dark:hover:text-indigo-300
-          "
-        >
-          <span>View Profile</span>
-          <svg
-            className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* Actions: Connect & View Profile */}
+        <div className="flex items-center gap-2">
+          {connectionStatus === "accepted" ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+              ✓ Connected
+            </span>
+          ) : connectionStatus === "pending" ? (
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500"
+            >
+              Request Sent
+            </button>
+          ) : onConnect ? (
+            <button
+              type="button"
+              onClick={() => onConnect(teammate)}
+              className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-2xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+            >
+              + Connect
+            </button>
+          ) : null}
+
+          <Link
+            to={`/profile/${teammate.id || teammate._id}`}
+            className="
+              inline-flex
+              items-center
+              gap-1
+              text-xs
+              font-semibold
+              text-indigo-600
+              transition-colors
+              duration-150
+              hover:text-indigo-700
+              dark:text-indigo-400
+              dark:hover:text-indigo-300
+            "
           >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
-        </Link>
+            <span>View Profile</span>
+            <svg
+              className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
       </div>
     </article>
   );

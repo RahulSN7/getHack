@@ -1,0 +1,260 @@
+// ---------------------------------------------------------------------------
+// server/controllers/networkController.js — Network & Connection Request Controllers
+// Enforces backend profile completion checks, note validation, and connection limits
+// ---------------------------------------------------------------------------
+
+const Connection = require("../models/connection");
+const User = require("../models/user");
+const { calculateProfileCompletion } = require("../utils/profileCompletion");
+
+// ---------------------------------------------------------------------------
+// POST /api/network/requests — Send Connection Request
+// ---------------------------------------------------------------------------
+const sendConnectionRequest = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthenticated." });
+    }
+
+    const sender = await User.findById(req.user._id);
+    if (!sender) {
+      return res.status(404).json({ message: "Sender account not found." });
+    }
+
+    // Backend Profile Completion Gate
+    const profileCompletion = calculateProfileCompletion(sender);
+    if (!profileCompletion.isComplete) {
+      return res.status(403).json({
+        error: "PROFILE_INCOMPLETE",
+        message: "Complete your profile first. A complete profile helps other participants understand your skills and interests before connecting with you.",
+        profileCompletion,
+      });
+    }
+
+    const { receiverId, note } = req.body || {};
+
+    if (!receiverId || typeof receiverId !== "string" || !receiverId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: "Invalid recipient specified." });
+    }
+
+    const senderIdStr = sender._id.toString();
+    const receiverIdStr = receiverId.trim();
+
+    // Prevent self-requests
+    if (senderIdStr === receiverIdStr) {
+      return res.status(400).json({ message: "You cannot send a connection request to yourself." });
+    }
+
+    // Verify receiver exists
+    const receiver = await User.findById(receiverIdStr);
+    if (!receiver) {
+      return res.status(404).json({ message: "Recipient user not found." });
+    }
+
+    // Check existing connections / pending requests
+    const existing = await Connection.findOne({
+      $or: [
+        { sender: sender._id, receiver: receiver._id },
+        { sender: receiver._id, receiver: sender._id },
+      ],
+    });
+
+    if (existing) {
+      if (existing.status === "pending") {
+        return res.status(400).json({ message: "Connection request already sent." });
+      }
+      if (existing.status === "accepted") {
+        return res.status(400).json({ message: "You are already connected." });
+      }
+      // If previously rejected, allow re-requesting by updating status & note
+      if (existing.status === "rejected") {
+        let cleanNote = typeof note === "string" ? note.trim() : null;
+        if (cleanNote && cleanNote.length > 300) {
+          return res.status(400).json({ message: "Note cannot exceed 300 characters." });
+        }
+        if (!cleanNote) cleanNote = null;
+
+        existing.sender = sender._id;
+        existing.receiver = receiver._id;
+        existing.note = cleanNote;
+        existing.status = "pending";
+        await existing.save();
+
+        return res.status(200).json({
+          message: "Connection request sent successfully.",
+          connection: existing,
+        });
+      }
+    }
+
+    // Validate optional note (max 300 chars, whitespace trimmed, empty stored as null)
+    let cleanNote = typeof note === "string" ? note.trim() : null;
+    if (cleanNote && cleanNote.length > 300) {
+      return res.status(400).json({ message: "Note cannot exceed 300 characters." });
+    }
+    if (!cleanNote) cleanNote = null;
+
+    const newConnection = await Connection.create({
+      sender: sender._id,
+      receiver: receiver._id,
+      note: cleanNote,
+      status: "pending",
+    });
+
+    return res.status(201).json({
+      message: "Connection request sent successfully.",
+      connection: newConnection,
+    });
+  } catch (error) {
+    console.error("Error in sendConnectionRequest:", error);
+    return res.status(500).json({ message: "Failed to send connection request." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// GET /api/network/requests — Fetch Connections, Incoming & Outgoing Requests
+// ---------------------------------------------------------------------------
+const getNetworkRequests = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthenticated." });
+    }
+
+    const userId = req.user._id;
+
+    // Fetch accepted connections
+    const rawConnections = await Connection.find({
+      $or: [{ sender: userId }, { receiver: userId }],
+      status: "accepted",
+    })
+      .populate("sender", "name email role profile createdAt")
+      .populate("receiver", "name email role profile createdAt")
+      .sort({ updatedAt: -1 });
+
+    const connections = rawConnections.map((c) => {
+      const isSender = c.sender._id.toString() === userId.toString();
+      const partner = isSender ? c.receiver : c.sender;
+      const safePartner = partner ? partner.toSafeUser() : {};
+
+      return {
+        id: c._id.toString(),
+        connectionId: c._id.toString(),
+        userId: safePartner.id,
+        name: safePartner.name || "Participant",
+        role: safePartner.profile?.role || "Developer",
+        avatar: safePartner.profile?.avatar || "",
+        bio: safePartner.profile?.bio || "",
+        skills: safePartner.profile?.skills || [],
+        location: safePartner.profile?.location || "",
+        availability: safePartner.profile?.availability || "Available",
+        connectedAt: c.updatedAt,
+      };
+    });
+
+    // Fetch incoming pending requests (with optional note)
+    const rawIncoming = await Connection.find({
+      receiver: userId,
+      status: "pending",
+    })
+      .populate("sender", "name email role profile createdAt")
+      .sort({ createdAt: -1 });
+
+    const incoming = rawIncoming.map((c) => {
+      const safeSender = c.sender ? c.sender.toSafeUser() : {};
+      return {
+        id: c._id.toString(),
+        requestId: c._id.toString(),
+        senderId: safeSender.id,
+        name: safeSender.name || "Participant",
+        role: safeSender.profile?.role || "Developer",
+        avatar: safeSender.profile?.avatar || "",
+        bio: safeSender.profile?.bio || "",
+        skills: safeSender.profile?.skills || [],
+        location: safeSender.profile?.location || "",
+        availability: safeSender.profile?.availability || "Available",
+        note: c.note || null,
+        createdAt: c.createdAt,
+      };
+    });
+
+    // Fetch outgoing pending requests
+    const rawOutgoing = await Connection.find({
+      sender: userId,
+      status: "pending",
+    })
+      .populate("receiver", "name email role profile createdAt")
+      .sort({ createdAt: -1 });
+
+    const outgoing = rawOutgoing.map((c) => {
+      const safeReceiver = c.receiver ? c.receiver.toSafeUser() : {};
+      return {
+        id: c._id.toString(),
+        requestId: c._id.toString(),
+        receiverId: safeReceiver.id,
+        name: safeReceiver.name || "Participant",
+        role: safeReceiver.profile?.role || "Developer",
+        avatar: safeReceiver.profile?.avatar || "",
+        bio: safeReceiver.profile?.bio || "",
+        skills: safeReceiver.profile?.skills || [],
+        location: safeReceiver.profile?.location || "",
+        availability: safeReceiver.profile?.availability || "Available",
+        note: c.note || null,
+        createdAt: c.createdAt,
+      };
+    });
+
+    return res.status(200).json({
+      connections,
+      incoming,
+      outgoing,
+    });
+  } catch (error) {
+    console.error("Error in getNetworkRequests:", error);
+    return res.status(500).json({ message: "Failed to load network requests." });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// PUT /api/network/requests/:id — Respond to Connection Request (Accept/Decline)
+// ---------------------------------------------------------------------------
+const respondToConnectionRequest = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthenticated." });
+    }
+
+    const { id } = req.params;
+    const { action } = req.body || {};
+
+    if (action !== "accept" && action !== "decline") {
+      return res.status(400).json({ message: "Invalid action. Use 'accept' or 'decline'." });
+    }
+
+    const connection = await Connection.findOne({
+      _id: id,
+      receiver: req.user._id,
+      status: "pending",
+    });
+
+    if (!connection) {
+      return res.status(404).json({ message: "Connection request not found or already processed." });
+    }
+
+    connection.status = action === "accept" ? "accepted" : "rejected";
+    await connection.save();
+
+    return res.status(200).json({
+      message: `Connection request ${action === "accept" ? "accepted" : "declined"}.`,
+      connection,
+    });
+  } catch (error) {
+    console.error("Error in respondToConnectionRequest:", error);
+    return res.status(500).json({ message: "Failed to update connection request." });
+  }
+};
+
+module.exports = {
+  sendConnectionRequest,
+  getNetworkRequests,
+  respondToConnectionRequest,
+};

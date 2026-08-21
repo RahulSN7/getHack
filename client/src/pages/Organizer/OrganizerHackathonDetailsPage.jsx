@@ -180,11 +180,8 @@ function OrganizerHackathonDetailsPage() {
     eligibility ||
     "Students, developers, designers, and technology enthusiasts are welcome to participate.";
 
-  const isOnlineMode = mode === "Online" || mode === "Hybrid";
-  const isOfflineMode = mode === "Offline" || mode === "Hybrid";
-
-  const hasOnlineSpecs = isOnlineMode && (platform || duration || timezone || submission);
-  const hasOfflineSpecs = isOfflineMode && (venue || address || checkIn || mapUrl);
+  const hasOnlineSpecs = Boolean(platform || duration || timezone || submission);
+  const hasOfflineSpecs = Boolean(venue || address || checkIn || mapUrl);
   const hasEventDetails = hasOnlineSpecs || hasOfflineSpecs;
 
   return (
@@ -268,7 +265,7 @@ function OrganizerHackathonDetailsPage() {
                   </span>
                 </p>
 
-                {/* Status & Mode badges */}
+                {/* Status & Location badge */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {isOpen ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
@@ -282,17 +279,12 @@ function OrganizerHackathonDetailsPage() {
                     </span>
                   )}
 
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                    {mode === "Online" ? (
-                      <svg className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></svg>
-                    ) : (
+                  {location && (
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
                       <svg className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    )}
-                    <span>
-                      {mode}
-                      {location ? ` · ${location}` : ""}
+                      <span>{location}</span>
                     </span>
-                  </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -329,28 +321,8 @@ function OrganizerHackathonDetailsPage() {
           </div>
         </div>
 
-        {/* ── 3. Quick Overview Bar ── */}
-        <div className="mt-6 divide-y divide-neutral-200/80 rounded-xl border border-neutral-200/90 bg-white shadow-xs sm:grid sm:grid-cols-4 sm:divide-x sm:divide-y-0 dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
-          {/* Fee */}
-          <div className="px-5 py-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              Registration Fee
-            </span>
-            <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white">
-              {fee}
-            </p>
-          </div>
-
-          {/* Team Size */}
-          <div className="px-5 py-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              Team Size
-            </span>
-            <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white">
-              {teamSizeLabel}
-            </p>
-          </div>
-
+        {/* ── 3. Quick Overview Bar (2 Columns: Deadline & Event Date) ── */}
+        <div className="mt-6 divide-y divide-neutral-200/80 rounded-xl border border-neutral-200/90 bg-white shadow-xs sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0 dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
           {/* Deadline */}
           <div className="px-5 py-3.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
@@ -426,16 +398,6 @@ function OrganizerHackathonDetailsPage() {
                 </div>
               </section>
             )}
-
-            {/* Eligibility Section */}
-            <section className="space-y-3 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                ELIGIBILITY
-              </h2>
-              <p className="pt-1 text-sm font-medium leading-relaxed text-neutral-800 dark:text-neutral-200">
-                {eligibilityText}
-              </p>
-            </section>
 
             {/* Event Timeline Section */}
             <section className="space-y-4 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">

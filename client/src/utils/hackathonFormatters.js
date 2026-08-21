@@ -30,11 +30,16 @@ export function stripHtmlTags(str) {
  * @returns {string} Human-readable team size label
  */
 export function formatTeamSize(teamSize, minTeamSize, maxTeamSize) {
+  if (teamSize && typeof teamSize === "object" && !Array.isArray(teamSize) && teamSize.display) {
+    return stripHtmlTags(teamSize.display);
+  }
+
   let min = minTeamSize;
   let max = maxTeamSize;
 
   if (typeof teamSize === "string" && teamSize.trim()) {
-    return stripHtmlTags(teamSize);
+    const clean = stripHtmlTags(teamSize);
+    if (clean && clean !== "Not specified") return clean;
   }
 
   if (typeof teamSize === "number") {
@@ -62,7 +67,7 @@ export function formatTeamSize(teamSize, minTeamSize, maxTeamSize) {
     return `Up to ${max} members`;
   }
 
-  return "Individual / Team";
+  return "Check official registration page";
 }
 
 /**
@@ -72,14 +77,14 @@ export function formatTeamSize(teamSize, minTeamSize, maxTeamSize) {
  * @param {string} fallback
  * @returns {string} Clean human-readable prize label
  */
-export function formatPrize(prizePool, prizes, fallback = "Not specified") {
+export function formatPrize(prizePool, prizes, fallback = "See official registration page") {
   // 1. Check prizes parameter
   if (typeof prizes === "number") {
     return prizes === 0 ? "Free" : `$${prizes.toLocaleString()}`;
   }
   if (typeof prizes === "string") {
     const cleanPrizes = stripHtmlTags(prizes);
-    if (cleanPrizes) return cleanPrizes;
+    if (cleanPrizes && cleanPrizes !== "Not specified") return cleanPrizes;
   }
 
   // 2. Check prizePool parameter if string or number
@@ -88,14 +93,14 @@ export function formatPrize(prizePool, prizes, fallback = "Not specified") {
   }
   if (typeof prizePool === "string") {
     const cleanPool = stripHtmlTags(prizePool);
-    if (cleanPool) return cleanPool;
+    if (cleanPool && cleanPool !== "Not specified") return cleanPool;
   }
 
   // 3. Check prizePool parameter if structured object { amount, currency, description }
   if (prizePool && typeof prizePool === "object" && !Array.isArray(prizePool)) {
     if (typeof prizePool.description === "string") {
       const cleanDesc = stripHtmlTags(prizePool.description);
-      if (cleanDesc) return cleanDesc;
+      if (cleanDesc && cleanDesc !== "Not specified") return cleanDesc;
     }
     if (prizePool.amount != null && !isNaN(Number(prizePool.amount))) {
       const amount = Number(prizePool.amount);
@@ -115,10 +120,10 @@ export function formatPrize(prizePool, prizes, fallback = "Not specified") {
   // 4. Check fallback parameter
   if (typeof fallback === "string") {
     const cleanFallback = stripHtmlTags(fallback);
-    if (cleanFallback) return cleanFallback;
+    if (cleanFallback && cleanFallback !== "Not specified") return cleanFallback;
   }
 
-  return "Not specified";
+  return "See official registration page";
 }
 
 /**
@@ -190,24 +195,6 @@ export function formatFee(fee, registrationFee) {
   return "Free";
 }
 
-/**
- * Format event mode handling objects, strings, or missing values
- * @param {string} mode
- * @param {string} format
- * @param {Object} event
- * @returns {string}
- */
 export function formatMode(mode, format, event) {
-  if (typeof mode === "string" && mode.trim()) {
-    return stripHtmlTags(mode);
-  }
-  if (typeof format === "string" && format.trim()) {
-    return stripHtmlTags(format);
-  }
-  if (event && typeof event === "object" && !Array.isArray(event)) {
-    if (typeof event.mode === "string" && event.mode.trim()) {
-      return stripHtmlTags(event.mode);
-    }
-  }
-  return "Online";
+  return "";
 }

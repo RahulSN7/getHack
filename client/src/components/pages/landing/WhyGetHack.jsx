@@ -193,9 +193,6 @@ function WhyGetHack() {
                           Tech: React & Node.js ✕
                         </span>
                         <span className="rounded-md bg-neutral-200/70 dark:bg-neutral-800 px-2.5 py-1 font-medium text-neutral-700 dark:text-neutral-300">
-                          Format: Online
-                        </span>
-                        <span className="rounded-md bg-neutral-200/70 dark:bg-neutral-800 px-2.5 py-1 font-medium text-neutral-700 dark:text-neutral-300">
                           Deadline: &lt; 14 Days
                         </span>
                         <span className="rounded-md bg-neutral-200/70 dark:bg-neutral-800 px-2.5 py-1 font-medium text-neutral-700 dark:text-neutral-300">
@@ -207,7 +204,7 @@ function WhyGetHack() {
                         <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-neutral-800 dark:bg-neutral-900">
                           <div>
                             <p className="font-semibold text-neutral-900 dark:text-white">BuildWithAI 2025</p>
-                            <p className="text-neutral-500 dark:text-neutral-400">Google Developer Groups · Online</p>
+                            <p className="text-neutral-500 dark:text-neutral-400">Google Developer Groups</p>
                           </div>
                           <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-600 dark:text-emerald-400">
                             $2,500 Prize

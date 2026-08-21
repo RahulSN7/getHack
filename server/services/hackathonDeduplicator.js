@@ -29,7 +29,7 @@ async function processHackathon(normalizedHackathon) {
     if (!existing && normalizedHackathon.title) {
       const cleanTitle = normalizedHackathon.title.trim();
       const start = normalizedHackathon.event?.startDate || normalizedHackathon.startDate;
-      
+
       if (start) {
         const startWindowBegin = new Date(start.getTime() - 86400000);
         const startWindowEnd = new Date(start.getTime() + 86400000);

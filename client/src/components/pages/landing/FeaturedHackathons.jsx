@@ -12,7 +12,6 @@ function normalizeHackathon(h) {
     id: h.id || h._id,
     name: h.title || h.name,
     organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer?.name : h.organizer) || "Organizer",
-    mode: h.event?.mode || h.format || h.mode || "Online",
     location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : (h.event?.venue || h.location || null),
     registrationDeadline: h.registration?.deadline || h.registrationDeadline,
     hackathonDate: h.event?.startDate || h.startDate || h.hackathonDate,
