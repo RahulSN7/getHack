@@ -71,8 +71,10 @@ export const userService = {
       );
     },
 
-  getParticipants: async () => {
-    return request("/users/participants");
+  getParticipants: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/users/participants${queryString ? `?${queryString}` : ""}`;
+    return request(endpoint);
   },
 
   getParticipantProfile:

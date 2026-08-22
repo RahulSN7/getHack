@@ -1001,14 +1001,20 @@ const updateOwnOrganizerProfile = async (
 const getAllParticipants = async (req, res) => {
   try {
     const currentUserId = req.user?._id ? req.user._id.toString() : null;
+    const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : null;
 
     // Fetch all users with role 'participant'
     const users = await User.find({ role: "participant" }).sort({ createdAt: -1 });
 
     // Filter out current user
-    const otherUsers = currentUserId
+    let otherUsers = currentUserId
       ? users.filter((u) => u._id.toString() !== currentUserId)
       : users;
+
+    // Apply limit if specified
+    if (limitParam && !isNaN(limitParam) && limitParam > 0) {
+      otherUsers = otherUsers.slice(0, limitParam);
+    }
 
     // Fetch connection states for current user if logged in
     let connectionsMap = {};
