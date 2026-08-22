@@ -7,6 +7,7 @@ import { useParams, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { userService } from "../../services/userService";
 import { ORGANIZER_PROFILE, ORGANIZER_HACKATHONS } from "../../data/organizerData";
+import BackButton from "../../components/common/BackButton";
 
 // Helper for initials fallback
 function getInitials(name) {
@@ -38,8 +39,10 @@ function formatDateRange(startDateStr, endDateStr) {
 
 function OrganizerProfilePage() {
   const { id } = useParams();
-  const location = useLocation();
+  const routerLocation = useLocation();
   const { user: currentUser, updateUser } = useAuth();
+
+  const isOrganizerPortal = routerLocation.pathname.startsWith("/organizer");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,8 +81,6 @@ function OrganizerProfilePage() {
     discord: "",
     contactNumber: "",
   });
-
-  const isOrganizerPortal = location.pathname.startsWith("/organizer");
 
   // Load Profile Data
   useEffect(() => {
@@ -338,6 +339,11 @@ function OrganizerProfilePage() {
 
   return (
     <main className="mx-auto max-w-4xl px-5 py-8 sm:px-6 lg:px-8 space-y-8">
+      {/* ── Top-Left Back Button ── */}
+      <div>
+        <BackButton fallbackPath={isOrganizerPortal ? "/organizer" : "/hackathons"} />
+      </div>
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-xs font-semibold text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/60 dark:text-indigo-300">

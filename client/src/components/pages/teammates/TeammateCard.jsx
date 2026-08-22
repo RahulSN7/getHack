@@ -5,35 +5,6 @@
 
 import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
-import { isProfileComplete } from "../../../utils/profileValidation";
-
-// ---------------------------------------------------------------------------
-// Availability badge rendering (only shows valid real availability; no "Not Set")
-// ---------------------------------------------------------------------------
-
-function AvailabilityBadge({ availability, isComplete }) {
-  if (!isComplete || !availability) {
-    return null; // Do not render "Not Set" badge
-  }
-
-  const isAvailable = availability === "Available";
-
-  if (isAvailable) {
-    return (
-      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        Available
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-      <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
-      Not Available
-    </span>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // TeammateCard Component
@@ -45,7 +16,6 @@ function TeammateCard({ teammate }) {
     experience = "Intermediate",
     bio,
     location,
-    availability,
     hackathonsCompleted = 0,
     accent = "indigo",
     username,
@@ -108,7 +78,7 @@ function TeammateCard({ teammate }) {
       "
     >
       <div>
-        {/* ── 1. Header: Avatar + Name + getHack ID (No Participant role) ── */}
+        {/* ── 1. Header: Avatar + Name + getHack ID (No Participant role & No Availability badge) ── */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             {/* Avatar */}
@@ -149,8 +119,6 @@ function TeammateCard({ teammate }) {
               )}
             </div>
           </div>
-
-          <AvailabilityBadge availability={availability} isComplete={isProfileComplete(teammate)} />
         </div>
 
         {/* ── 2. Skills Section ── */}

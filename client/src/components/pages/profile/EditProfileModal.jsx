@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useRef, useEffect } from "react";
+import { isProfileComplete } from "../../../utils/profileValidation";
 
 function formatDateForInput(dateStr) {
   if (!dateStr) return "";
@@ -472,15 +473,14 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
 
     onClose();
   } catch (err) {
-    console.error(
-      "PROFILE SAVE ERROR:",
-      err
-    );
-
-    setError(
-      err?.message ||
-        "Failed to update participant profile."
-    );
+    console.error("PROFILE SAVE ERROR:", err);
+    if (err.data?.code === "PROFILE_INCOMPLETE" || err.message?.toLowerCase().includes("complete your profile")) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        availability: "Complete your profile before becoming available to teammates.",
+      }));
+    }
+    setError(err?.message || "Failed to update participant profile.");
   } finally {
     setSaving(false);
   }

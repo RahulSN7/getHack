@@ -142,6 +142,11 @@ function HackathonCard({ hackathon }) {
     Boolean(registrationDeadline) &&
     new Date(registrationDeadline) > new Date();
 
+  const mode = hackathon.format || hackathon.event?.mode || hackathon.mode || null;
+  const minTeam = hackathon.minTeamSize || hackathon.teamSize?.min || 1;
+  const maxTeam = hackathon.maxTeamSize || hackathon.teamSize?.max || 4;
+  const teamSizeStr = minTeam === maxTeam ? `${minTeam} Member${minTeam > 1 ? "s" : ""}` : `${minTeam}–${maxTeam} Members`;
+
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
   const initial = name ? name.charAt(0).toUpperCase() : "H";
@@ -210,7 +215,7 @@ function HackathonCard({ hackathon }) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {/* Registration Status Badge */}
             {isOpen ? (
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
@@ -221,6 +226,13 @@ function HackathonCard({ hackathon }) {
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
                 CLOSED
+              </span>
+            )}
+
+            {/* Mode Badge */}
+            {mode && (
+              <span className="inline-flex shrink-0 items-center rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                {mode}
               </span>
             )}
 
@@ -291,25 +303,33 @@ function HackathonCard({ hackathon }) {
           </div>
         )}
 
-        {/* ── 4. Deadline ── */}
-        <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-          <DeadlineDisplay
-            registrationDeadline={registrationDeadline}
-            registrationOpen={registrationOpen}
-          />
+        {/* ── 4. Stats Row: Team Size & Prize ── */}
+        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              TEAM SIZE
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+              {teamSizeStr}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              PRIZE
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+              {prize}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ── 5. Footer: Prize (Left) & View Details CTA (Right) ── */}
-      <div className="mt-4 flex items-end justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-            PRIZE
-          </p>
-          <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white">
-            {prize}
-          </p>
-        </div>
+      {/* ── 5. Footer: Deadline (Left) & View Details CTA (Right) ── */}
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
+        <DeadlineDisplay
+          registrationDeadline={registrationDeadline}
+          registrationOpen={registrationOpen}
+        />
 
         <Link
           to={`/hackathons/${id}`}

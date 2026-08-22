@@ -5,33 +5,9 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
-
 import NetworkFilters from "./NetworkFilters";
-
-// ---------------------------------------------------------------------------
-// Availability badge (strictly 2 states)
-// ---------------------------------------------------------------------------
-
-function AvailabilityBadge({ availability }) {
-  const isAvailable = availability === "Available";
-
-  if (isAvailable) {
-    return (
-      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        Available
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-      <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
-      Not Available
-    </span>
-  );
-}
+import NetworkUserCard from "./NetworkUserCard";
+import { userService } from "../../../services/userService";
 
 // ---------------------------------------------------------------------------
 // Days ago parser helper
@@ -75,8 +51,6 @@ function matchesUserSearch(user, query) {
 // Main Network Component
 // ---------------------------------------------------------------------------
 
-import { userService } from "../../../services/userService";
-
 function Network() {
   const [activeTab, setActiveTab] = useState("connections"); // 'connections' | 'requests' | 'sent'
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,9 +75,10 @@ function Network() {
                 name: req.name,
                 role: req.role,
                 avatar: req.avatar,
-                skills: req.skills,
-                location: req.location,
-                availability: req.availability,
+                skills: req.skills || [],
+                location: req.location || "",
+                availability: req.availability || "",
+                username: req.username || (req.name ? req.name.toLowerCase().replace(/[^a-z0-9]/g, "") : ""),
                 note: req.note,
                 createdAt: req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "Just now",
               }))
@@ -117,6 +92,10 @@ function Network() {
                 name: s.name,
                 role: s.role,
                 avatar: s.avatar,
+                skills: s.skills || [],
+                location: s.location || "",
+                availability: s.availability || "",
+                username: s.username || (s.name ? s.name.toLowerCase().replace(/[^a-z0-9]/g, "") : ""),
                 note: s.note,
                 createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Just now",
               }))
@@ -153,10 +132,12 @@ function Network() {
   // ── Action Handlers ──
 
   const handleAcceptRequest = async (requestItem) => {
+    const reqId = typeof requestItem === "string" ? requestItem : requestItem.id;
+    const reqName = requestItem?.name || "builder";
     try {
-      await userService.respondToConnectionRequest(requestItem.id, "accept");
+      await userService.respondToConnectionRequest(reqId, "accept");
       await loadNetworkData(true);
-      setToastMessage(`Connection request from ${requestItem.name || "builder"} accepted!`);
+      setToastMessage(`Connection request from ${reqName} accepted!`);
     } catch (err) {
       setToastMessage("Failed to accept request.");
     }
@@ -216,8 +197,7 @@ function Network() {
   const availableRoles = useMemo(() => {
     const rolesSet = new Set();
     connections.forEach((conn) => {
-      const u = TEAMMATES.find((m) => m.id === conn.userId);
-      if (u?.role) rolesSet.add(u.role);
+      if (conn.role) rolesSet.add(conn.role);
     });
     return Array.from(rolesSet);
   }, [connections]);
@@ -225,9 +205,8 @@ function Network() {
   const availableSkills = useMemo(() => {
     const skillsSet = new Set();
     connections.forEach((conn) => {
-      const u = TEAMMATES.find((m) => m.id === conn.userId);
-      if (u?.skills) {
-        u.skills.forEach((s) => skillsSet.add(s));
+      if (conn.skills && Array.isArray(conn.skills)) {
+        conn.skills.forEach((s) => skillsSet.add(s));
       }
     });
     return Array.from(skillsSet);
@@ -303,7 +282,6 @@ function Network() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
-      {/* ── Page Header ── */}
       {/* ── Page Header Banner ── */}
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto max-w-7xl px-5 pb-6 pt-5 sm:px-6 lg:px-8">
@@ -479,7 +457,7 @@ function Network() {
                     }
                   `}
                 >
-                  <span>Requests</span>
+                  <span>Incoming Requests</span>
                   <span
                     className={`
                       inline-flex
@@ -523,7 +501,7 @@ function Network() {
                     }
                   `}
                 >
-                  <span>Sent</span>
+                  <span>Sent Requests</span>
                   <span
                     className={`
                       inline-flex
@@ -669,640 +647,203 @@ function Network() {
 
         {/* Toast Feedback */}
         {toastMessage && (
-          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs font-semibold text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/60 dark:text-indigo-300 animate-in fade-in">
+          <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-xs font-semibold text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/60 dark:text-indigo-300 animate-in fade-in">
             {toastMessage}
           </div>
         )}
 
         {/* Loading State or Tab Content */}
         {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-48 animate-pulse rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />
+              <div key={i} className="h-48 animate-pulse rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />
             ))}
           </div>
         ) : (
           <>
             {/* ── TAB 1: CONNECTIONS ── */}
             {activeTab === "connections" && (
-          <div>
-            {displayedConnections.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {displayedConnections.map((conn) => {
-                  const user = TEAMMATES.find((m) => m.id === conn.userId);
-                  if (!user) return null;
-
-                  const { name, username, role, skills = [], location, availability, accent = "indigo" } = user;
-                  const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
-                  const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
-                  const initial = name ? name.charAt(0).toUpperCase() : "?";
-                  const visibleSkills = skills.slice(0, 3);
-
-                  return (
-                    <div
-                      key={conn.id}
-                      className="
-                        flex
-                        flex-col
-                        justify-between
-                        rounded-xl
-                        border
-                        border-neutral-200
-                        bg-white
-                        p-5
-                        shadow-xs
-                        transition-all
-                        hover:border-neutral-300
-                        dark:border-neutral-800
-                        dark:bg-neutral-900
-                        dark:hover:border-neutral-700
-                      "
-                    >
-                      <div className="space-y-3">
-                        {/* Card Header: Avatar + Identity + Status */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 flex-1 items-start gap-3">
-                            <div
-                              className={`
-                                grid
-                                h-10
-                                w-10
-                                shrink-0
-                                place-items-center
-                                rounded-xl
-                                text-sm
-                                font-bold
-                                ${accentBgSoft}
-                                ${accentText}
-                              `}
-                            >
-                              {initial}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h3 className="truncate text-sm font-semibold text-neutral-900 dark:text-white">
-                                {name}
-                              </h3>
-                              {username && (
-                                <p className="text-[11px] font-medium font-mono text-neutral-400 dark:text-neutral-500">
-                                  @{username}
-                                </p>
-                              )}
-                              <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                                {role}
-                              </p>
-                            </div>
-                          </div>
-                          <AvailabilityBadge availability={availability} />
-                        </div>
-
-                        {/* Skills Chips */}
-                        {visibleSkills.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {visibleSkills.map((s) => (
-                              <span
-                                key={s}
-                                className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-                              >
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Location & Connection Metadata */}
-                        <div className="flex items-center justify-between text-[11px] text-neutral-400 dark:text-neutral-500 pt-1">
-                          <span>{location || "Remote"}</span>
-                          <span>Connected {conn.connectedAt}</span>
-                        </div>
-                      </div>
-
-                      {/* Card Actions */}
-                      <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800/80">
-                        <button
-                          type="button"
-                          onClick={() => handleMessageClick(name, username)}
-                          className="
-                            inline-flex
-                            items-center
-                            gap-1.5
-                            rounded-lg
-                            border
-                            border-neutral-200
-                            px-3
-                            py-1.5
-                            text-xs
-                            font-semibold
-                            text-neutral-700
-                            transition-colors
-                            hover:bg-neutral-50
-                            dark:border-neutral-800
-                            dark:text-neutral-300
-                            dark:hover:bg-neutral-800
-                          "
-                        >
-                          <svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                          </svg>
-                          <span>Message</span>
-                        </button>
-
-                        <Link
-                          to={`/profile/${user.id}`}
-                          className="
-                            inline-flex
-                            items-center
-                            gap-1
-                            text-xs
-                            font-semibold
-                            text-indigo-600
-                            transition-colors
-                            hover:text-indigo-700
-                            dark:text-indigo-400
-                            dark:hover:text-indigo-300
-                          "
-                        >
-                          <span>View Profile</span>
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M5 12h14" />
-                            <path d="m12 5 7 7-7 7" />
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
-                {connections.length === 0 ? (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No connections yet
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Start discovering builders and connect with people who share your interests.
-                    </p>
-                    <div className="mt-4">
-                      <Link
-                        to="/teammates"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-                      >
-                        <span>Find Teammates</span>
-                      </Link>
-                    </div>
-                  </>
-                ) : searchQuery ? (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No people found
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Try searching by name, skill, role, username, or getHack ID.
-                    </p>
-                  </>
+              <div>
+                {displayedConnections.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {displayedConnections.map((conn) => (
+                      <NetworkUserCard
+                        key={conn.id}
+                        person={conn}
+                        variant="connection"
+                        onMessage={handleMessageClick}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No matches found
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Try changing or clearing your filters.
-                    </p>
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={handleClearFilters}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-                      >
-                        Clear Filters
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── TAB 2: INCOMING REQUESTS ── */}
-        {activeTab === "requests" && (
-          <div>
-            {displayedRequests.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {displayedRequests.map((req) => {
-                  const user = TEAMMATES.find((m) => m.id === req.fromUserId) || req;
-
-                  const name = user.name || "Participant";
-                  const username = user.username || "";
-                  const role = user.role || "Developer";
-                  const skills = Array.isArray(user.skills) ? user.skills : [];
-                  const location = user.location || "";
-                  const availability = user.availability || "";
-                  const accent = user.accent || "indigo";
-                  const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
-                  const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
-                  const initial = name ? name.charAt(0).toUpperCase() : "?";
-                  const visibleSkills = skills.slice(0, 3);
-                  const note = req.note || req.message;
-
-                  return (
-                    <div
-                      key={req.id}
-                      className="
-                        flex
-                        flex-col
-                        justify-between
-                        rounded-xl
-                        border
-                        border-neutral-200
-                        bg-white
-                        p-5
-                        shadow-xs
-                        transition-all
-                        hover:border-neutral-300
-                        dark:border-neutral-800
-                        dark:bg-neutral-900
-                        dark:hover:border-neutral-700
-                      "
-                    >
-                      <div className="space-y-3">
-                        {/* Header */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 flex-1 items-start gap-3">
-                            <div
-                              className={`
-                                grid
-                                h-10
-                                w-10
-                                shrink-0
-                                place-items-center
-                                rounded-xl
-                                text-sm
-                                font-bold
-                                ${accentBgSoft}
-                                ${accentText}
-                              `}
-                            >
-                              {initial}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h3 className="truncate text-sm font-semibold text-neutral-900 dark:text-white">
-                                {name}
-                              </h3>
-                              {username && (
-                                <p className="text-[11px] font-medium font-mono text-neutral-400 dark:text-neutral-500">
-                                  @{username}
-                                </p>
-                              )}
-                              <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                                {role}
-                              </p>
-                            </div>
-                          </div>
-                          <AvailabilityBadge availability={availability} />
+                  <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
+                    {connections.length === 0 ? (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No connections yet
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+                          Start connecting with developers and find people who complement your skills.
+                        </p>
+                        <div className="mt-4">
+                          <Link
+                            to="/teammates"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                          >
+                            <span>Find Teammates</span>
+                          </Link>
                         </div>
-
-                        {/* Skills */}
-                        {visibleSkills.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {visibleSkills.map((s) => (
-                              <span
-                                key={s}
-                                className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-                              >
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Optional Message / Note */}
-                        {note && (
-                          <div className="rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-300">
-                            <span className="font-semibold text-neutral-900 dark:text-white">Note: </span>
-                            &quot;{note}&quot;
-                          </div>
-                        )}
-
-                        {/* Location & Received Date */}
-                        <div className="flex items-center justify-between text-[11px] text-neutral-400 dark:text-neutral-500 pt-1">
-                          <span>{location || "Remote"}</span>
-                          <span>Received {req.createdAt}</span>
-                        </div>
-                      </div>
-
-                      {/* Request Actions: Accept / Decline / View Profile */}
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800/80">
-                        <div className="flex items-center gap-2">
+                      </>
+                    ) : searchQuery ? (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No people found
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          Try searching by name, skill, role, username, or getHack ID.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No matches found
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          Try changing or clearing your filters.
+                        </p>
+                        <div className="mt-4">
                           <button
                             type="button"
-                            onClick={() => handleAcceptRequest(req)}
-                            className="
-                              inline-flex
-                              items-center
-                              gap-1.5
-                              rounded-lg
-                              bg-indigo-600
-                              px-3.5
-                              py-1.5
-                              text-xs
-                              font-semibold
-                              text-white
-                              transition-colors
-                              hover:bg-indigo-500
-                              dark:bg-indigo-500
-                              dark:hover:bg-indigo-400
-                            "
+                            onClick={handleClearFilters}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                           >
-                            <span>Accept</span>
+                            Clear Filters
                           </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
+            {/* ── TAB 2: INCOMING REQUESTS ── */}
+            {activeTab === "requests" && (
+              <div>
+                {displayedRequests.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {displayedRequests.map((req) => (
+                      <NetworkUserCard
+                        key={req.id}
+                        person={req}
+                        variant="incoming-request"
+                        onAccept={handleAcceptRequest}
+                        onDecline={handleDeclineRequest}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
+                    {requests.length === 0 ? (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No incoming requests
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+                          When someone sends you a connection request, it will appear here.
+                        </p>
+                      </>
+                    ) : searchQuery ? (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No people found
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          Try searching by name, skill, role, username, or getHack ID.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No matches found
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          Try changing or clearing your filters.
+                        </p>
+                        <div className="mt-4">
                           <button
                             type="button"
-                            onClick={() => handleDeclineRequest(req.id)}
-                            className="
-                              inline-flex
-                              items-center
-                              gap-1.5
-                              rounded-lg
-                              border
-                              border-neutral-200
-                              px-3
-                              py-1.5
-                              text-xs
-                              font-semibold
-                              text-neutral-600
-                              transition-colors
-                              hover:bg-neutral-50
-                              dark:border-neutral-800
-                              dark:text-neutral-400
-                              dark:hover:bg-neutral-800
-                            "
+                            onClick={handleClearFilters}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                           >
-                            <span>Decline</span>
+                            Clear Filters
                           </button>
                         </div>
-
-                        <Link
-                          to={`/profile/${user.id}`}
-                          className="
-                            inline-flex
-                            items-center
-                            gap-1
-                            text-xs
-                            font-semibold
-                            text-indigo-600
-                            transition-colors
-                            hover:text-indigo-700
-                            dark:text-indigo-400
-                            dark:hover:text-indigo-300
-                          "
-                        >
-                          <span>View Profile</span>
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M5 12h14" />
-                            <path d="m12 5 7 7-7 7" />
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
-                {requests.length === 0 ? (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No connection requests
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      You&apos;re all caught up.
-                    </p>
-                  </>
-                ) : searchQuery ? (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No people found
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Try searching by name, skill, role, username, or getHack ID.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No matches found
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Try changing or clearing your filters.
-                    </p>
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={handleClearFilters}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-                      >
-                        Clear Filters
-                      </button>
-                    </div>
-                  </>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* ── TAB 3: SENT REQUESTS ── */}
-        {activeTab === "sent" && (
-          <div>
-            {displayedSent.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {displayedSent.map((s) => {
-                  const user = TEAMMATES.find((m) => m.id === s.toUserId);
-                  if (!user) return null;
-
-                  const { name, username, role, skills = [], location, availability, accent = "indigo" } = user;
-                  const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
-                  const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
-                  const initial = name ? name.charAt(0).toUpperCase() : "?";
-                  const visibleSkills = skills.slice(0, 3);
-
-                  return (
-                    <div
-                      key={s.id}
-                      className="
-                        flex
-                        flex-col
-                        justify-between
-                        rounded-xl
-                        border
-                        border-neutral-200
-                        bg-white
-                        p-5
-                        shadow-xs
-                        transition-all
-                        hover:border-neutral-300
-                        dark:border-neutral-800
-                        dark:bg-neutral-900
-                        dark:hover:border-neutral-700
-                      "
-                    >
-                      <div className="space-y-3">
-                        {/* Header */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 flex-1 items-start gap-3">
-                            <div
-                              className={`
-                                grid
-                                h-10
-                                w-10
-                                shrink-0
-                                place-items-center
-                                rounded-xl
-                                text-sm
-                                font-bold
-                                ${accentBgSoft}
-                                ${accentText}
-                              `}
-                            >
-                              {initial}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h3 className="truncate text-sm font-semibold text-neutral-900 dark:text-white">
-                                {name}
-                              </h3>
-                              {username && (
-                                <p className="text-[11px] font-medium font-mono text-neutral-400 dark:text-neutral-500">
-                                  @{username}
-                                </p>
-                              )}
-                              <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                                {role}
-                              </p>
-                            </div>
-                          </div>
-                          <AvailabilityBadge availability={availability} />
-                        </div>
-
-                        {/* Skills */}
-                        {visibleSkills.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {visibleSkills.map((sk) => (
-                              <span
-                                key={sk}
-                                className="rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-                              >
-                                {sk}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Location & Sent Date */}
-                        <div className="flex items-center justify-between text-[11px] text-neutral-400 dark:text-neutral-500 pt-1">
-                          <span>{location || "Remote"}</span>
-                          <span>Request sent {s.createdAt}</span>
-                        </div>
-                      </div>
-
-                      {/* Sent Actions: Cancel Request / View Profile */}
-                      <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800/80">
-                        <button
-                          type="button"
-                          onClick={() => handleCancelSentRequest(s.id)}
-                          className="
-                            inline-flex
-                            items-center
-                            gap-1.5
-                            rounded-lg
-                            border
-                            border-neutral-200
-                            px-3
-                            py-1.5
-                            text-xs
-                            font-semibold
-                            text-neutral-600
-                            transition-colors
-                            hover:bg-neutral-50
-                            dark:border-neutral-800
-                            dark:text-neutral-400
-                            dark:hover:bg-neutral-800
-                          "
-                        >
-                          <span>Cancel Request</span>
-                        </button>
-
-                        <Link
-                          to={`/profile/${user.id}`}
-                          className="
-                            inline-flex
-                            items-center
-                            gap-1
-                            text-xs
-                            font-semibold
-                            text-indigo-600
-                            transition-colors
-                            hover:text-indigo-700
-                            dark:text-indigo-400
-                            dark:hover:text-indigo-300
-                          "
-                        >
-                          <span>View Profile</span>
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M5 12h14" />
-                            <path d="m12 5 7 7-7 7" />
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
-                {sent.length === 0 ? (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No sent requests
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Requests you send to developers will appear here.
-                    </p>
-                  </>
-                ) : searchQuery ? (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No people found
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Try searching by name, skill, role, username, or getHack ID.
-                    </p>
-                  </>
+            {/* ── TAB 3: SENT REQUESTS ── */}
+            {activeTab === "sent" && (
+              <div>
+                {displayedSent.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {displayedSent.map((s) => (
+                      <NetworkUserCard
+                        key={s.id}
+                        person={s}
+                        variant="sent-request"
+                        onCancel={handleCancelSentRequest}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <>
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      No matches found
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      Try changing or clearing your filters.
-                    </p>
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={handleClearFilters}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-                      >
-                        Clear Filters
-                      </button>
-                    </div>
-                  </>
+                  <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-900">
+                    {sent.length === 0 ? (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No sent requests
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+                          People you send connection requests to will appear here.
+                        </p>
+                      </>
+                    ) : searchQuery ? (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No people found
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          Try searching by name, skill, role, username, or getHack ID.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                          No matches found
+                        </h3>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          Try changing or clearing your filters.
+                        </p>
+                        <div className="mt-4">
+                          <button
+                            type="button"
+                            onClick={handleClearFilters}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                          >
+                            Clear Filters
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
-          </div>
-        )}
-        </>
+          </>
         )}
       </main>
     </div>

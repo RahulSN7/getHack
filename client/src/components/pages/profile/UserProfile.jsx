@@ -5,6 +5,7 @@ import { userService } from "../../../services/userService";
 import { TEAMMATES } from "../../../data/teammates";
 import EditProfileModal from "./EditProfileModal";
 import { isProfileComplete } from "../../../utils/profileValidation";
+import BackButton from "../../common/BackButton";
 
 function AvailabilityBadge({ availability, isComplete }) {
   if (!isComplete) {
@@ -349,6 +350,11 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+        {/* ── Top-Left Back Button ── */}
+        <div>
+          <BackButton fallbackPath="/teammates" />
+        </div>
+
         {/* ── 1. Profile Header Card ── */}
         <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">

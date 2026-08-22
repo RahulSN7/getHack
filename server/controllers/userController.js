@@ -10,6 +10,7 @@ const path = require("path");
 const User = require("../models/user");
 const Hackathon = require("../models/hackathon");
 const Connection = require("../models/connection");
+const { isProfileComplete } = require("../utils/profileValidation");
 
 // ============================================================
 // DATE FORMATTER
@@ -470,6 +471,18 @@ const updateOwnParticipantProfile = async (req, res) => {
           .slice(-6)
           .toUpperCase()}`,
     };
+
+    // Reject Available selection if candidate profile is incomplete
+    if (cleanAvailability === "Available" && !isProfileComplete(user)) {
+      if (req.file?.path) {
+        fs.unlink(req.file.path, () => {});
+      }
+      return res.status(400).json({
+        success: false,
+        code: "PROFILE_INCOMPLETE",
+        message: "Complete your profile before becoming available to teammates.",
+      });
+    }
 
     // ========================================================
     // SAVE DATABASE
@@ -1003,17 +1016,21 @@ const getAllParticipants = async (req, res) => {
     const currentUserId = req.user?._id ? req.user._id.toString() : null;
     const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : null;
 
-    // Fetch all users with role 'participant'
-    const users = await User.find({ role: "participant" }).sort({ createdAt: -1 });
+    // Fetch users with role 'participant' and explicit availability 'Available'
+    const users = await User.find({
+      role: "participant",
+      "profile.availability": "Available",
+    }).sort({ createdAt: -1 });
 
-    // Filter out current user
-    let otherUsers = currentUserId
-      ? users.filter((u) => u._id.toString() !== currentUserId)
-      : users;
+    // Filter out current user and enforce complete profile + explicit Available
+    let eligibleUsers = users.filter((u) => {
+      const isNotCurrent = currentUserId ? u._id.toString() !== currentUserId : true;
+      return isNotCurrent && isProfileComplete(u) && u.profile?.availability === "Available";
+    });
 
     // Apply limit if specified
     if (limitParam && !isNaN(limitParam) && limitParam > 0) {
-      otherUsers = otherUsers.slice(0, limitParam);
+      eligibleUsers = eligibleUsers.slice(0, limitParam);
     }
 
     // Fetch connection states for current user if logged in
@@ -1035,7 +1052,7 @@ const getAllParticipants = async (req, res) => {
       });
     }
 
-    const participants = otherUsers.map((u) => {
+    const participants = eligibleUsers.map((u) => {
       const safe = u.toSafeUser();
       const conn = connectionsMap[u._id.toString()] || { status: "none" };
       return {

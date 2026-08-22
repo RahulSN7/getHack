@@ -64,7 +64,7 @@ function searchMembers(members, query) {
 // Filters: Find Members
 // ---------------------------------------------------------------------------
 
-function filterMembers(members, { roleFilter, experienceFilter, availabilityFilter }) {
+function filterMembers(members, { roleFilter, experienceFilter }) {
   let result = members;
 
   if (roleFilter !== "all") {
@@ -72,15 +72,6 @@ function filterMembers(members, { roleFilter, experienceFilter, availabilityFilt
   }
   if (experienceFilter !== "all") {
     result = result.filter((m) => m.experience === experienceFilter);
-  }
-  if (availabilityFilter !== "all") {
-    if (availabilityFilter === "Available") {
-      result = result.filter(
-        (m) => isProfileComplete(m) && m.availability === "Available"
-      );
-    } else {
-      result = result.filter((m) => m.availability === availabilityFilter);
-    }
   }
 
   return result;
@@ -336,7 +327,6 @@ function Teammates() {
   // Filters — Members
   const [roleFilter, setRoleFilter] = useState("all");
   const [experienceFilter, setExperienceFilter] = useState("all");
-  const [availabilityFilter, setAvailabilityFilter] = useState("all");
 
   // Filters — Teams
   const [teamStatusFilter, setTeamStatusFilter] = useState("all");
@@ -349,7 +339,7 @@ function Teammates() {
   const hasFilters =
     searchQuery.trim() !== "" ||
     (activeTab === "members" &&
-      (roleFilter !== "all" || experienceFilter !== "all" || availabilityFilter !== "all")) ||
+      (roleFilter !== "all" || experienceFilter !== "all")) ||
     (activeTab === "teams" && teamStatusFilter !== "all");
 
   // Clear all state
@@ -357,7 +347,6 @@ function Teammates() {
     setSearchQuery("");
     setRoleFilter("all");
     setExperienceFilter("all");
-    setAvailabilityFilter("all");
     setTeamStatusFilter("all");
     setMemberSort("default");
     setTeamSort("default");
@@ -366,9 +355,9 @@ function Teammates() {
   // Pipeline: Members
   const memberResults = useMemo(() => {
     const searched = searchMembers(members, searchQuery);
-    const filtered = filterMembers(searched, { roleFilter, experienceFilter, availabilityFilter });
+    const filtered = filterMembers(searched, { roleFilter, experienceFilter });
     return sortMembers(filtered, memberSort);
-  }, [members, searchQuery, roleFilter, experienceFilter, availabilityFilter, memberSort]);
+  }, [members, searchQuery, roleFilter, experienceFilter, memberSort]);
 
   // Pipeline: Teams
   const teamResults = useMemo(() => {
@@ -386,19 +375,16 @@ function Teammates() {
   const handleFilterApply = ({
     roleFilter: r,
     experienceFilter: e,
-    availabilityFilter: a,
     teamStatusFilter: ts,
   }) => {
     setRoleFilter(r);
     setExperienceFilter(e);
-    setAvailabilityFilter(a);
     setTeamStatusFilter(ts);
   };
 
   const handleFilterClear = () => {
     setRoleFilter("all");
     setExperienceFilter("all");
-    setAvailabilityFilter("all");
     setTeamStatusFilter("all");
   };
 
@@ -528,7 +514,6 @@ function Teammates() {
                 activeTab={activeTab}
                 roleFilter={roleFilter}
                 experienceFilter={experienceFilter}
-                availabilityFilter={availabilityFilter}
                 teamStatusFilter={teamStatusFilter}
                 onApply={handleFilterApply}
                 onClear={handleFilterClear}
