@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { useMemo, useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
 import { isProfileComplete } from "../../../utils/profileValidation";
@@ -19,6 +20,7 @@ import TeammateFilters from "./TeammateFilters";
 import TeammateCard from "./TeammateCard";
 import TeamCard from "./TeamCard";
 import TeamDetailsModal from "./TeamDetailsModal";
+import CreateTeamModal from "./CreateTeamModal";
 
 // ---------------------------------------------------------------------------
 // Role matching helper (maps filter IDs to role strings)
@@ -98,9 +100,19 @@ function searchTeams(teams, query) {
 // Filters: Join a Team
 // ---------------------------------------------------------------------------
 
-function filterTeams(teams, { teamStatusFilter }) {
-  if (teamStatusFilter === "all") return teams;
-  return teams.filter((t) => t.status === teamStatusFilter);
+function filterTeams(teams, currentUser) {
+  return teams.filter((t) => {
+    const currentCount = t.memberIds ? t.memberIds.length : (t.currentSize || 1);
+    const isNotFull = currentCount < (t.maxSize || 4);
+    const currentUserId = currentUser?.id || currentUser?._id;
+    const isAlreadyMember = Boolean(
+      currentUserId && (
+        (t.memberIds && t.memberIds.includes(currentUserId)) ||
+        t.createdBy === currentUserId
+      )
+    );
+    return isNotFull && !isAlreadyMember;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +179,34 @@ const TEAM_SORT_OPTIONS = [
 // Empty state component
 // ---------------------------------------------------------------------------
 
-function EmptyState({ hasFilters, onClear, message }) {
+function EmptyState({ activeTab, hasFilters, onClear, message }) {
+  if (activeTab === "teams" && !hasFilters) {
+    return (
+      <div className="py-16 text-center space-y-4 rounded-2xl border border-dashed border-neutral-300 bg-white p-8 dark:border-neutral-800 dark:bg-neutral-900/50">
+        <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500">
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+        </div>
+        <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+          No teams available
+        </h3>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+          There are currently no teams looking for members. Try again later or create your own team.
+        </p>
+        <div className="pt-2">
+          <Link
+            to="/create-team"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          >
+            + Create a Team
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="py-16 text-center">
       <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500">
@@ -192,7 +231,7 @@ function EmptyState({ hasFilters, onClear, message }) {
           ? "Try adjusting your search or filters."
           : "Check back later for new listings."}
       </p>
-      {hasFilters && (
+      {hasFilters && onClear && (
         <button
           type="button"
           onClick={onClear}
@@ -219,6 +258,10 @@ function Teammates() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState("members");
+
+  // Teams list state
+  const [teamsList, setTeamsList] = useState(TEAMS);
+  const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
 
   // Selected team for Team Details modal
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -359,12 +402,12 @@ function Teammates() {
     return sortMembers(filtered, memberSort);
   }, [members, searchQuery, roleFilter, experienceFilter, memberSort]);
 
-  // Pipeline: Teams
+  // Pipeline: Teams (only teams with open spots: currentSize < maxSize)
   const teamResults = useMemo(() => {
-    const searched = searchTeams(TEAMS, searchQuery);
-    const filtered = filterTeams(searched, { teamStatusFilter });
-    return sortTeams(filtered, teamSort);
-  }, [searchQuery, teamStatusFilter, teamSort]);
+    const openTeamsOnly = filterTeams(teamsList, currentUser);
+    const searched = searchTeams(openTeamsOnly, searchQuery);
+    return sortTeams(searched, teamSort);
+  }, [teamsList, searchQuery, teamSort, currentUser]);
 
   const results = activeTab === "members" ? memberResults : teamResults;
   const sortOptions = activeTab === "members" ? MEMBER_SORT_OPTIONS : TEAM_SORT_OPTIONS;
@@ -404,13 +447,41 @@ function Teammates() {
             Connect
           </p>
 
-          {/* Heading */}
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
-            Find Teammates
-          </h1>
-          <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
-            Find skilled people to build with — or join a team that needs you.
-          </p>
+          {/* Heading + Create Team Button */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
+                Find Teammates
+              </h1>
+              <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
+                Find the right teammates, join a team that needs you, or create your own.
+              </p>
+            </div>
+
+            <Link
+              to="/create-team"
+              className="
+                inline-flex
+                items-center
+                gap-1.5
+                rounded-lg
+                bg-indigo-600
+                px-4
+                py-2.5
+                text-xs
+                font-semibold
+                text-white
+                shadow-2xs
+                transition-colors
+                duration-150
+                hover:bg-indigo-500
+                dark:bg-indigo-500
+                dark:hover:bg-indigo-400
+              "
+            >
+              <span>+ Create Team</span>
+            </Link>
+          </div>
 
           {/* Search */}
           <div className="mt-6 max-w-2xl">
@@ -623,6 +694,7 @@ function Teammates() {
           </div>
         ) : (
           <EmptyState
+            activeTab={activeTab}
             hasFilters={hasFilters}
             onClear={handleClearAll}
             message={
@@ -754,6 +826,16 @@ function Teammates() {
           </div>
         </div>
       )}
+
+      {/* Create Team Modal */}
+      <CreateTeamModal
+        isOpen={isCreateTeamOpen}
+        onClose={() => setIsCreateTeamOpen(false)}
+        onCreateTeam={(newTeam) => {
+          setTeamsList((prev) => [newTeam, ...prev]);
+          setActiveTab("teams");
+        }}
+      />
     </div>
   );
 }

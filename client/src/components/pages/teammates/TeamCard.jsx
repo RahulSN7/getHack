@@ -3,18 +3,20 @@
 // Follows the same card design conventions as HackathonCard.jsx
 // ---------------------------------------------------------------------------
 
+import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 
 // ---------------------------------------------------------------------------
 // Status badge rendering
 // ---------------------------------------------------------------------------
 
-function StatusBadge({ status }) {
-  if (status === "Recruiting") {
+function StatusBadge({ currentSize, maxSize }) {
+  const spotsLeft = Math.max(0, maxSize - currentSize);
+  if (spotsLeft > 0) {
     return (
       <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        Looking for teammates
+        {spotsLeft === 1 ? "1 spot left" : `${spotsLeft} spots left`}
       </span>
     );
   }
@@ -22,7 +24,7 @@ function StatusBadge({ status }) {
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
       <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
-      Full
+      Team Full
     </span>
   );
 }
@@ -112,7 +114,7 @@ function TeamCard({ team, onSelectTeam }) {
             </div>
           </div>
 
-          <StatusBadge status={status} />
+          <StatusBadge currentSize={currentSize} maxSize={maxSize} />
         </div>
 
         {/* ── 2. Description ── */}
@@ -155,7 +157,7 @@ function TeamCard({ team, onSelectTeam }) {
         <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              TEAM SIZE
+              TEAM MEMBERS
             </p>
             <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
               {currentSize} / {maxSize} members
@@ -163,17 +165,17 @@ function TeamCard({ team, onSelectTeam }) {
           </div>
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              LOCATION
+              OPEN SPOTS
             </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-              {location || "Remote"}
+            <p className="mt-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              {maxSize - currentSize === 1 ? "1 spot available" : `${maxSize - currentSize} spots available`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── 5. Footer: Tech Stack (Left) & Team Details CTA (Right) ── */}
-      <div className="mt-4 flex items-end justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
+      {/* ── 5. Footer: Tech Stack (Left) & Team Details / Request CTAs (Right) ── */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
         {/* Tech stack preview */}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1">
@@ -197,39 +199,85 @@ function TeamCard({ team, onSelectTeam }) {
           </div>
         </div>
 
-        {/* Team Details CTA */}
-        <button
-          type="button"
-          onClick={() => onSelectTeam && onSelectTeam(team)}
-          className="
-            inline-flex
-            shrink-0
-            items-center
-            gap-1.5
-            text-xs
-            font-semibold
-            text-indigo-600
-            transition-colors
-            duration-150
-            hover:text-indigo-700
-            dark:text-indigo-400
-            dark:hover:text-indigo-300
-          "
-        >
-          <span>Team Details</span>
-          <svg
-            className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* Team Actions */}
+        <div className="flex items-center gap-2">
+          {onSelectTeam ? (
+            <button
+              type="button"
+              onClick={() => onSelectTeam(team)}
+              className="
+                inline-flex
+                items-center
+                gap-1
+                rounded-lg
+                border
+                border-neutral-200
+                bg-white
+                px-3
+                py-1.5
+                text-xs
+                font-semibold
+                text-neutral-700
+                transition-colors
+                hover:bg-neutral-50
+                dark:border-neutral-800
+                dark:bg-neutral-900
+                dark:text-neutral-300
+                dark:hover:bg-neutral-800
+              "
+            >
+              <span>View Team</span>
+            </button>
+          ) : (
+            <Link
+              to={`/team/${team.id || "team-1"}`}
+              className="
+                inline-flex
+                items-center
+                gap-1
+                rounded-lg
+                border
+                border-neutral-200
+                bg-white
+                px-3
+                py-1.5
+                text-xs
+                font-semibold
+                text-neutral-700
+                transition-colors
+                hover:bg-neutral-50
+                dark:border-neutral-800
+                dark:bg-neutral-900
+                dark:text-neutral-300
+                dark:hover:bg-neutral-800
+              "
+            >
+              <span>View Team</span>
+            </Link>
+          )}
+
+          <Link
+            to={`/team/${team.id || "team-1"}`}
+            className="
+              inline-flex
+              items-center
+              gap-1
+              rounded-lg
+              bg-indigo-600
+              px-3
+              py-1.5
+              text-xs
+              font-semibold
+              text-white
+              transition-colors
+              hover:bg-indigo-500
+              dark:bg-indigo-500
+              dark:hover:bg-indigo-400
+            "
           >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
-        </button>
+            <span>Request to Join</span>
+          </Link>
+        </div>
       </div>
     </article>
   );
