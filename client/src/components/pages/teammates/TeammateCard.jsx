@@ -1,57 +1,81 @@
 // ---------------------------------------------------------------------------
-// TeammateCard — clean participant discovery card for getHack
-// Replaces role label with Skills section and focuses on participant discovery
+// TeammateCard.jsx — Redesigned Teammate Card Component for Find Teammates
+// Matches exact getHack dark theme & reference design specifications
 // ---------------------------------------------------------------------------
 
-import { Link } from "react-router-dom";
-import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
-// ---------------------------------------------------------------------------
-// TeammateCard Component
-// ---------------------------------------------------------------------------
+function UserAvatar({ avatar, name, isOnline = true }) {
+  const [imgError, setImgError] = useState(false);
+  const initials = name
+    ? name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "GH";
 
-function TeammateCard({ teammate }) {
+  return (
+    <div className="relative shrink-0">
+      {avatar && !imgError ? (
+        <img
+          src={avatar}
+          alt={name}
+          onError={() => setImgError(true)}
+          className="h-[56px] w-[56px] rounded-full object-cover border border-[#232336]"
+        />
+      ) : (
+        <div className="grid h-[56px] w-[56px] place-items-center rounded-full bg-[#885CF6]/20 font-bold text-base text-[#885CF6] border border-[#232336]">
+          {initials}
+        </div>
+      )}
+
+      {isOnline && (
+        <span className="absolute bottom-0.5 right-0.5 h-[10px] w-[10px] rounded-full bg-[#22C55E] ring-2 ring-[#11121A]" />
+      )}
+    </div>
+  );
+}
+
+export default function TeammateCard({ teammate, onConnect, connectionStatus }) {
+  if (!teammate) return null;
+
   const {
-    name,
-    experience = "Intermediate",
-    bio,
-    location,
-    hackathonsCompleted = 0,
-    accent = "indigo",
-    username,
-    avatar,
+    name = "Developer",
+    bio = "",
+    location = "",
+    avatar = "",
+    username = "",
+    availability = "available",
   } = teammate;
 
-  const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
-  const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
-  const initial = name ? name.charAt(0).toUpperCase() : "?";
+  const currentLocation = useLocation();
+  const navigate = useNavigate();
+  const userId = teammate.id || teammate._id;
+  const isOnline = availability === "available" || availability === "online";
 
-  // Normalize skills (supports array or comma-separated string)
+  // Derive role
+  const role =
+    teammate.role ||
+    teammate.profile?.role ||
+    (teammate.domain ? (Array.isArray(teammate.domain) ? teammate.domain[0] : teammate.domain) : "Full Stack Developer");
+
+  // Normalize skills (array or comma string)
   const rawSkills = teammate.skills || teammate.profile?.skills || [];
-  const parsedSkills = Array.isArray(rawSkills)
+  const skillsList = Array.isArray(rawSkills)
     ? rawSkills
     : typeof rawSkills === "string"
     ? rawSkills.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
 
-  const visibleSkills = parsedSkills.slice(0, 3);
-  const overflowCount = Math.max(0, parsedSkills.length - 3);
+  const MAX_SKILLS = 3;
+  const visibleSkills = skillsList.slice(0, MAX_SKILLS);
+  const overflowSkillsCount = Math.max(0, skillsList.length - MAX_SKILLS);
 
-  // Normalize interests
-  const rawInterests = teammate.interests || teammate.profile?.interests || [];
-  const formattedInterests = Array.isArray(rawInterests)
-    ? rawInterests.join(" · ")
-    : typeof rawInterests === "string"
-    ? rawInterests
-    : "";
-
-  // Normalize domain
-  const rawDomain = teammate.domain || teammate.profile?.domain || "";
-  const formattedDomain = Array.isArray(rawDomain)
-    ? rawDomain.join(" · ")
-    : typeof rawDomain === "string"
-    ? rawDomain
-    : "";
+  const realBio = bio || teammate.profile?.bio || "";
+  const realLocation = location || teammate.profile?.location || "";
 
   return (
     <article
@@ -60,208 +84,304 @@ function TeammateCard({ teammate }) {
         flex
         flex-col
         justify-between
-        rounded-xl
+        rounded-[16px]
         border
         border-neutral-200
         bg-white
-        p-5
-        transition-all
-        duration-200
-        hover:-translate-y-0.5
-        hover:border-neutral-300
-        hover:shadow-md
-        hover:shadow-neutral-950/5
+        shadow-xs
         dark:border-neutral-800
         dark:bg-neutral-900
+        p-[20px]
+        transition-all
+        duration-200
+        hover:border-neutral-300
         dark:hover:border-neutral-700
-        dark:hover:shadow-neutral-950/30
       "
     >
-      <div>
-        {/* ── 1. Header: Avatar + Name + getHack ID (No Participant role & No Availability badge) ── */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
-            {/* Avatar */}
-            {avatar ? (
-              <img
-                src={avatar}
-                alt={name}
-                className="h-10 w-10 shrink-0 rounded-full object-cover border border-neutral-200 dark:border-neutral-800"
-              />
-            ) : (
-              <div
-                className={`
-                  grid
-                  h-10
-                  w-10
-                  shrink-0
-                  place-items-center
-                  rounded-full
-                  text-sm
-                  font-bold
-                  ${accentBgSoft}
-                  ${accentText}
-                `}
-              >
-                {initial}
-              </div>
-            )}
+      <div className="space-y-4">
+        {/* ── Header: Avatar + Identity ── */}
+        <div className="flex items-center gap-3.5">
+          <Link
+            to={userId ? `/profile/${userId}` : "#"}
+            state={{ from: currentLocation }}
+            aria-label={`View ${name}'s profile`}
+            className="shrink-0 transition-opacity hover:opacity-90"
+          >
+            <UserAvatar avatar={avatar} name={name} isOnline={isOnline} />
+          </Link>
 
-            {/* Name & getHack ID */}
-            <div className="min-w-0 flex-1">
-              <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <h3 className="truncate text-[16px] font-semibold text-neutral-900 dark:text-white leading-tight">
+              <Link
+                to={userId ? `/profile/${userId}` : "#"}
+                state={{ from: currentLocation }}
+                className="transition-colors hover:text-indigo-600 dark:hover:text-[#885CF6]"
+              >
                 {name}
-              </h3>
-              {username && (
-                <p className="mt-0.5 text-[11px] font-medium text-neutral-400 dark:text-neutral-500 font-mono">
-                  @{username}
-                </p>
-              )}
-            </div>
+              </Link>
+            </h3>
+
+            <p className="truncate text-[14px] font-medium text-indigo-600 dark:text-[#885CF6]">
+              {role}
+            </p>
+
+            {realLocation && (
+              <p className="flex items-center gap-1 truncate text-[12px] font-normal text-neutral-500 dark:text-[#A1A1AA] pt-0.5">
+                <svg
+                  className="h-3 w-3 shrink-0 text-neutral-400 dark:text-[#A1A1AA]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span className="truncate">{realLocation}</span>
+              </p>
+            )}
           </div>
         </div>
 
-        {/* ── 2. Skills Section ── */}
-        {parsedSkills.length > 0 && (
-          <div className="mt-4 space-y-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              SKILLS
+        {/* ── Bio Section (Real Data Only) ── */}
+        {realBio && (
+          <p className="text-[14px] font-normal text-neutral-600 dark:text-[#D1D5DB] leading-relaxed line-clamp-2">
+            {realBio}
+          </p>
+        )}
+
+        {/* ── Skills Section ── */}
+        {visibleSkills.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              Skills
             </p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {visibleSkills.map((skill) => (
                 <span
                   key={skill}
-                  className={`
+                  className="
                     inline-flex
                     items-center
                     rounded-md
-                    px-2
-                    py-0.5
+                    border
+                    border-neutral-200/80
+                    bg-neutral-100/80
+                    px-2.5
+                    py-1
                     text-[11px]
                     font-medium
-                    ${accentBgSoft}
-                    ${accentText}
-                  `}
+                    text-neutral-700
+                    transition-colors
+                    duration-150
+                    hover:border-indigo-500/30
+                    hover:text-indigo-600
+                    dark:border-neutral-700/50
+                    dark:bg-neutral-800/60
+                    dark:text-neutral-300
+                    dark:hover:border-indigo-500/30
+                    dark:hover:text-indigo-400
+                  "
                 >
                   {skill}
                 </span>
               ))}
-              {overflowCount > 0 && (
-                <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                  +{overflowCount}
+
+              {overflowSkillsCount > 0 && (
+                <span
+                  className="
+                    inline-flex
+                    items-center
+                    rounded-md
+                    border
+                    border-neutral-200/80
+                    bg-neutral-100/80
+                    px-2.5
+                    py-1
+                    text-[11px]
+                    font-medium
+                    text-neutral-500
+                    dark:border-neutral-700/50
+                    dark:bg-neutral-800/60
+                    dark:text-neutral-400
+                  "
+                >
+                  +{overflowSkillsCount}
                 </span>
               )}
             </div>
           </div>
         )}
-
-        {/* ── 3. Interests (Compact) ── */}
-        {formattedInterests && (
-          <div className="mt-3.5 space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              INTERESTS
-            </p>
-            <p className="truncate text-xs font-medium text-neutral-600 dark:text-neutral-300">
-              {formattedInterests}
-            </p>
-          </div>
-        )}
-
-        {/* ── 4. Domain (Compact - if present) ── */}
-        {formattedDomain && (
-          <div className="mt-3 space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              DOMAIN
-            </p>
-            <p className="truncate text-xs font-medium text-neutral-600 dark:text-neutral-300">
-              {formattedDomain}
-            </p>
-          </div>
-        )}
-
-        {/* ── 5. Bio (Fallback if no interests/domain) ── */}
-        {bio && !formattedInterests && !formattedDomain && (
-          <p className="mt-3.5 line-clamp-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
-            {bio}
-          </p>
-        )}
-
-        {/* ── 6. Stats Row ── */}
-        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              EXPERIENCE
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-              {experience}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              HACKATHONS
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-              {hackathonsCompleted} completed
-            </p>
-          </div>
-        </div>
       </div>
 
-      {/* ── 7. Footer: Location (if set) & View Profile Action ── */}
-      <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-        {location ? (
-          <span className="inline-flex items-center gap-1 truncate text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+      {/* ── Footer Actions ── */}
+      <div className="mt-5 flex items-center gap-2.5 pt-2">
+        <Link
+          to={`/profile/${userId}`}
+          state={{ from: currentLocation }}
+          className="
+            group/btn
+            flex-1
+            h-10
+            inline-flex
+            items-center
+            justify-center
+            gap-2
+            rounded-lg
+            bg-indigo-600
+            px-4
+            text-xs
+            font-semibold
+            text-white
+            shadow-2xs
+            transition-all
+            duration-150
+            hover:bg-indigo-500
+            active:scale-[0.99]
+            dark:bg-indigo-500
+            dark:hover:bg-indigo-400
+          "
+        >
+          <svg
+            className="h-4 w-4 text-white/90 transition-transform duration-150 group-hover/btn:translate-x-0.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span>View Profile</span>
+        </Link>
+
+        {connectionStatus === "accepted" || connectionStatus === "connected" ? (
+          <button
+            type="button"
+            disabled
+            className="
+              group/btn
+              flex-1
+              h-10
+              inline-flex
+              items-center
+              justify-center
+              gap-2
+              rounded-lg
+              border
+              border-neutral-200/90
+              bg-neutral-100/70
+              px-4
+              text-xs
+              font-semibold
+              text-emerald-600
+              cursor-not-allowed
+              opacity-90
+              dark:border-neutral-700/80
+              dark:bg-neutral-800/70
+              dark:text-emerald-400
+            "
+          >
             <svg
-              className="h-3 w-3 shrink-0 text-neutral-400 dark:text-neutral-500"
+              className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>Connected</span>
+          </button>
+        ) : connectionStatus === "pending" ? (
+          <button
+            type="button"
+            disabled
+            className="
+              group/btn
+              flex-1
+              h-10
+              inline-flex
+              items-center
+              justify-center
+              gap-2
+              rounded-lg
+              border
+              border-neutral-200/90
+              bg-neutral-100/70
+              px-4
+              text-xs
+              font-semibold
+              text-neutral-500
+              cursor-not-allowed
+              opacity-80
+              dark:border-neutral-700/80
+              dark:bg-neutral-800/70
+              dark:text-neutral-400
+            "
+          >
+            <svg
+              className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>Request Sent</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => (onConnect ? onConnect(teammate) : navigate(userId ? `/profile/${userId}` : "#", { state: { from: currentLocation } }))}
+            className="
+              group/btn
+              flex-1
+              h-10
+              inline-flex
+              items-center
+              justify-center
+              gap-2
+              rounded-lg
+              border
+              border-neutral-200/90
+              bg-neutral-100/70
+              px-4
+              text-xs
+              font-semibold
+              text-neutral-700
+              transition-all
+              duration-150
+              hover:border-indigo-500/40
+              hover:bg-indigo-500/10
+              hover:text-indigo-600
+              dark:border-neutral-700/80
+              dark:bg-neutral-800/70
+              dark:text-neutral-200
+              dark:hover:border-indigo-500/40
+              dark:hover:bg-indigo-500/15
+              dark:hover:text-indigo-300
+            "
+          >
+            <svg
+              className="h-4 w-4 text-neutral-500 transition-colors duration-150 group-hover/btn:text-indigo-600 dark:text-neutral-400 dark:group-hover/btn:text-indigo-300"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
             >
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <line x1="20" y1="8" x2="20" y2="14" />
+              <line x1="23" y1="11" x2="17" y2="11" />
             </svg>
-            <span className="truncate">{location}</span>
-          </span>
-        ) : (
-          <span />
+            <span>Connect</span>
+          </button>
         )}
-
-        <Link
-          to={`/profile/${teammate.id || teammate._id}`}
-          className="
-            inline-flex
-            items-center
-            gap-1
-            text-xs
-            font-semibold
-            text-indigo-600
-            transition-colors
-            duration-150
-            hover:text-indigo-700
-            dark:text-indigo-400
-            dark:hover:text-indigo-300
-          "
-        >
-          <span>View Profile</span>
-          <svg
-            className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
-        </Link>
       </div>
     </article>
   );
 }
-
-export default TeammateCard;

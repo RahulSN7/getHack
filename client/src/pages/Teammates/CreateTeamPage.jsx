@@ -11,6 +11,7 @@ import InviteConnectionsModal from "../../components/pages/teammates/InviteConne
 import { TEAMS } from "../../data/teams";
 import { TEAMMATES } from "../../data/teammates";
 import { useAuth } from "../../context/useAuth";
+import { teamService } from "../../services/teamService";
 
 function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
@@ -178,7 +179,7 @@ export default function CreateTeamPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
@@ -215,11 +216,9 @@ export default function CreateTeamPage() {
 
     setIsSubmitting(true);
 
-    const generatedId = `team-${Date.now()}`;
     const formattedDates = formatDateDisplay(startDate, endDate);
 
-    const newTeam = {
-      id: generatedId,
+    const payload = {
       teamName: teamName.trim(),
       hackathon: `custom-hackathon-${Date.now()}`,
       hackathonName: hackathonName.trim(),
@@ -229,21 +228,35 @@ export default function CreateTeamPage() {
       lookingForDescription: lookingForDescription.trim(),
       rolesNeeded: rolesNeeded,
       techStack: techStack,
-      currentSize: currentMemberCount,
       maxSize: maxSize,
       location: mode,
       accent: "indigo",
-      createdBy: creatorId,
-      memberIds: [creatorId],
       pendingInvitationIds: invitedMemberIds,
     };
 
-    // Prepend newly created team into TEAMS dataset
-    TEAMS.unshift(newTeam);
+    try {
+      const res = await teamService.createTeam(payload);
+      const createdTeam = res?.team;
+      const teamId = createdTeam?.id || createdTeam?._id || `team-${Date.now()}`;
 
-    setTimeout(() => {
-      navigate(`/team/${generatedId}`);
-    }, 500);
+      // Local sync fallback
+      if (createdTeam) {
+        TEAMS.unshift(createdTeam);
+      } else {
+        TEAMS.unshift({ id: teamId, ...payload, createdBy: creatorId, memberIds: [creatorId] });
+      }
+
+      showToast("Team created successfully!");
+
+      // Navigate to Team Details page, passing source state so Back button returns to Join Team (/teammates?tab=teams)
+      navigate(`/team/${teamId}`, {
+        state: { from: "/teammates?tab=teams" },
+      });
+    } catch (err) {
+      console.error("Failed to create team:", err);
+      showToast(err.message || "Failed to create team. Please try again.");
+      setIsSubmitting(false);
+    }
   };
 
   return (

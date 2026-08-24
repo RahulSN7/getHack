@@ -5,8 +5,11 @@
 
 import { useState } from "react";
 import { HACKATHONS } from "../../../data/hackathons";
+import { useAuth } from "../../../context/useAuth";
+import { teamService } from "../../../services/teamService";
 
 export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }) {
+  const { user: currentUser } = useAuth();
   const [hackathonId, setHackathonId] = useState(HACKATHONS[0]?.id || "");
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
@@ -16,6 +19,7 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }) {
   const [roleInput, setRoleInput] = useState("");
   const [rolesNeeded, setRolesNeeded] = useState(["Backend Developer"]);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -43,7 +47,7 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }) {
     setRolesNeeded(rolesNeeded.filter((r) => r !== roleToRemove));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
@@ -68,27 +72,41 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }) {
       return;
     }
 
+    setIsSubmitting(true);
     const selectedHackathon = HACKATHONS.find((h) => h.id === hackathonId) || HACKATHONS[0];
 
-    const newTeam = {
-      id: `team-${Date.now()}`,
+    const payload = {
       teamName: teamName.trim(),
       hackathon: hackathonId,
-      hackathonName: selectedHackathon.title,
+      hackathonName: selectedHackathon?.name || selectedHackathon?.title || "Hackathon",
       description: description.trim(),
       rolesNeeded: rolesNeeded.length > 0 ? rolesNeeded : ["Developer"],
       techStack: techStack.length > 0 ? techStack : ["React"],
-      currentSize: 1,
       maxSize: parseInt(maxSize, 10),
       location: "Remote",
       accent: "indigo",
-      status: "Recruiting",
-      createdBy: "current-user",
-      memberIds: ["current-user"],
     };
 
-    onCreateTeam(newTeam);
-    onClose();
+    try {
+      const res = await teamService.createTeam(payload);
+      const createdTeam = res?.team || {
+        id: `team-${Date.now()}`,
+        ...payload,
+        currentSize: 1,
+        createdBy: currentUser?.id || currentUser?._id || "current-user",
+        memberIds: [currentUser?.id || currentUser?._id || "current-user"],
+      };
+
+      if (onCreateTeam) {
+        onCreateTeam(createdTeam);
+      }
+      onClose();
+    } catch (err) {
+      console.error("Modal create team error:", err);
+      setErrors({ form: err.message || "Failed to create team. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -127,7 +145,7 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }) {
             >
               {HACKATHONS.map((h) => (
                 <option key={h.id} value={h.id}>
-                  {h.title}
+                  {h.name || h.title}
                 </option>
               ))}
             </select>

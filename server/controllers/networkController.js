@@ -251,8 +251,77 @@ const respondToConnectionRequest = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// DELETE /api/network/requests/:id — Cancel Sent Connection Request
+// ---------------------------------------------------------------------------
+const cancelConnectionRequest = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthenticated." });
+    }
+
+    const { id } = req.params;
+
+    // Validate ObjectId format
+    if (!id || typeof id !== "string" || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: "Invalid connection request ID." });
+    }
+
+    // Check if request exists
+    const existing = await Connection.findById(id);
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Connection request not found." });
+    }
+
+    // Verify authenticated user is the sender
+    if (existing.sender.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "You are not authorized to cancel this connection request." });
+    }
+
+    // Check if request is still pending
+    if (existing.status === "accepted") {
+      return res.status(400).json({
+        success: false,
+        message: "This connection request can no longer be cancelled as it has already been accepted.",
+      });
+    }
+
+    if (existing.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "This connection request is no longer pending.",
+      });
+    }
+
+    // Secure database cancellation scoped to sender and pending status
+    const cancelled = await Connection.findOneAndDelete({
+      _id: id,
+      sender: req.user._id,
+      status: "pending",
+    });
+
+    if (!cancelled) {
+      return res.status(400).json({
+        success: false,
+        message: "Connection request could not be cancelled. It may have already been processed.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Connection request cancelled successfully.",
+      requestId: id,
+    });
+  } catch (error) {
+    console.error("Error in cancelConnectionRequest:", error);
+    return res.status(500).json({ success: false, message: "Failed to cancel connection request." });
+  }
+};
+
 module.exports = {
   sendConnectionRequest,
   getNetworkRequests,
   respondToConnectionRequest,
+  cancelConnectionRequest,
 };

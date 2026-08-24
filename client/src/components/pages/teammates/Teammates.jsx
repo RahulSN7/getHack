@@ -15,6 +15,7 @@ import { userService } from "../../../services/userService";
 import { isProfileComplete } from "../../../utils/profileValidation";
 import { TEAMMATES } from "../../../data/teammates";
 import { TEAMS } from "../../../data/teams";
+import { teamService } from "../../../services/teamService";
 import TeammateSearch from "./TeammateSearch";
 import TeammateFilters from "./TeammateFilters";
 import TeammateCard from "./TeammateCard";
@@ -101,17 +102,71 @@ function searchTeams(teams, query) {
 // ---------------------------------------------------------------------------
 
 function filterTeams(teams, currentUser) {
+  const currentUserId = currentUser?.id || currentUser?._id;
+  const currentUserHandle = currentUser?.username || currentUser?.profile?.handle?.replace(/^@/, "");
+  const currentUserEmail = currentUser?.email;
+
+  // Set of identifiers representing the current user
+  const userIdentifiers = new Set(
+    [
+      currentUserId,
+      currentUserId?.toString(),
+      currentUserHandle,
+      currentUserEmail,
+      "user-current",
+      "current-user",
+      "priya-sharma",
+    ].filter(Boolean)
+  );
+
   return teams.filter((t) => {
-    const currentCount = t.memberIds ? t.memberIds.length : (t.currentSize || 1);
-    const isNotFull = currentCount < (t.maxSize || 4);
-    const currentUserId = currentUser?.id || currentUser?._id;
-    const isAlreadyMember = Boolean(
-      currentUserId && (
-        (t.memberIds && t.memberIds.includes(currentUserId)) ||
-        t.createdBy === currentUserId
-      )
-    );
-    return isNotFull && !isAlreadyMember;
+    if (!t) return false;
+
+    // 1. Check capacity (full teams cannot be joined)
+    const memberList = Array.isArray(t.memberIds)
+      ? t.memberIds
+      : Array.isArray(t.members)
+      ? t.members
+      : [];
+    const currentCount = memberList.length || t.currentSize || 1;
+    const maxSize = t.maxSize || t.maxTeamSize || 4;
+    if (currentCount >= maxSize) {
+      return false;
+    }
+
+    // 2. Check team status (only recruiting / open teams)
+    if (t.status && typeof t.status === "string") {
+      const statusLower = t.status.toLowerCase();
+      if (
+        statusLower === "full" ||
+        statusLower === "closed" ||
+        statusLower === "completed" ||
+        statusLower === "inactive"
+      ) {
+        return false;
+      }
+    }
+
+    // 3. Check if current user is creator / leader / owner
+    const rawCreator = t.createdBy ?? t.leader ?? t.leaderId ?? t.owner ?? t.ownerId;
+    const creatorId = typeof rawCreator === "object" ? (rawCreator?._id || rawCreator?.id || rawCreator?.user) : rawCreator;
+
+    if (creatorId && userIdentifiers.has(creatorId.toString())) {
+      return false; // Creator/leader -> DO NOT show in Join Team
+    }
+
+    // 4. Check if current user is already a member
+    const isAlreadyMember = memberList.some((m) => {
+      if (!m) return false;
+      const mId = typeof m === "object" ? (m._id || m.id || m.userId || m.user?._id || m.user?.id || m.user) : m;
+      return mId && userIdentifiers.has(mId.toString());
+    });
+
+    if (isAlreadyMember) {
+      return false; // Already a member -> DO NOT show in Join Team
+    }
+
+    return true;
   });
 }
 
@@ -358,7 +413,26 @@ function Teammates() {
         if (isMounted) setLoading(false);
       }
     }
+    async function fetchBackendTeams() {
+      try {
+        const data = await teamService.getTeams();
+        if (isMounted && data?.teams && Array.isArray(data.teams)) {
+          const apiTeams = data.teams;
+          const merged = [...apiTeams];
+          TEAMS.forEach((localT) => {
+            const locId = localT.id || localT._id;
+            if (!merged.some((m) => (m.id || m._id) === locId)) {
+              merged.push(localT);
+            }
+          });
+          setTeamsList(merged);
+        }
+      } catch (err) {
+        console.error("Failed to load backend teams:", err);
+      }
+    }
     fetchParticipants();
+    fetchBackendTeams();
     return () => {
       isMounted = false;
     };

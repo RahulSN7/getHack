@@ -107,12 +107,19 @@ runTest("Deadline calculation accurately determines Closed status for past deadl
   assert.strictEqual(processed.registration.status, "Closed");
 });
 
+const runTeamTests = require("./testTeamCreation");
+
 console.log("\n==============================================");
 console.log(`Test Execution Summary: ${passedTests} / ${totalTests} passed`);
 console.log("==============================================\n");
 
-if (passedTests === totalTests) {
-  process.exit(0);
-} else {
+runTeamTests().then(() => {
+  if (passedTests === totalTests) {
+    process.exit(0);
+  } else {
+    process.exit(1);
+  }
+}).catch((err) => {
+  console.error("Team creation tests failed:", err);
   process.exit(1);
-}
+});

@@ -11,5 +11,6 @@ const { requireAuth } = require("../middleware/authMiddleware");
 router.post("/requests", requireAuth, networkController.sendConnectionRequest);
 router.get("/requests", requireAuth, networkController.getNetworkRequests);
 router.put("/requests/:id", requireAuth, networkController.respondToConnectionRequest);
+router.delete("/requests/:id", requireAuth, networkController.cancelConnectionRequest);
 
 module.exports = router;

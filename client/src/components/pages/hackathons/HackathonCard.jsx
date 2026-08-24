@@ -3,7 +3,7 @@
 // Displays Platform, Themes, Prize Pool & Deadline. Zero Mode/Fee/TeamSize/Eligibility fields.
 // ---------------------------------------------------------------------------
 
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
 import DeadlineDisplay from "./DeadlineDisplay";
@@ -114,6 +114,7 @@ function getCleanThemes(hackathon) {
 }
 
 function HackathonCard({ hackathon }) {
+  const currentLocation = useLocation();
   const id = hackathon.id || hackathon._id;
   const name = typeof hackathon.name === "string" ? hackathon.name : typeof hackathon.title === "string" ? hackathon.title : "Untitled Hackathon";
   const organizer = formatOrganizer(hackathon.organizerName, hackathon.organizer);
@@ -187,27 +188,40 @@ function HackathonCard({ hackathon }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             {/* Logo / Avatar fallback */}
-            <div
-              className={`
-                grid
-                h-9
-                w-9
-                shrink-0
-                place-items-center
-                rounded-lg
-                text-sm
-                font-bold
-                ${accentBgSoft}
-                ${accentText}
-              `}
+            <Link
+              to={id ? `/hackathons/${id}` : "#"}
+              state={{ from: currentLocation }}
+              aria-label={`View details for ${name}`}
+              className="shrink-0 transition-opacity hover:opacity-90"
             >
-              {initial}
-            </div>
+              <div
+                className={`
+                  grid
+                  h-9
+                  w-9
+                  shrink-0
+                  place-items-center
+                  rounded-lg
+                  text-sm
+                  font-bold
+                  ${accentBgSoft}
+                  ${accentText}
+                `}
+              >
+                {initial}
+              </div>
+            </Link>
 
             {/* Name & Organizer */}
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
-                {name}
+                <Link
+                  to={id ? `/hackathons/${id}` : "#"}
+                  state={{ from: currentLocation }}
+                  className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                >
+                  {name}
+                </Link>
               </h3>
               <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
                 {organizer}
@@ -332,7 +346,8 @@ function HackathonCard({ hackathon }) {
         />
 
         <Link
-          to={`/hackathons/${id}`}
+          to={id ? `/hackathons/${id}` : "#"}
+          state={{ from: currentLocation }}
           className="
             inline-flex
             items-center

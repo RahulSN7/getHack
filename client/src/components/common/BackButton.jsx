@@ -10,7 +10,9 @@ export default function BackButton({ fallbackPath = "/", className = "" }) {
   const routerLocation = useLocation();
 
   const handleBack = () => {
-    if (window.history.length > 1 && routerLocation.key !== "default") {
+    if (routerLocation.state?.from) {
+      navigate(routerLocation.state.from);
+    } else if (window.history.length > 1 && routerLocation.key !== "default") {
       navigate(-1);
     } else {
       navigate(fallbackPath);

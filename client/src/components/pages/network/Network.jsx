@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import NetworkFilters from "./NetworkFilters";
 import NetworkUserCard from "./NetworkUserCard";
 import { userService } from "../../../services/userService";
@@ -52,13 +52,38 @@ function matchesUserSearch(user, query) {
 // ---------------------------------------------------------------------------
 
 function Network() {
-  const [activeTab, setActiveTab] = useState("connections"); // 'connections' | 'requests' | 'sent'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const validTabs = ["connections", "requests", "sent"];
+  const initialTab = validTabs.includes(tabParam) ? tabParam : "connections";
+
+  const [activeTab, setActiveTabState] = useState(initialTab);
+
+  // Synchronize activeTab if searchParams change
+  useEffect(() => {
+    if (validTabs.includes(tabParam) && tabParam !== activeTab) {
+      setActiveTabState(tabParam);
+    }
+  }, [tabParam]);
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    setSearchParams({ tab }, { replace: true });
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [connections, setConnections] = useState([]);
   const [requests, setRequests] = useState([]);
   const [sent, setSent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Cancel Request Modal state
+  const [cancelModalState, setCancelModalState] = useState({
+    isOpen: false,
+    requestItem: null,
+    isCancelling: false,
+    error: null,
+  });
 
   // Load real network requests from backend API on mount
   const loadNetworkData = async (isMounted = true) => {
@@ -156,8 +181,44 @@ function Network() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleCancelSentRequest = (sentId) => {
-    setSent((prev) => prev.filter((s) => s.id !== sentId));
+  const handleCancelSentRequest = (sentItem) => {
+    const itemObj =
+      typeof sentItem === "object"
+        ? sentItem
+        : sent.find((s) => s.id === sentItem || s.requestId === sentItem || s.toUserId === sentItem);
+    if (!itemObj) return;
+
+    setCancelModalState({
+      isOpen: true,
+      requestItem: itemObj,
+      isCancelling: false,
+      error: null,
+    });
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelModalState.requestItem || cancelModalState.isCancelling) return;
+
+    const reqItem = cancelModalState.requestItem;
+    const reqId = reqItem.id || reqItem.requestId;
+    const targetName = reqItem.name || "user";
+
+    setCancelModalState((prev) => ({ ...prev, isCancelling: true, error: null }));
+
+    try {
+      await userService.cancelConnectionRequest(reqId);
+      // Optimistic state update: remove cancelled request immediately
+      setSent((prev) => prev.filter((s) => s.id !== reqId && s.requestId !== reqId));
+      setToastMessage(`Connection request to ${targetName} cancelled.`);
+      setCancelModalState({ isOpen: false, requestItem: null, isCancelling: false, error: null });
+    } catch (err) {
+      console.error("Failed to cancel connection request:", err);
+      const errorMsg = err.message || "Unable to cancel the request. Please try again.";
+      setCancelModalState((prev) => ({ ...prev, isCancelling: false, error: errorMsg }));
+      // Re-reconcile state if request was already cancelled or accepted upstream
+      await loadNetworkData(true);
+    }
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleMessageClick = (userName, username) => {
@@ -846,6 +907,64 @@ function Network() {
           </>
         )}
       </main>
+
+      {/* ── Confirmation Modal for Cancelling Sent Connection Request ── */}
+      {cancelModalState.isOpen && cancelModalState.requestItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => !cancelModalState.isCancelling && setCancelModalState({ isOpen: false, requestItem: null, isCancelling: false, error: null })}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
+                Cancel connection request?
+              </h2>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Are you sure you want to cancel this connection request?
+              </p>
+            </div>
+
+            {cancelModalState.error && (
+              <div className="rounded-lg bg-red-500/10 p-3 text-xs font-medium text-red-600 dark:bg-red-500/15 dark:text-red-400">
+                {cancelModalState.error}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={cancelModalState.isCancelling}
+                onClick={() => setCancelModalState({ isOpen: false, requestItem: null, isCancelling: false, error: null })}
+                className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              >
+                Keep Request
+              </button>
+
+              <button
+                type="button"
+                disabled={cancelModalState.isCancelling}
+                onClick={handleConfirmCancel}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-red-500 disabled:opacity-50 dark:bg-red-600 dark:hover:bg-red-500"
+              >
+                {cancelModalState.isCancelling ? (
+                  <>
+                    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span>Cancelling...</span>
+                  </>
+                ) : (
+                  <span>Cancel Request</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

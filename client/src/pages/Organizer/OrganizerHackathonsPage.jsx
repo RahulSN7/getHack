@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import DeleteConfirmationModal from "../../components/organizer/DeleteConfirmationModal";
 import { hackathonService } from "../../services/hackathonService";
 
@@ -57,6 +57,7 @@ function getStatusBadge(status) {
 }
 
 function OrganizerHackathonsPage() {
+  const currentLocation = useLocation();
   const [hackathons, setHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -267,7 +268,13 @@ function OrganizerHackathonsPage() {
                 <div className="space-y-2.5 max-w-3xl">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-                      {h.title || h.name}
+                      <Link
+                        to={`/organizer/hackathons/${h.id}`}
+                        state={{ from: currentLocation }}
+                        className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        {h.title || h.name}
+                      </Link>
                     </h3>
 
                     <span

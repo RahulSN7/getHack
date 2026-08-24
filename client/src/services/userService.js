@@ -120,4 +120,14 @@ export const userService = {
         }
       );
     },
+
+  cancelConnectionRequest:
+    async (id) => {
+      return request(
+        `/network/requests/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+    },
 };

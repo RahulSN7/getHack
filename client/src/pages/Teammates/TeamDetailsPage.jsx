@@ -4,7 +4,7 @@
 // Includes Invite Connections modal for team owners
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import BackButton from "../../components/common/BackButton";
 import InviteConnectionsModal from "../../components/pages/teammates/InviteConnectionsModal";
@@ -12,6 +12,7 @@ import { TEAMS } from "../../data/teams";
 import { TEAMMATES } from "../../data/teammates";
 import { HACKATHONS } from "../../data/hackathons";
 import { useAuth } from "../../context/useAuth";
+import { teamService } from "../../services/teamService";
 
 function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
   const [imgError, setImgError] = useState(false);
@@ -52,8 +53,29 @@ export default function TeamDetailsPage() {
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Find target team from TEAMS data
-  const team = TEAMS.find((t) => t.id === id) || TEAMS[0];
+  const [fetchedTeam, setFetchedTeam] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTeam() {
+      if (!id) return;
+      try {
+        const res = await teamService.getTeamById(id);
+        if (isMounted && res?.team) {
+          setFetchedTeam(res.team);
+        }
+      } catch {
+        // Fallback to static or pre-populated TEAMS array
+      }
+    }
+    loadTeam();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  const localTeam = TEAMS.find((t) => (t.id || t._id) === id);
+  const team = fetchedTeam || localTeam || TEAMS[0];
 
   if (!team) {
     return (
@@ -72,7 +94,7 @@ export default function TeamDetailsPage() {
             This team may have been deleted or is no longer available.
           </p>
           <div className="pt-2">
-            <BackButton fallbackPath="/teammates" />
+            <BackButton fallbackPath="/teammates?tab=teams" />
           </div>
         </main>
       </div>
@@ -80,24 +102,29 @@ export default function TeamDetailsPage() {
   }
 
   const {
-    teamName,
-    hackathon,
-    hackathonName,
-    hackathonLink,
-    hackathonDates,
-    description,
-    lookingForDescription,
+    teamName = "Untitled Team",
+    hackathon = "general",
+    hackathonName = "Hackathon",
+    hackathonLink = "",
+    hackathonDates = "",
+    description = "",
+    lookingForDescription = "",
     rolesNeeded = [],
     techStack = [],
-    currentSize,
-    maxSize,
-    location,
-    createdBy,
+    currentSize = 1,
+    maxSize = 4,
+    location = "Online",
+    createdBy = "",
     memberIds = [],
   } = team;
 
   const currentUserId = currentUser?.id || currentUser?._id;
-  const isOwner = currentUserId === createdBy || createdBy === "priya-sharma" || createdBy === "user-current";
+  const rawCreator = createdBy || team.leader;
+  const creatorIdStr = typeof rawCreator === "object" ? (rawCreator?._id || rawCreator?.id) : rawCreator;
+  const isOwner = Boolean(
+    currentUserId &&
+    (currentUserId === creatorIdStr || creatorIdStr === "priya-sharma" || creatorIdStr === "user-current")
+  );
 
   const allPendingIds = [...(team.pendingInvitationIds || []), ...pendingInvitations];
   const spotsLeft = Math.max(0, maxSize - currentSize - allPendingIds.length);
@@ -144,9 +171,13 @@ export default function TeamDetailsPage() {
   });
 
   // Resolve associated hackathon from HACKATHONS dataset if available
-  const associatedHackathon = HACKATHONS.find(
-    (h) => h.id === hackathon || h.title.toLowerCase().includes((hackathonName || "").toLowerCase())
-  );
+  const associatedHackathon = HACKATHONS.find((h) => {
+    if (!h) return false;
+    if (hackathon && h.id === hackathon) return true;
+    const hTitle = typeof h.name === "string" ? h.name : typeof h.title === "string" ? h.title : "";
+    const targetTitle = typeof hackathonName === "string" ? hackathonName : "";
+    return Boolean(hTitle && targetTitle && hTitle.toLowerCase().includes(targetTitle.toLowerCase()));
+  });
 
   const finalHackathonLink = hackathonLink || (associatedHackathon ? `/hackathons/${associatedHackathon.id}` : null);
   const finalHackathonDates = hackathonDates || (associatedHackathon ? "Sep 20 – Sep 22, 2026" : "");
@@ -164,7 +195,7 @@ export default function TeamDetailsPage() {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
         {/* ── 1. Top Back Navigation ── */}
         <div>
-          <BackButton fallbackPath="/teammates" />
+          <BackButton fallbackPath="/teammates?tab=teams" />
         </div>
 
         {/* ── 2. Team Header Banner Card ── */}
