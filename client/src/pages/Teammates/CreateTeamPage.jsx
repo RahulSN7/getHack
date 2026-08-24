@@ -4,8 +4,8 @@
 // Includes fully functional Invite Connections modal with team capacity protection
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import BackButton from "../../components/common/BackButton";
 import InviteConnectionsModal from "../../components/pages/teammates/InviteConnectionsModal";
 import { TEAMS } from "../../data/teams";
@@ -46,6 +46,8 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
 
 export default function CreateTeamPage() {
   const navigate = useNavigate();
+  const { id: editTeamId } = useParams();
+  const isEditMode = Boolean(editTeamId);
   const { user: currentUser } = useAuth();
 
   // Section 01: Team Information (Empty Initial State)
@@ -77,6 +79,31 @@ export default function CreateTeamPage() {
   // Form Validation & Submission state
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load team data if in edit mode
+  useEffect(() => {
+    if (!editTeamId) return;
+    async function loadTeamForEdit() {
+      try {
+        const res = await teamService.getTeamById(editTeamId);
+        const team = res?.team;
+        if (team) {
+          setTeamName(team.teamName || "");
+          setDescription(team.description || "");
+          setHackathonName(team.hackathonName || "");
+          setHackathonLink(team.hackathonLink || "");
+          setMode(team.location || "Online");
+          setRolesNeeded(team.rolesNeeded || []);
+          setTechStack(team.techStack || []);
+          setLookingForDescription(team.lookingForDescription || "");
+          setMaxSize(team.maxSize || 4);
+        }
+      } catch (err) {
+        console.error("Failed to load team for edit:", err);
+      }
+    }
+    loadTeamForEdit();
+  }, [editTeamId]);
 
   // Authenticated Creator profile info
   const creatorName = currentUser?.name || "Team Owner";
@@ -216,7 +243,7 @@ export default function CreateTeamPage() {
 
     setIsSubmitting(true);
 
-    const formattedDates = formatDateDisplay(startDate, endDate);
+    const formattedDates = startDate && endDate ? formatDateDisplay(startDate, endDate) : "";
 
     const payload = {
       teamName: teamName.trim(),
@@ -233,6 +260,21 @@ export default function CreateTeamPage() {
       accent: "indigo",
       pendingInvitationIds: invitedMemberIds,
     };
+
+    if (isEditMode) {
+      try {
+        await teamService.updateTeam(editTeamId, payload);
+        showToast("Team updated successfully!");
+        navigate(`/team/${editTeamId}`, {
+          state: { from: "/teammates?tab=my-teams" },
+        });
+      } catch (err) {
+        console.error("Failed to update team:", err);
+        showToast(err.message || "Failed to update team.");
+        setIsSubmitting(false);
+      }
+      return;
+    }
 
     try {
       const res = await teamService.createTeam(payload);
@@ -277,10 +319,12 @@ export default function CreateTeamPage() {
         {/* ── Page Header ── */}
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
-            Create a Team
+            {isEditMode ? "Edit Team" : "Create a Team"}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-neutral-500 dark:text-neutral-400">
-            Build your team and tell people what you&apos;re looking for.
+            {isEditMode
+              ? "Update your team information and requirements."
+              : "Build your team and tell people what you're looking for."}
           </p>
         </div>
 

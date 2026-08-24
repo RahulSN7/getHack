@@ -3,8 +3,10 @@
 // Follows the same card design conventions as HackathonCard.jsx
 // ---------------------------------------------------------------------------
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
+import { resolveTeamLeader, getTeamActionState } from "../../../utils/teamMemberResolver";
 
 // ---------------------------------------------------------------------------
 // Status badge rendering
@@ -33,23 +35,49 @@ function StatusBadge({ currentSize, maxSize }) {
 // TeamCard Component
 // ---------------------------------------------------------------------------
 
-function TeamCard({ team, onSelectTeam }) {
+function TeamCard({
+  team,
+  currentUser,
+  sentRequests = [],
+  onRequestJoin,
+  onViewDetails,
+  onSelectTeam,
+}) {
   const {
     teamName,
     hackathonName,
     description,
     rolesNeeded = [],
     techStack = [],
-    currentSize,
-    maxSize,
+    currentSize = 1,
+    maxSize = 4,
     location,
     accent = "indigo",
     status,
   } = team;
 
+  const [isRequesting, setIsRequesting] = useState(false);
+
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
   const initial = teamName ? teamName.charAt(0).toUpperCase() : "T";
+  const leaderObj = resolveTeamLeader(team);
+
+  const teamIdStr = (team._id || team.id)?.toString();
+  const actionState = getTeamActionState(team, currentUser, sentRequests);
+
+  const handleRequestClick = async (e) => {
+    e.stopPropagation();
+    if (!onRequestJoin) return;
+    try {
+      setIsRequesting(true);
+      await onRequestJoin(teamIdStr);
+    } catch (err) {
+      console.error("Request to join click error:", err);
+    } finally {
+      setIsRequesting(false);
+    }
+  };
 
   // Tech stack preview — max 3
   const visibleTech = techStack.slice(0, 3);
@@ -111,6 +139,11 @@ function TeamCard({ team, onSelectTeam }) {
                   {hackathonName}
                 </span>
               </p>
+              {leaderObj && leaderObj.name && (
+                <p className="mt-0.5 truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                  Leader: <span className="font-medium text-neutral-600 dark:text-neutral-400">{leaderObj.name}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -201,82 +234,76 @@ function TeamCard({ team, onSelectTeam }) {
 
         {/* Team Actions */}
         <div className="flex items-center gap-2">
-          {onSelectTeam ? (
-            <button
-              type="button"
-              onClick={() => onSelectTeam(team)}
-              className="
-                inline-flex
-                items-center
-                gap-1
-                rounded-lg
-                border
-                border-neutral-200
-                bg-white
-                px-3
-                py-1.5
-                text-xs
-                font-semibold
-                text-neutral-700
-                transition-colors
-                hover:bg-neutral-50
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:text-neutral-300
-                dark:hover:bg-neutral-800
-              "
-            >
-              <span>View Team</span>
-            </button>
-          ) : (
-            <Link
-              to={`/team/${team.id || "team-1"}`}
-              className="
-                inline-flex
-                items-center
-                gap-1
-                rounded-lg
-                border
-                border-neutral-200
-                bg-white
-                px-3
-                py-1.5
-                text-xs
-                font-semibold
-                text-neutral-700
-                transition-colors
-                hover:bg-neutral-50
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:text-neutral-300
-                dark:hover:bg-neutral-800
-              "
-            >
-              <span>View Team</span>
-            </Link>
-          )}
-
           <Link
-            to={`/team/${team.id || "team-1"}`}
+            to={`/team/${teamIdStr}`}
+            state={{ from: "/teammates?tab=teams" }}
             className="
               inline-flex
               items-center
               gap-1
               rounded-lg
-              bg-indigo-600
+              border
+              border-neutral-200
+              bg-white
               px-3
               py-1.5
               text-xs
               font-semibold
-              text-white
+              text-neutral-700
               transition-colors
-              hover:bg-indigo-500
-              dark:bg-indigo-500
-              dark:hover:bg-indigo-400
+              hover:bg-neutral-50
+              dark:border-neutral-800
+              dark:bg-neutral-900
+              dark:text-neutral-300
+              dark:hover:bg-neutral-800
             "
           >
-            <span>Request to Join</span>
+            <span>View Team</span>
           </Link>
+
+          {actionState.type === "leader" ? (
+            <span className="inline-flex items-center rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+              Your Team
+            </span>
+          ) : actionState.type === "member" ? (
+            <span className="inline-flex items-center rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+              You are a member
+            </span>
+          ) : actionState.type === "pending" ? (
+            <span className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-500">
+              ✓ Request Sent
+            </span>
+          ) : actionState.type === "full" ? (
+            <span className="inline-flex items-center rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-500">
+              Team Full
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={isRequesting}
+              onClick={handleRequestClick}
+              className="
+                inline-flex
+                items-center
+                gap-1
+                rounded-lg
+                bg-indigo-600
+                px-3
+                py-1.5
+                text-xs
+                font-semibold
+                text-white
+                transition-colors
+                hover:bg-indigo-500
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+                dark:bg-indigo-500
+                dark:hover:bg-indigo-400
+              "
+            >
+              <span>{isRequesting ? "Sending..." : "Request to Join"}</span>
+            </button>
+          )}
         </div>
       </div>
     </article>

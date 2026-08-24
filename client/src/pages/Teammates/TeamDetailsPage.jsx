@@ -13,16 +13,17 @@ import { TEAMMATES } from "../../data/teammates";
 import { HACKATHONS } from "../../data/hackathons";
 import { useAuth } from "../../context/useAuth";
 import { teamService } from "../../services/teamService";
+import { resolveTeamMembers, resolveTeamLeader, getTeamActionState } from "../../utils/teamMemberResolver";
 
 function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
   const [imgError, setImgError] = useState(false);
   const initials = name
     ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "GH";
 
   if (avatar && !imgError) {
@@ -47,11 +48,13 @@ function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
 
 export default function TeamDetailsPage() {
   const { id } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isAuthenticated } = useAuth();
   const [hasRequested, setHasRequested] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
+  const [sentRequests, setSentRequests] = useState([]);
+  const [requestSending, setRequestSending] = useState(false);
 
   const [fetchedTeam, setFetchedTeam] = useState(null);
 
@@ -68,11 +71,23 @@ export default function TeamDetailsPage() {
         // Fallback to static or pre-populated TEAMS array
       }
     }
+    async function fetchSentRequests() {
+      if (!isAuthenticated) return;
+      try {
+        const res = await teamService.getSentRequests();
+        if (isMounted && res?.requests) {
+          setSentRequests(res.requests);
+        }
+      } catch (err) {
+        console.error("Failed to load sent requests:", err);
+      }
+    }
     loadTeam();
+    fetchSentRequests();
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const localTeam = TEAMS.find((t) => (t.id || t._id) === id);
   const team = fetchedTeam || localTeam || TEAMS[0];
@@ -119,6 +134,9 @@ export default function TeamDetailsPage() {
   } = team;
 
   const currentUserId = currentUser?.id || currentUser?._id;
+  const currentUserIdStr = currentUserId ? currentUserId.toString() : "";
+  const teamIdStr = (team._id || team.id || id).toString();
+
   const rawCreator = createdBy || team.leader;
   const creatorIdStr = typeof rawCreator === "object" ? (rawCreator?._id || rawCreator?.id) : rawCreator;
   const isOwner = Boolean(
@@ -126,13 +144,57 @@ export default function TeamDetailsPage() {
     (currentUserId === creatorIdStr || creatorIdStr === "priya-sharma" || creatorIdStr === "user-current")
   );
 
+  const isMember = Boolean(
+    currentUserIdStr &&
+    (memberIds.includes(currentUserIdStr) ||
+      (team.members && team.members.some((m) => (m.user?._id || m.user?.id || m.user || m)?.toString() === currentUserIdStr)))
+  );
+
+  const pendingReq = sentRequests.find(
+    (r) => (r.team?._id || r.team?.id || r.team)?.toString() === teamIdStr && r.status === "pending"
+  );
+  const hasPendingRequest = Boolean(pendingReq);
+
   const allPendingIds = [...(team.pendingInvitationIds || []), ...pendingInvitations];
   const spotsLeft = Math.max(0, maxSize - currentSize - allPendingIds.length);
   const isFull = spotsLeft === 0;
 
+  const actionState = getTeamActionState(team, currentUser, sentRequests);
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleRequestToJoin = async () => {
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
+    try {
+      setRequestSending(true);
+      const res = await teamService.sendTeamRequest(teamIdStr);
+      showToast("Join request sent successfully!");
+      if (res?.request) {
+        setSentRequests((prev) => [res.request, ...prev]);
+      }
+    } catch (err) {
+      console.error("Failed to send join request:", err);
+      showToast(err.message || "Failed to send join request.");
+    } finally {
+      setRequestSending(false);
+    }
+  };
+
+  const handleLeaveTeam = async () => {
+    try {
+      await teamService.leaveTeam(teamIdStr);
+      showToast("Left team successfully!");
+      window.location.href = "/teammates?tab=my-teams";
+    } catch (err) {
+      console.error("Failed to leave team:", err);
+      showToast(err.message || "Failed to leave team.");
+    }
   };
 
   const handleSendInvitations = (selectedIds) => {
@@ -140,34 +202,16 @@ export default function TeamDetailsPage() {
     showToast(`${selectedIds.length} invitation(s) sent successfully!`);
   };
 
-  // Resolve team members dynamically from real user objects & TEAMMATES dataset
-  const memberObjects = memberIds.map((mId) => {
-    if (currentUser && (mId === currentUser.id || mId === currentUser._id)) {
-      return {
-        id: currentUser.id || currentUser._id,
-        name: currentUser.name || "Team Owner",
-        avatar: currentUser.avatar || currentUser.profile?.avatar || "",
-        role: currentUser.profile?.role || currentUser.role || "",
-        skills: currentUser.profile?.skills || currentUser.skills || [],
-      };
-    }
-    const found = TEAMMATES.find((item) => item.id === mId || item.username === mId);
-    if (found) {
-      return {
-        id: found.id,
-        name: found.name,
-        avatar: found.avatar || found.profile?.avatar || "",
-        role: found.profile?.role || found.role || "",
-        skills: found.profile?.skills || found.skills || [],
-      };
-    }
-    return {
-      id: mId,
-      name: mId.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
-      avatar: "",
-      role: "",
-      skills: [],
-    };
+  // Resolve team members & leader dynamically from populated Mongoose user objects
+  const memberObjects = resolveTeamMembers(team, currentUser);
+  const leaderObj = resolveTeamLeader(team, currentUser);
+
+  const sortedMembers = [...memberObjects].sort((a, b) => {
+    const aIsLeader = a.id === leaderObj?.id || a.isOwner;
+    const bIsLeader = b.id === leaderObj?.id || b.isOwner;
+    if (aIsLeader && !bIsLeader) return -1;
+    if (!aIsLeader && bIsLeader) return 1;
+    return 0;
   });
 
   // Resolve associated hackathon from HACKATHONS dataset if available
@@ -230,24 +274,8 @@ export default function TeamDetailsPage() {
                 {teamName}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+              <div className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                 <span>Building for <strong>{hackathonName}</strong></span>
-                {finalHackathonLink && (
-                  finalHackathonLink.startsWith("http") ? (
-                    <a
-                      href={finalHackathonLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 hover:underline text-indigo-600 dark:text-indigo-400"
-                    >
-                      <span>View Hackathon ↗</span>
-                    </a>
-                  ) : (
-                    <Link to={finalHackathonLink} className="hover:underline">
-                      View Hackathon ↗
-                    </Link>
-                  )
-                )}
               </div>
 
               {description && (
@@ -270,80 +298,68 @@ export default function TeamDetailsPage() {
             </div>
 
             {/* Request / Manage CTA Buttons */}
-            <div className="shrink-0 pt-2 sm:pt-0 flex flex-col gap-2">
-              {isOwner && !isFull && (
-                <button
-                  type="button"
-                  onClick={() => setIsInviteModalOpen(true)}
-                  className="
-                    w-full
-                    sm:w-auto
-                    inline-flex
-                    items-center
-                    justify-center
-                    gap-2
-                    rounded-xl
-                    bg-indigo-600
-                    px-5
-                    py-2.5
-                    text-xs
-                    font-semibold
-                    text-white
-                    shadow-2xs
-                    transition-all
-                    hover:bg-indigo-500
-                    dark:bg-indigo-500
-                    dark:hover:bg-indigo-400
-                  "
-                >
-                  <span>+ Invite Connections</span>
-                </button>
-              )}
-
-              {isFull ? (
+            <div className="shrink-0 pt-2 sm:pt-0 flex flex-col sm:flex-row gap-2">
+              {actionState.type === "leader" ? (
+                <>
+                  {!isFull && (
+                    <button
+                      type="button"
+                      onClick={() => setIsInviteModalOpen(true)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-2xs transition-all hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                    >
+                      <span>+ Invite Connections</span>
+                    </button>
+                  )}
+                  <Link
+                    to={`/team/${teamIdStr}/edit`}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-5 py-2.5 text-xs font-semibold text-neutral-800 shadow-2xs transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+                  >
+                    <span>Manage Team</span>
+                  </Link>
+                </>
+              ) : actionState.type === "member" ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    You are a member
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleLeaveTeam}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/60"
+                  >
+                    Leave Team
+                  </button>
+                </div>
+              ) : actionState.type === "pending" ? (
                 <button
                   type="button"
                   disabled
-                  className="w-full sm:w-auto rounded-xl bg-neutral-100 px-6 py-3 text-xs font-semibold text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600/20 px-6 py-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 cursor-default"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Request Sent
+                </button>
+              ) : actionState.type === "full" ? (
+                <button
+                  type="button"
+                  disabled
+                  className="rounded-xl bg-neutral-100 px-6 py-3 text-xs font-semibold text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
                 >
                   Team Full
                 </button>
-              ) : !isOwner && (
+              ) : (
                 <button
                   type="button"
-                  onClick={() => setHasRequested(!hasRequested)}
-                  className={`
-                    w-full
-                    sm:w-auto
-                    inline-flex
-                    items-center
-                    justify-center
-                    gap-2
-                    rounded-xl
-                    px-6
-                    py-3
-                    text-xs
-                    font-semibold
-                    shadow-2xs
-                    transition-all
-                    duration-150
-                    ${
-                      hasRequested
-                        ? "bg-emerald-600 text-white dark:bg-emerald-500 hover:bg-emerald-700"
-                        : "bg-indigo-600 text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-                    }
-                  `}
+                  disabled={requestSending}
+                  onClick={handleRequestToJoin}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-xs font-semibold text-white shadow-2xs transition-all hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400 disabled:opacity-50"
                 >
-                  {hasRequested ? (
-                    <>
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      <span>Request Sent</span>
-                    </>
-                  ) : (
-                    <span>Request to Join</span>
-                  )}
+                  <span>{requestSending ? "Sending..." : "Request to Join"}</span>
                 </button>
               )}
             </div>
@@ -354,13 +370,13 @@ export default function TeamDetailsPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-200 pb-3 dark:border-neutral-800">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
-              Team Members ({memberObjects.length})
+              Team Members ({sortedMembers.length})
             </h2>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {memberObjects.map((mem) => {
-              const isTeamOwner = mem.id === createdBy || mem.username === createdBy;
+            {sortedMembers.map((mem) => {
+              const isTeamLeader = mem.id === (leaderObj?.id || createdBy) || mem.isOwner;
 
               return (
                 <Link
@@ -394,9 +410,9 @@ export default function TeamDetailsPage() {
                         <h3 className="truncate text-sm font-bold text-neutral-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
                           {mem.name}
                         </h3>
-                        {isTeamOwner && (
+                        {isTeamLeader && (
                           <span className="rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
-                            Team Owner
+                            Team Leader
                           </span>
                         )}
                       </div>

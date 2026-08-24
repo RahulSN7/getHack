@@ -65,6 +65,14 @@ const router = createBrowserRouter([
         element: <TeamDetailsPage />,
       },
       {
+        path: "team/:id/edit",
+        element: (
+          <ProtectedRoute>
+            <CreateTeamPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: "profile",
         element: (
           <ProtectedRoute>

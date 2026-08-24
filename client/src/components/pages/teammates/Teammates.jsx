@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { useMemo, useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
 import { isProfileComplete } from "../../../utils/profileValidation";
@@ -22,6 +22,7 @@ import TeammateCard from "./TeammateCard";
 import TeamCard from "./TeamCard";
 import TeamDetailsModal from "./TeamDetailsModal";
 import CreateTeamModal from "./CreateTeamModal";
+import { resolveTeamMembers, resolveTeamLeader } from "../../../utils/teamMemberResolver";
 
 // ---------------------------------------------------------------------------
 // Role matching helper (maps filter IDs to role strings)
@@ -300,11 +301,385 @@ function EmptyState({ activeTab, hasFilters, onClear, message }) {
 }
 
 // ---------------------------------------------------------------------------
+// My Teams View Component
+// ---------------------------------------------------------------------------
+
+function MyTeamsView({ currentUser, onShowToast }) {
+  const [myTeams, setMyTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMyTeams = async () => {
+    setLoading(true);
+    try {
+      const res = await teamService.getMyTeams();
+      if (res?.teams) {
+        setMyTeams(res.teams);
+      }
+    } catch (err) {
+      console.error("Failed to load my teams:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyTeams();
+  }, []);
+
+  const handleLeave = async (teamId) => {
+    try {
+      await teamService.leaveTeam(teamId);
+      if (onShowToast) onShowToast("Left team successfully!");
+      fetchMyTeams();
+    } catch (err) {
+      console.error("Leave team error:", err);
+      if (onShowToast) onShowToast(err.message || "Failed to leave team.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-56 animate-pulse rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />
+        ))}
+      </div>
+    );
+  }
+
+  if (myTeams.length === 0) {
+    return (
+      <div className="py-16 text-center">
+        <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500">
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+        </div>
+        <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+          You aren&apos;t part of any teams yet.
+        </p>
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          Create a team to start recruiting or find open teams to join.
+        </p>
+        <div className="pt-4">
+          <Link
+            to="/create-team"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          >
+            + Create a Team
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const userIdStr = (currentUser?.id || currentUser?._id)?.toString();
+
+  return (
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {myTeams.map((t) => {
+        const rawLeader = t.createdBy || t.leader;
+        const leaderIdStr = (typeof rawLeader === "object" ? (rawLeader?._id || rawLeader?.id) : rawLeader)?.toString();
+        const isLeader = Boolean(userIdStr && (userIdStr === leaderIdStr || leaderIdStr === "priya-sharma" || leaderIdStr === "user-current"));
+        const leaderObj = resolveTeamLeader(t, currentUser);
+
+        return (
+          <article
+            key={t._id || t.id}
+            className="flex flex-col justify-between rounded-xl border border-neutral-200 bg-white p-5 shadow-xs transition-all dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isLeader ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"}`}>
+                    {isLeader ? "Team Leader" : "Member"}
+                  </span>
+                  <h3 className="mt-1.5 text-base font-bold text-neutral-900 dark:text-white">
+                    {t.teamName}
+                  </h3>
+                </div>
+                <span className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                  {t.currentSize} / {t.maxSize} members
+                </span>
+              </div>
+
+              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                {t.hackathonName}
+              </p>
+
+              {leaderObj && leaderObj.name && (
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Leader: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{leaderObj.name}</span>
+                </p>
+              )}
+
+              {t.description && (
+                <p className="line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400">
+                  {t.description}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800">
+              <Link
+                to={`/team/${t._id || t.id}`}
+                state={{ from: "/teammates?tab=my-teams" }}
+                className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              >
+                View Team
+              </Link>
+              {isLeader ? (
+                <Link
+                  to={`/team/${t._id || t.id}/edit`}
+                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                >
+                  Manage Team
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleLeave(t._id || t.id)}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
+                >
+                  Leave Team
+                </button>
+              )}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Team Requests View Component (Incoming & Sent Sub-tabs)
+// ---------------------------------------------------------------------------
+
+function TeamRequestsView({ onShowToast, onRequestStateChange }) {
+  const [subTab, setSubTab] = useState("incoming");
+  const [incoming, setIncoming] = useState([]);
+  const [sent, setSent] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const [incRes, sentRes] = await Promise.all([
+        teamService.getIncomingRequests().catch(() => ({ requests: [] })),
+        teamService.getSentRequests().catch(() => ({ requests: [] })),
+      ]);
+      setIncoming(incRes?.requests || []);
+      setSent(sentRes?.requests || []);
+    } catch (err) {
+      console.error("Failed to load team requests:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleAccept = async (requestId) => {
+    try {
+      await teamService.acceptRequest(requestId);
+      if (onShowToast) onShowToast("Team request accepted!");
+      fetchRequests();
+      if (onRequestStateChange) onRequestStateChange();
+    } catch (err) {
+      console.error("Accept error:", err);
+      if (onShowToast) onShowToast(err.message || "Failed to accept request.");
+    }
+  };
+
+  const handleReject = async (requestId) => {
+    try {
+      await teamService.rejectRequest(requestId);
+      if (onShowToast) onShowToast("Team request rejected.");
+      fetchRequests();
+      if (onRequestStateChange) onRequestStateChange();
+    } catch (err) {
+      console.error("Reject error:", err);
+      if (onShowToast) onShowToast(err.message || "Failed to reject request.");
+    }
+  };
+
+  const handleCancel = async (requestId) => {
+    try {
+      await teamService.cancelRequest(requestId);
+      if (onShowToast) onShowToast("Team request cancelled.");
+      fetchRequests();
+      if (onRequestStateChange) onRequestStateChange();
+    } catch (err) {
+      console.error("Cancel error:", err);
+      if (onShowToast) onShowToast(err.message || "Failed to cancel request.");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Sub-tab Navigation */}
+      <div className="flex items-center gap-3 border-b border-neutral-200 pb-3 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={() => setSubTab("incoming")}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${subTab === "incoming" ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900" : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"}`}
+        >
+          Incoming ({incoming.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubTab("sent")}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${subTab === "sent" ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900" : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"}`}
+        >
+          Sent ({sent.length})
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-24 animate-pulse rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900" />
+          ))}
+        </div>
+      ) : subTab === "incoming" ? (
+        incoming.length === 0 ? (
+          <div className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
+            No pending team requests.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {incoming.map((req) => {
+              const requester = req.requester || {};
+              const team = req.team || {};
+              const reqId = requester.id || requester._id || "user";
+
+              return (
+                <div
+                  key={req._id || req.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-300">
+                      {requester.name ? requester.name[0].toUpperCase() : "U"}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
+                        {requester.name || "Applicant"}
+                      </h4>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        Wants to join <span className="font-semibold text-indigo-600 dark:text-indigo-400">{team.teamName}</span> ({team.hackathonName})
+                      </p>
+                      {req.note && (
+                        <p className="mt-1 text-xs italic text-neutral-600 dark:text-neutral-300">
+                          &quot;{req.note}&quot;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                    <Link
+                      to={`/profile/${reqId}`}
+                      className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                    >
+                      View Profile
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleAccept(req._id || req.id)}
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 dark:bg-emerald-500"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReject(req._id || req.id)}
+                      className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : sent.length === 0 ? (
+        <div className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
+          You haven&apos;t requested to join any teams.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {sent.map((req) => {
+            const team = req.team || {};
+            const teamId = team.id || team._id;
+            const statusClass =
+              req.status === "accepted"
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                : req.status === "rejected"
+                ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                : req.status === "cancelled"
+                ? "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+
+            return (
+              <div
+                key={req._id || req.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
+                      {team.teamName || "Team"}
+                    </h4>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusClass}`}>
+                      {req.status}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                    {team.hackathonName}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    to={`/team/${teamId}`}
+                    state={{ from: "/teammates?tab=requests" }}
+                    className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                  >
+                    View Team
+                  </Link>
+                  {req.status === "pending" && (
+                    <button
+                      type="button"
+                      onClick={() => handleCancel(req._id || req.id)}
+                      className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
+                    >
+                      Cancel Request
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
 
 function Teammates() {
   const { user: currentUser, isAuthenticated } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") || "members";
 
   // Dynamic participants state
   const [members, setMembers] = useState([]);
@@ -312,7 +687,20 @@ function Teammates() {
   const [error, setError] = useState(null);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState("members");
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+  useEffect(() => {
+    const currentTab = searchParams.get("tab") || "members";
+    if (["members", "teams", "my-teams", "requests"].includes(currentTab)) {
+      setActiveTab(currentTab);
+    }
+  }, [searchParams]);
+
+  const handleTabSwitch = (newTab) => {
+    setActiveTab(newTab);
+    setSearchQuery("");
+    setSearchParams({ tab: newTab });
+  };
 
   // Teams list state
   const [teamsList, setTeamsList] = useState(TEAMS);
@@ -320,6 +708,70 @@ function Teammates() {
 
   // Selected team for Team Details modal
   const [selectedTeam, setSelectedTeam] = useState(null);
+
+  // Sent team requests state for Join Team cards
+  const [sentRequests, setSentRequests] = useState([]);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  useEffect(() => {
+    async function fetchSentTeamRequests() {
+      if (!isAuthenticated) return;
+      try {
+        const res = await teamService.getSentRequests();
+        if (res?.requests) {
+          setSentRequests(res.requests);
+        }
+      } catch (err) {
+        console.error("Failed to load sent team requests:", err);
+      }
+    }
+    fetchSentTeamRequests();
+  }, [isAuthenticated]);
+
+  const handleRequestToJoinTeam = async (teamId) => {
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
+    try {
+      const res = await teamService.sendTeamRequest(teamId);
+      if (res?.request) {
+        setSentRequests((prev) => [res.request, ...prev]);
+      }
+    } catch (err) {
+      console.error("Failed to send team request:", err);
+      showToast(err.message || "Failed to send join request.");
+      throw err;
+    }
+  };
+
+  const refetchSentAndTeams = async () => {
+    try {
+      const [sentRes, teamsRes] = await Promise.all([
+        teamService.getSentRequests().catch(() => ({ requests: [] })),
+        teamService.getTeams().catch(() => ({ teams: [] })),
+      ]);
+      if (sentRes?.requests) setSentRequests(sentRes.requests);
+      if (teamsRes?.teams && Array.isArray(teamsRes.teams)) {
+        const apiTeams = teamsRes.teams;
+        const merged = [...apiTeams];
+        TEAMS.forEach((localT) => {
+          const locId = localT.id || localT._id;
+          if (!merged.some((m) => (m.id || m._id) === locId)) {
+            merged.push(localT);
+          }
+        });
+        setTeamsList(merged);
+      }
+    } catch (err) {
+      console.error("Failed to refetch state:", err);
+    }
+  };
 
   // Connection flow states
   const [connectTarget, setConnectTarget] = useState(null);
@@ -505,14 +957,15 @@ function Teammates() {
     setTeamStatusFilter("all");
   };
 
-  // Reset search when switching tabs
-  const handleTabSwitch = (tab) => {
-    setActiveTab(tab);
-    setSearchQuery("");
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-neutral-900 px-4 py-3 text-xs font-semibold text-white shadow-lg dark:bg-white dark:text-neutral-900 animate-in fade-in">
+          {toastMessage}
+        </div>
+      )}
+
       {/* ── Page Header ── */}
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto max-w-7xl px-5 pb-6 pt-5 sm:px-6 lg:px-8">
@@ -574,7 +1027,7 @@ function Teammates() {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {/* Tab Switcher */}
-              <div className="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="inline-flex flex-wrap rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
                 <button
                   type="button"
                   onClick={() => handleTabSwitch("members")}
@@ -596,7 +1049,6 @@ function Teammates() {
                     }
                   `}
                 >
-                  {/* People icon */}
                   <svg
                     className="h-3.5 w-3.5"
                     viewBox="0 0 24 24"
@@ -635,7 +1087,6 @@ function Teammates() {
                     }
                   `}
                 >
-                  {/* Team icon */}
                   <svg
                     className="h-3.5 w-3.5"
                     viewBox="0 0 24 24"
@@ -652,17 +1103,74 @@ function Teammates() {
                   </svg>
                   <span>Join a Team</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabSwitch("my-teams")}
+                  className={`
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-md
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-150
+                    ${
+                      activeTab === "my-teams"
+                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    }
+                  `}
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  <span>My Teams</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabSwitch("requests")}
+                  className={`
+                    inline-flex
+                    items-center
+                    gap-1.5
+                    rounded-md
+                    px-3
+                    py-1.5
+                    text-xs
+                    font-semibold
+                    transition-all
+                    duration-150
+                    ${
+                      activeTab === "requests"
+                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    }
+                  `}
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                  <span>Team Requests</span>
+                </button>
               </div>
 
-              {/* Filters */}
-              <TeammateFilters
-                activeTab={activeTab}
-                roleFilter={roleFilter}
-                experienceFilter={experienceFilter}
-                teamStatusFilter={teamStatusFilter}
-                onApply={handleFilterApply}
-                onClear={handleFilterClear}
-              />
+              {/* Filters (only for members & teams tabs) */}
+              {(activeTab === "members" || activeTab === "teams") && (
+                <TeammateFilters
+                  activeTab={activeTab}
+                  roleFilter={roleFilter}
+                  experienceFilter={experienceFilter}
+                  teamStatusFilter={teamStatusFilter}
+                  onApply={handleFilterApply}
+                  onClear={handleFilterClear}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -670,123 +1178,125 @@ function Teammates() {
 
       {/* ── Content ── */}
       <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8">
-        {/* Sort + Count Row */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <p className="text-sm font-normal text-neutral-500 dark:text-neutral-400">
-            <span className="font-semibold text-neutral-900 dark:text-white">
-              {results.length}
-            </span>{" "}
-            {activeTab === "members"
-              ? results.length === 1
-                ? "person"
-                : "people"
-              : results.length === 1
-              ? "team"
-              : "teams"}
-          </p>
-
-          {/* Sort dropdown */}
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="teammate-sort"
-              className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400"
-            >
-              Sort by
-            </label>
-            <div className="relative">
-              <select
-                id="teammate-sort"
-                value={currentSort}
-                onChange={(e) => setCurrentSort(e.target.value)}
-                className="
-                  h-8
-                  appearance-none
-                  rounded-lg
-                  border
-                  border-neutral-200
-                  bg-white
-                  pl-3
-                  pr-8
-                  text-xs
-                  font-medium
-                  text-neutral-700
-                  outline-none
-                  transition-[border-color,box-shadow]
-                  duration-150
-                  focus:border-indigo-400
-                  focus:ring-2
-                  focus:ring-indigo-500/15
-                  dark:border-neutral-800
-                  dark:bg-neutral-900
-                  dark:text-neutral-200
-                  dark:focus:border-indigo-500
-                "
-              >
-                {sortOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-neutral-400 dark:text-neutral-500"
-              >
-                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card Grid, Loading Skeleton, or Empty State */}
-        {activeTab === "members" && loading ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 animate-pulse rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />
-            ))}
-          </div>
-        ) : results.length > 0 ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {activeTab === "members"
-              ? results.map((member) => (
-                  <TeammateCard
-                    key={member.id || member._id}
-                    teammate={member}
-                    onConnect={handleConnectClick}
-                    connectionStatus={sentMap[member.id || member._id] || member.connectionState?.status}
-                  />
-                ))
-              : results.map((team) => (
-                  <TeamCard
-                    key={team.id}
-                    team={team}
-                    onViewDetails={(t) => setSelectedTeam(t)}
-                  />
-                ))}
-          </div>
+        {activeTab === "my-teams" ? (
+          <MyTeamsView currentUser={currentUser} />
+        ) : activeTab === "requests" ? (
+          <TeamRequestsView onShowToast={showToast} onRequestStateChange={refetchSentAndTeams} />
         ) : (
-          <EmptyState
-            activeTab={activeTab}
-            hasFilters={hasFilters}
-            onClear={handleClearAll}
-            message={
-              activeTab === "members"
-                ? "No teammates found"
-                : "No teams found"
-            }
-          />
+          <>
+            {/* Sort + Count Row */}
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <p className="text-sm font-normal text-neutral-500 dark:text-neutral-400">
+                <span className="font-semibold text-neutral-900 dark:text-white">
+                  {results.length}
+                </span>{" "}
+                {activeTab === "members"
+                  ? results.length === 1
+                    ? "person"
+                    : "people"
+                  : results.length === 1
+                  ? "team"
+                  : "teams"}
+              </p>
+
+              {/* Sort dropdown */}
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="teammate-sort"
+                  className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400"
+                >
+                  Sort by
+                </label>
+                <div className="relative">
+                  <select
+                    id="teammate-sort"
+                    value={currentSort}
+                    onChange={(e) => setCurrentSort(e.target.value)}
+                    className="
+                      h-8
+                      appearance-none
+                      rounded-lg
+                      border
+                      border-neutral-200
+                      bg-white
+                      pl-3
+                      pr-8
+                      text-xs
+                      font-medium
+                      text-neutral-700
+                      outline-none
+                      transition-[border-color,box-shadow]
+                      duration-150
+                      focus:border-indigo-400
+                      focus:ring-2
+                      focus:ring-indigo-500/15
+                      dark:border-neutral-800
+                      dark:bg-neutral-900
+                      dark:text-neutral-200
+                      dark:focus:border-indigo-500
+                    "
+                  >
+                    {sortOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-neutral-400 dark:text-neutral-500"
+                  >
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Grid, Loading Skeleton, or Empty State */}
+            {activeTab === "members" && loading ? (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-64 animate-pulse rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />
+                ))}
+              </div>
+            ) : results.length > 0 ? (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {activeTab === "members"
+                  ? results.map((member) => (
+                      <TeammateCard
+                        key={member.id || member._id}
+                        teammate={member}
+                        onConnect={handleConnectClick}
+                        connectionStatus={sentMap[member.id || member._id] || member.connectionState?.status}
+                      />
+                    ))
+                  : results.map((team) => (
+                      <TeamCard
+                        key={team.id || team._id}
+                        team={team}
+                        currentUser={currentUser}
+                        sentRequests={sentRequests}
+                        onRequestJoin={handleRequestToJoinTeam}
+                      />
+                    ))}
+              </div>
+            ) : (
+              <EmptyState
+                activeTab={activeTab}
+                hasFilters={hasFilters}
+                onClear={handleClearAll}
+                message={
+                  activeTab === "members"
+                    ? "No teammates found"
+                    : "No teams found"
+                }
+              />
+            )}
+          </>
         )}
       </main>
-
-      {/* Team Details Modal */}
-      {selectedTeam && (
-        <TeamDetailsModal
-          team={selectedTeam}
-          onClose={() => setSelectedTeam(null)}
-        />
-      )}
 
 
 

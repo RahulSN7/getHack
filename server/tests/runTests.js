@@ -108,18 +108,28 @@ runTest("Deadline calculation accurately determines Closed status for past deadl
 });
 
 const runTeamTests = require("./testTeamCreation");
+const runCompleteTeamsTests = require("./testCompleteTeamsArchitecture");
+const runPopulationTests = require("./testTeamUserPopulation");
+const runJoinRequestCtaTests = require("./testJoinTeamRequestCta");
+const runSynchronizedStateTests = require("./testSynchronizedTeamRequestState");
 
 console.log("\n==============================================");
 console.log(`Test Execution Summary: ${passedTests} / ${totalTests} passed`);
 console.log("==============================================\n");
 
-runTeamTests().then(() => {
-  if (passedTests === totalTests) {
-    process.exit(0);
-  } else {
+runTeamTests()
+  .then(() => runCompleteTeamsTests())
+  .then(() => runPopulationTests())
+  .then(() => runJoinRequestCtaTests())
+  .then(() => runSynchronizedStateTests())
+  .then(() => {
+    if (passedTests === totalTests) {
+      process.exit(0);
+    } else {
+      process.exit(1);
+    }
+  })
+  .catch((err) => {
+    console.error("Team architecture tests failed:", err);
     process.exit(1);
-  }
-}).catch((err) => {
-  console.error("Team creation tests failed:", err);
-  process.exit(1);
-});
+  });

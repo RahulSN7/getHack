@@ -201,9 +201,177 @@ const joinTeam = async (req, res) => {
   }
 };
 
+// GET /api/teams/my-teams — Get teams where current user is leader or member
+const getMyTeams = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+
+    const teams = await Team.find({
+      $or: [
+        { createdBy: userId },
+        { leader: userId },
+        { memberIds: userIdStr },
+        { "members.user": userId },
+      ],
+    })
+      .populate("createdBy", "name email role profile")
+      .populate("leader", "name email role profile")
+      .populate("members.user", "name email role profile")
+      .sort({ updatedAt: -1 });
+
+    return res.json({
+      success: true,
+      teams,
+    });
+  } catch (error) {
+    console.error("Get my teams error:", error);
+    return res.status(500).json({
+      message: "Server error occurred while fetching your teams.",
+      error: error.message,
+    });
+  }
+};
+
+// PUT /api/teams/:id — Edit team details (Team Leader only)
+const updateTeam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+
+    let team = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      team = await Team.findById(id);
+    }
+    if (!team) {
+      team = await Team.findOne({ id });
+    }
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found." });
+    }
+
+    // Leader authorization check
+    const isLeader = team.createdBy.toString() === userIdStr || (team.leader && team.leader.toString() === userIdStr);
+    if (!isLeader) {
+      return res.status(403).json({ message: "Only the team leader can edit team information." });
+    }
+
+    const {
+      teamName,
+      hackathonName,
+      hackathonLink,
+      hackathonDates,
+      description,
+      lookingForDescription,
+      rolesNeeded,
+      techStack,
+      maxSize,
+      location,
+      accent,
+    } = req.body;
+
+    if (teamName !== undefined && teamName.trim()) team.teamName = teamName.trim();
+    if (hackathonName !== undefined && hackathonName.trim()) team.hackathonName = hackathonName.trim();
+    if (hackathonLink !== undefined) team.hackathonLink = hackathonLink.trim();
+    if (hackathonDates !== undefined) team.hackathonDates = hackathonDates.trim();
+    if (description !== undefined) team.description = description.trim();
+    if (lookingForDescription !== undefined) team.lookingForDescription = lookingForDescription.trim();
+    if (Array.isArray(rolesNeeded)) team.rolesNeeded = rolesNeeded;
+    if (Array.isArray(techStack)) team.techStack = techStack;
+    if (maxSize !== undefined && Number(maxSize) >= team.currentSize) team.maxSize = Number(maxSize);
+    if (location !== undefined) team.location = location;
+    if (accent !== undefined) team.accent = accent;
+
+    if (team.currentSize >= team.maxSize) {
+      team.status = "Full";
+    } else if (team.status === "Full") {
+      team.status = "Recruiting";
+    }
+
+    await team.save();
+
+    const updatedTeam = await Team.findById(team._id)
+      .populate("createdBy", "name email role profile")
+      .populate("leader", "name email role profile")
+      .populate("members.user", "name email role profile");
+
+    return res.json({
+      success: true,
+      message: "Team updated successfully.",
+      team: updatedTeam,
+    });
+  } catch (error) {
+    console.error("Update team error:", error);
+    return res.status(500).json({
+      message: "Server error occurred while updating team.",
+      error: error.message,
+    });
+  }
+};
+
+// POST /api/teams/:id/leave — Leave team (Member only, non-leader)
+const leaveTeam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+
+    let team = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      team = await Team.findById(id);
+    }
+    if (!team) {
+      team = await Team.findOne({ id });
+    }
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found." });
+    }
+
+    // Leader cannot leave
+    if (team.createdBy.toString() === userIdStr || (team.leader && team.leader.toString() === userIdStr)) {
+      return res.status(400).json({ message: "Team leader cannot leave the team. Transfer leadership or delete team instead." });
+    }
+
+    // Member check
+    const isMember = team.memberIds.includes(userIdStr) || team.members.some((m) => m.user && m.user.toString() === userIdStr);
+    if (!isMember) {
+      return res.status(400).json({ message: "You are not a member of this team." });
+    }
+
+    // Remove user from members & memberIds
+    team.members = team.members.filter((m) => m.user && m.user.toString() !== userIdStr);
+    team.memberIds = team.memberIds.filter((mId) => mId !== userIdStr);
+    team.currentSize = team.members.length;
+
+    if (team.status === "Full" && team.currentSize < team.maxSize) {
+      team.status = "Recruiting";
+    }
+
+    await team.save();
+
+    return res.json({
+      success: true,
+      message: "Left team successfully.",
+      teamId: team.id || team._id,
+    });
+  } catch (error) {
+    console.error("Leave team error:", error);
+    return res.status(500).json({
+      message: "Server error occurred while leaving team.",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createTeam,
   getTeams,
+  getMyTeams,
   getTeamById,
+  updateTeam,
   joinTeam,
+  leaveTeam,
 };

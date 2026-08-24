@@ -12,11 +12,11 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
   const initials = name
     ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "GH";
 
   if (avatar && !imgError) {
@@ -309,10 +309,9 @@ export default function InviteConnectionsModal({
                     border
                     p-3.5
                     transition-all
-                    ${
-                      isSelected
-                        ? "border-indigo-500 bg-indigo-50/40 dark:border-indigo-500 dark:bg-indigo-950/20"
-                        : "border-neutral-200 bg-white hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-800/60 dark:hover:border-neutral-700"
+                    ${isSelected
+                      ? "border-indigo-500 bg-indigo-50/40 dark:border-indigo-500 dark:bg-indigo-950/20"
+                      : "border-neutral-200 bg-white hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-800/60 dark:hover:border-neutral-700"
                     }
                     ${isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}
                   `}
@@ -322,7 +321,7 @@ export default function InviteConnectionsModal({
                       type="checkbox"
                       checked={isSelected}
                       disabled={isDisabled}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="h-4 w-4 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-900"
                     />
 
