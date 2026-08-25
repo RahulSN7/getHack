@@ -79,9 +79,15 @@ function TeamCard({
     }
   };
 
-  // Tech stack preview — max 3
-  const visibleTech = techStack.slice(0, 3);
-  const techOverflow = techStack.length - 3;
+  // Technologies list — fallback to team.technologies or team.tech if present
+  const technologies =
+    Array.isArray(techStack) && techStack.length > 0
+      ? techStack
+      : Array.isArray(team.technologies) && team.technologies.length > 0
+      ? team.technologies
+      : Array.isArray(team.tech)
+      ? team.tech
+      : [];
 
   return (
     <article
@@ -186,7 +192,36 @@ function TeamCard({
           </div>
         )}
 
-        {/* ── 4. Stats Row ── */}
+        {/* ── 4. Technologies ── */}
+        {technologies.length > 0 && (
+          <div className="mt-3.5">
+            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              TECHNOLOGIES
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {technologies.map((tech) => (
+                <span
+                  key={tech}
+                  className={`
+                    inline-flex
+                    items-center
+                    rounded-md
+                    px-2
+                    py-0.5
+                    text-[11px]
+                    font-medium
+                    ${accentBgSoft}
+                    ${accentText}
+                  `}
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. Stats Row ── */}
         <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
@@ -207,104 +242,78 @@ function TeamCard({
         </div>
       </div>
 
-      {/* ── 5. Footer: Tech Stack (Left) & Team Details / Request CTAs (Right) ── */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-        {/* Tech stack preview */}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              Tech:
-            </span>
-            {visibleTech.map((tech) => (
-              <span
-                key={tech}
-                className="text-[11px] font-medium text-neutral-600 dark:text-neutral-300"
-              >
-                {tech}
-                {tech !== visibleTech[visibleTech.length - 1] || techOverflow > 0 ? "," : ""}
-              </span>
-            ))}
-            {techOverflow > 0 && (
-              <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                +{techOverflow}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* ── 6. Footer: Team Actions ── */}
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
+        <Link
+          to={`/team/${teamIdStr}`}
+          state={{ from: "/teammates?tab=teams" }}
+          className="
+            inline-flex
+            items-center
+            gap-1
+            rounded-lg
+            border
+            border-neutral-200
+            bg-white
+            px-3
+            py-1.5
+            text-xs
+            font-semibold
+            text-neutral-700
+            transition-colors
+            hover:bg-neutral-50
+            dark:border-neutral-800
+            dark:bg-neutral-900
+            dark:text-neutral-300
+            dark:hover:bg-neutral-800
+          "
+        >
+          <span>View Team</span>
+        </Link>
 
-        {/* Team Actions */}
-        <div className="flex items-center gap-2">
-          <Link
-            to={`/team/${teamIdStr}`}
-            state={{ from: "/teammates?tab=teams" }}
+        {actionState.type === "leader" ? (
+          <span className="inline-flex items-center rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+            Your Team
+          </span>
+        ) : actionState.type === "member" ? (
+          <span className="inline-flex items-center rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+            You are a member
+          </span>
+        ) : actionState.type === "pending" ? (
+          <span className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-500">
+            ✓ Request Sent
+          </span>
+        ) : actionState.type === "full" ? (
+          <span className="inline-flex items-center rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-500">
+            Team Full
+          </span>
+        ) : (
+          <button
+            type="button"
+            disabled={isRequesting}
+            onClick={handleRequestClick}
             className="
               inline-flex
               items-center
               gap-1
               rounded-lg
-              border
-              border-neutral-200
-              bg-white
+              bg-indigo-600
               px-3
               py-1.5
               text-xs
               font-semibold
-              text-neutral-700
+              text-white
               transition-colors
-              hover:bg-neutral-50
-              dark:border-neutral-800
-              dark:bg-neutral-900
-              dark:text-neutral-300
-              dark:hover:bg-neutral-800
+              hover:bg-indigo-500
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+              dark:bg-indigo-500
+              dark:hover:bg-indigo-400
             "
           >
-            <span>View Team</span>
-          </Link>
-
-          {actionState.type === "leader" ? (
-            <span className="inline-flex items-center rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
-              Your Team
-            </span>
-          ) : actionState.type === "member" ? (
-            <span className="inline-flex items-center rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-              You are a member
-            </span>
-          ) : actionState.type === "pending" ? (
-            <span className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-500">
-              ✓ Request Sent
-            </span>
-          ) : actionState.type === "full" ? (
-            <span className="inline-flex items-center rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-400 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-500">
-              Team Full
-            </span>
-          ) : (
-            <button
-              type="button"
-              disabled={isRequesting}
-              onClick={handleRequestClick}
-              className="
-                inline-flex
-                items-center
-                gap-1
-                rounded-lg
-                bg-indigo-600
-                px-3
-                py-1.5
-                text-xs
-                font-semibold
-                text-white
-                transition-colors
-                hover:bg-indigo-500
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-                dark:bg-indigo-500
-                dark:hover:bg-indigo-400
-              "
-            >
-              <span>{isRequesting ? "Sending..." : "Request to Join"}</span>
-            </button>
-          )}
-        </div>
+            <span>{isRequesting ? "Sending..." : "Request to Join"}</span>
+          </button>
+        )}
       </div>
     </article>
   );
