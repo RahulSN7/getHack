@@ -43,6 +43,7 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/hackathons", hackathonRoutes);
+// User profile & discovery routes
 app.use("/api/users", userRoutes);
 app.use("/api/network", networkRoutes);
 app.use("/api/teams", teamRoutes);
@@ -80,8 +81,9 @@ mongoose.connection.on("error", (err) => {
 
 mongoose
   .connect(MONGO_URI, {
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 10000,
     connectTimeoutMS: 10000,
+    tlsAllowInvalidCertificates: true,
   })
   .then(() => {
     console.log("MongoDB connected successfully to getHack DB");

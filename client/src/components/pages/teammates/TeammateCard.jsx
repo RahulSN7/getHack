@@ -43,24 +43,24 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
   if (!teammate) return null;
 
   const {
-    name = "Developer",
+    name = "",
     bio = "",
     location = "",
     avatar = "",
     username = "",
-    availability = "available",
+    availability = "",
   } = teammate;
 
   const currentLocation = useLocation();
   const navigate = useNavigate();
   const userId = teammate.id || teammate._id;
-  const isOnline = availability === "available" || availability === "online";
+  const isOnline = availability === "available" || availability === "online" || availability === "Available";
 
-  // Derive role
+  // Derive role dynamically from user object
   const role =
     teammate.role ||
     teammate.profile?.role ||
-    (teammate.domain ? (Array.isArray(teammate.domain) ? teammate.domain[0] : teammate.domain) : "Full Stack Developer");
+    (teammate.domain ? (Array.isArray(teammate.domain) ? teammate.domain[0] : teammate.domain) : "Participant");
 
   // Normalize skills (array or comma string)
   const rawSkills = teammate.skills || teammate.profile?.skills || [];

@@ -1065,10 +1065,12 @@ const getAllParticipants = async (req, res) => {
       success: true,
       count: participants.length,
       participants,
+      teammates: participants,
     });
   } catch (error) {
     console.error("GET ALL PARTICIPANTS ERROR:", error);
     return res.status(500).json({
+      success: false,
       message: "Failed to fetch participants.",
     });
   }

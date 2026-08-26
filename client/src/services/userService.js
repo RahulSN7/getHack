@@ -77,6 +77,12 @@ export const userService = {
     return request(endpoint);
   },
 
+  getTeammates: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/users/teammates${queryString ? `?${queryString}` : ""}`;
+    return request(endpoint);
+  },
+
   getParticipantProfile:
     async (id) => {
       return request(

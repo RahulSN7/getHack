@@ -301,6 +301,39 @@ function EmptyState({ activeTab, hasFilters, onClear, message }) {
 }
 
 // ---------------------------------------------------------------------------
+// Error state component
+// ---------------------------------------------------------------------------
+
+function ErrorState({ onRetry, message }) {
+  return (
+    <div className="py-16 text-center rounded-2xl border border-dashed border-red-200 bg-red-50/50 p-8 dark:border-red-900/50 dark:bg-red-950/20">
+      <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
+        <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+        {message || "Unable to load teammates. Please try again."}
+      </h3>
+      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+        We encountered an error connecting to the server. Please check your connection and try again.
+      </p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // My Teams View Component
 // ---------------------------------------------------------------------------
 
@@ -859,8 +892,8 @@ function Teammates() {
           setMembers(normalized);
         }
       } catch (err) {
-        console.error("Failed to load participants:", err);
-        if (isMounted) setError("Failed to load participants.");
+        console.error("Failed to load teammates:", err);
+        if (isMounted) setError("Unable to load teammates. Please try again.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -1254,8 +1287,43 @@ function Teammates() {
               </div>
             </div>
 
-            {/* Card Grid, Loading Skeleton, or Empty State */}
-            {activeTab === "members" && loading ? (
+            {/* Card Grid, Loading Skeleton, Error State, or Empty State */}
+            {activeTab === "members" && error ? (
+              <ErrorState
+                message={error}
+                onRetry={async () => {
+                  setLoading(true);
+                  setError(null);
+                  try {
+                    const data = await userService.getParticipants();
+                    if (data?.participants) {
+                      const normalized = data.participants.map((p) => ({
+                        id: p.id,
+                        _id: p.id,
+                        name: p.name,
+                        role: p.profile?.role || "Participant",
+                        bio: p.profile?.bio || "",
+                        skills: p.profile?.skills || [],
+                        experience: p.profile?.experienceLevel || "Intermediate",
+                        location: p.profile?.location || "",
+                        availability: p.profile?.availability || "",
+                        username: p.profile?.handle?.replace(/^@/, "") || `user_${p.id.slice(-4)}`,
+                        avatar: p.profile?.avatar || "",
+                        education: p.profile?.education || {},
+                        connectionState: p.connectionState || { status: "none" },
+                        profile: p.profile,
+                      }));
+                      setMembers(normalized);
+                    }
+                  } catch (err) {
+                    console.error("Failed to reload teammates:", err);
+                    setError("Unable to load teammates. Please try again.");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              />
+            ) : activeTab === "members" && loading ? (
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="h-64 animate-pulse rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900" />

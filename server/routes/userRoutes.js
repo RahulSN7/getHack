@@ -23,6 +23,7 @@ router.put(
 
 // Get all participants for Find Teammates discovery
 router.get("/participants", optionalAuth, userController.getAllParticipants);
+router.get("/teammates", optionalAuth, userController.getAllParticipants);
 
 // Public or optionally-authenticated participant profile view
 router.get("/participant/:id", optionalAuth, userController.getParticipantProfile);
