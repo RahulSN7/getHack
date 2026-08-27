@@ -411,38 +411,30 @@ export default function UserProfile() {
                 </div>
 
                 {/* Quick Link Pill Badges in Header */}
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  {github && (
-                    <a
-                      href={github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
-                    >
-                      <span>GitHub ↗</span>
-                    </a>
-                  )}
-                  {linkedin && (
-                    <a
-                      href={linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
-                    >
-                      <span>LinkedIn ↗</span>
-                    </a>
-                  )}
-                  {portfolio && (
-                    <a
-                      href={portfolio}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
-                    >
-                      <span>Portfolio ↗</span>
-                    </a>
-                  )}
-                </div>
+                {(linkedin || portfolio) && (
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    {linkedin && (
+                      <a
+                        href={linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
+                      >
+                        <span>LinkedIn ↗</span>
+                      </a>
+                    )}
+                    {portfolio && (
+                      <a
+                        href={portfolio}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:bg-neutral-800"
+                      >
+                        <span>Portfolio ↗</span>
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

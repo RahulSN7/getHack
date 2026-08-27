@@ -91,40 +91,64 @@ function Network() {
     try {
       const data = await userService.getNetworkRequests();
       if (isMounted && data) {
-        setConnections(Array.isArray(data.connections) ? data.connections : []);
+        const incomingList = Array.isArray(data.incoming)
+          ? data.incoming
+          : Array.isArray(data.requests)
+          ? data.requests
+          : Array.isArray(data.data?.incoming)
+          ? data.data.incoming
+          : [];
+
+        const outgoingList = Array.isArray(data.outgoing)
+          ? data.outgoing
+          : Array.isArray(data.sent)
+          ? data.sent
+          : Array.isArray(data.data?.outgoing)
+          ? data.data.outgoing
+          : [];
+
+        const connectionsList = Array.isArray(data.connections)
+          ? data.connections
+          : Array.isArray(data.data?.connections)
+          ? data.data.connections
+          : [];
+
+        setConnections(connectionsList);
         setRequests(
-          Array.isArray(data.incoming)
-            ? data.incoming.map((req) => ({
-                id: req.id || req.requestId,
-                fromUserId: req.senderId,
-                name: req.name,
-                role: req.role,
-                avatar: req.avatar,
-                skills: req.skills || [],
-                location: req.location || "",
-                availability: req.availability || "",
-                username: req.username || (req.name ? req.name.toLowerCase().replace(/[^a-z0-9]/g, "") : ""),
-                note: req.note,
-                createdAt: req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "Just now",
-              }))
-            : []
+          incomingList.map((req) => ({
+            id: req.id || req.requestId,
+            requestId: req.requestId || req.id,
+            fromUserId: req.senderId || req.fromUserId,
+            senderId: req.senderId || req.fromUserId,
+            name: req.name || "Participant",
+            role: req.role || "Developer",
+            avatar: req.avatar || "",
+            bio: req.bio || "",
+            skills: Array.isArray(req.skills) ? req.skills : [],
+            location: req.location || "",
+            availability: req.availability || "",
+            username: req.username || (req.name ? req.name.toLowerCase().replace(/[^a-z0-9]/g, "") : ""),
+            note: req.note,
+            createdAt: req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "Just now",
+          }))
         );
         setSent(
-          Array.isArray(data.outgoing)
-            ? data.outgoing.map((s) => ({
-                id: s.id || s.requestId,
-                toUserId: s.receiverId,
-                name: s.name,
-                role: s.role,
-                avatar: s.avatar,
-                skills: s.skills || [],
-                location: s.location || "",
-                availability: s.availability || "",
-                username: s.username || (s.name ? s.name.toLowerCase().replace(/[^a-z0-9]/g, "") : ""),
-                note: s.note,
-                createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Just now",
-              }))
-            : []
+          outgoingList.map((s) => ({
+            id: s.id || s.requestId,
+            requestId: s.requestId || s.id,
+            toUserId: s.receiverId || s.toUserId,
+            receiverId: s.receiverId || s.toUserId,
+            name: s.name || "Participant",
+            role: s.role || "Developer",
+            avatar: s.avatar || "",
+            bio: s.bio || "",
+            skills: Array.isArray(s.skills) ? s.skills : [],
+            location: s.location || "",
+            availability: s.availability || "",
+            username: s.username || (s.name ? s.name.toLowerCase().replace(/[^a-z0-9]/g, "") : ""),
+            note: s.note,
+            createdAt: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "Just now",
+          }))
         );
       }
     } catch (err) {
@@ -211,6 +235,7 @@ function Network() {
       setSent((prev) => prev.filter((s) => s.id !== reqId && s.requestId !== reqId));
       setToastMessage(`Connection request to ${targetName} cancelled.`);
       setCancelModalState({ isOpen: false, requestItem: null, isCancelling: false, error: null });
+      await loadNetworkData(true);
     } catch (err) {
       console.error("Failed to cancel connection request:", err);
       const errorMsg = err.message || "Unable to cancel the request. Please try again.";

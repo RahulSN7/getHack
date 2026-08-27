@@ -112,10 +112,37 @@ const sendConnectionRequest = async (req, res) => {
 // ---------------------------------------------------------------------------
 // GET /api/network/requests — Fetch Connections, Incoming & Outgoing Requests
 // ---------------------------------------------------------------------------
+function extractSafeUser(userDoc) {
+  if (!userDoc) return {};
+  if (typeof userDoc.toSafeUser === "function") {
+    try {
+      return userDoc.toSafeUser();
+    } catch {
+      // Fallback if toSafeUser throws
+    }
+  }
+  const p = userDoc.profile || {};
+  return {
+    id: (userDoc._id || userDoc.id)?.toString() || "",
+    name: userDoc.name || "Participant",
+    email: userDoc.email || "",
+    role: userDoc.role || "participant",
+    avatar: typeof p.avatar === "string" ? p.avatar : "",
+    profile: {
+      avatar: typeof p.avatar === "string" ? p.avatar : "",
+      role: typeof p.role === "string" ? p.role : "Developer",
+      bio: typeof p.bio === "string" ? p.bio : "",
+      skills: Array.isArray(p.skills) ? p.skills : [],
+      location: typeof p.location === "string" ? p.location : "",
+      availability: typeof p.availability === "string" ? p.availability : "",
+    },
+  };
+}
+
 const getNetworkRequests = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthenticated." });
+      return res.status(401).json({ success: false, message: "Unauthenticated." });
     }
 
     const userId = req.user._id;
@@ -130,9 +157,10 @@ const getNetworkRequests = async (req, res) => {
       .sort({ updatedAt: -1 });
 
     const connections = rawConnections.map((c) => {
-      const isSender = c.sender._id.toString() === userId.toString();
+      const senderIdStr = c.sender?._id ? c.sender._id.toString() : (c.sender ? c.sender.toString() : "");
+      const isSender = senderIdStr === userId.toString();
       const partner = isSender ? c.receiver : c.sender;
-      const safePartner = partner ? partner.toSafeUser() : {};
+      const safePartner = extractSafeUser(partner);
 
       return {
         id: c._id.toString(),
@@ -158,7 +186,7 @@ const getNetworkRequests = async (req, res) => {
       .sort({ createdAt: -1 });
 
     const incoming = rawIncoming.map((c) => {
-      const safeSender = c.sender ? c.sender.toSafeUser() : {};
+      const safeSender = extractSafeUser(c.sender);
       return {
         id: c._id.toString(),
         requestId: c._id.toString(),
@@ -184,7 +212,7 @@ const getNetworkRequests = async (req, res) => {
       .sort({ createdAt: -1 });
 
     const outgoing = rawOutgoing.map((c) => {
-      const safeReceiver = c.receiver ? c.receiver.toSafeUser() : {};
+      const safeReceiver = extractSafeUser(c.receiver);
       return {
         id: c._id.toString(),
         requestId: c._id.toString(),
@@ -202,13 +230,14 @@ const getNetworkRequests = async (req, res) => {
     });
 
     return res.status(200).json({
+      success: true,
       connections,
       incoming,
       outgoing,
     });
   } catch (error) {
     console.error("Error in getNetworkRequests:", error);
-    return res.status(500).json({ message: "Failed to load network requests." });
+    return res.status(500).json({ success: false, message: "Failed to load network requests." });
   }
 };
 
@@ -218,14 +247,14 @@ const getNetworkRequests = async (req, res) => {
 const respondToConnectionRequest = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Unauthenticated." });
+      return res.status(401).json({ success: false, message: "Unauthenticated." });
     }
 
     const { id } = req.params;
     const { action } = req.body || {};
 
     if (action !== "accept" && action !== "decline") {
-      return res.status(400).json({ message: "Invalid action. Use 'accept' or 'decline'." });
+      return res.status(400).json({ success: false, message: "Invalid action. Use 'accept' or 'decline'." });
     }
 
     const connection = await Connection.findOne({
@@ -235,13 +264,14 @@ const respondToConnectionRequest = async (req, res) => {
     });
 
     if (!connection) {
-      return res.status(404).json({ message: "Connection request not found or already processed." });
+      return res.status(404).json({ success: false, message: "Connection request not found or already processed." });
     }
 
     connection.status = action === "accept" ? "accepted" : "rejected";
     await connection.save();
 
     return res.status(200).json({
+      success: true,
       message: `Connection request ${action === "accept" ? "accepted" : "declined"}.`,
       connection,
     });
