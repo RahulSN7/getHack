@@ -1,21 +1,22 @@
 // ---------------------------------------------------------------------------
-// server/services/streamService.js — Stream Chat Server-Side Integration
-// Initializes the Stream Chat server client and provides helper functions
-// for token generation and user synchronization.
+// server/services/streamService.js
+// Stream Chat Server-Side Integration
 // ---------------------------------------------------------------------------
 
 const { StreamChat } = require("stream-chat");
 
 let serverClient = null;
 
-/**
- * Returns the initialized Stream Chat server client singleton.
- * Uses STREAM_API_KEY and STREAM_API_SECRET from environment variables.
- */
+// ---------------------------------------------------------------------------
+// Get Stream server client
+// ---------------------------------------------------------------------------
 function getStreamClient() {
   if (!serverClient) {
-    const apiKey = process.env.STREAM_API_KEY;
-    const apiSecret = process.env.STREAM_API_SECRET;
+    const apiKey =
+      process.env.STREAM_API_KEY;
+
+    const apiSecret =
+      process.env.STREAM_API_SECRET;
 
     if (!apiKey || !apiSecret) {
       throw new Error(
@@ -23,50 +24,181 @@ function getStreamClient() {
       );
     }
 
-    serverClient = StreamChat.getInstance(apiKey, apiSecret);
+    serverClient =
+      StreamChat.getInstance(
+        apiKey,
+        apiSecret
+      );
   }
+
   return serverClient;
 }
 
-/**
- * Generates a Stream Chat user token for the given getHack user ID.
- * @param {string} userId — The MongoDB _id string of the getHack user
- * @returns {string} JWT token for Stream Chat frontend SDK
- */
+// ---------------------------------------------------------------------------
+// Generate user token
+// ---------------------------------------------------------------------------
 function generateStreamToken(userId) {
-  const client = getStreamClient();
-  return client.createToken(String(userId));
-}
-
-/**
- * Upserts a getHack user into Stream Chat so they can be referenced
- * in channels and messages. Syncs name and avatar.
- * @param {object} user — A getHack user document (or safe user object)
- */
-async function upsertStreamUser(user) {
-  const client = getStreamClient();
-  const userId = String(user._id || user.id);
-  const name = user.name || "Participant";
-  const avatar = user.profile?.avatar || user.avatar || "";
-
-  // Build the full avatar URL if it's a relative path
-  let image = "";
-  if (avatar) {
-    image = avatar.startsWith("http") ? avatar : avatar;
+  if (!userId) {
+    throw new Error(
+      "Cannot generate Stream token without user ID."
+    );
   }
 
-  await client.upsertUser({
+  const client = getStreamClient();
+
+  return client.createToken(
+    String(userId)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Format getHack user for Stream
+// ---------------------------------------------------------------------------
+function formatStreamUser(user) {
+  if (!user) {
+    throw new Error(
+      "Cannot format empty user for Stream."
+    );
+  }
+
+  const userId = String(
+    user._id || user.id || ""
+  );
+
+  if (!userId) {
+    throw new Error(
+      "Cannot synchronize Stream user without an ID."
+    );
+  }
+
+  const name =
+    user.name || "Participant";
+
+  const avatar =
+    user.profile?.avatar ||
+    user.avatar ||
+    "";
+
+  return {
     id: userId,
     name,
-    image,
+    image: avatar || undefined,
     role: "user",
-  });
+  };
+}
 
-  return userId;
+// ---------------------------------------------------------------------------
+// Upsert one user
+// ---------------------------------------------------------------------------
+async function upsertStreamUser(user) {
+  if (!user) {
+    return null;
+  }
+
+  const client = getStreamClient();
+
+  const streamUser =
+    formatStreamUser(user);
+
+  console.log(
+    "[Stream] Upserting user:",
+    streamUser.id
+  );
+
+  await client.upsertUser(
+    streamUser
+  );
+
+  console.log(
+    "[Stream] User upserted:",
+    streamUser.id
+  );
+
+  return streamUser.id;
+}
+
+// ---------------------------------------------------------------------------
+// Upsert multiple users
+// ---------------------------------------------------------------------------
+async function upsertStreamUsers(users) {
+  if (
+    !Array.isArray(users) ||
+    users.length === 0
+  ) {
+    return [];
+  }
+
+  const client = getStreamClient();
+
+  const formattedUsers = users
+    .filter(Boolean)
+    .map(formatStreamUser);
+
+  if (
+    formattedUsers.length === 0
+  ) {
+    return [];
+  }
+
+  console.log(
+    "[Stream] Upserting users:",
+    formattedUsers.map(
+      (user) => user.id
+    )
+  );
+
+  await client.upsertUsers(
+    formattedUsers
+  );
+
+  console.log(
+    "[Stream] Users upserted successfully:",
+    formattedUsers.map(
+      (user) => user.id
+    )
+  );
+
+  return formattedUsers.map(
+    (user) => user.id
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sync all MongoDB users
+// ---------------------------------------------------------------------------
+async function syncAllUsersToStream() {
+  try {
+    const User = require(
+      "../models/user"
+    );
+
+    const allUsers =
+      await User.find({});
+
+    if (
+      allUsers &&
+      allUsers.length > 0
+    ) {
+      await upsertStreamUsers(
+        allUsers
+      );
+
+      console.log(
+        `[Stream Chat Sync] Successfully synchronized ${allUsers.length} MongoDB users into Stream Chat.`
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "Failed to synchronize all users into Stream Chat:",
+      error.message
+    );
+  }
 }
 
 module.exports = {
   getStreamClient,
   generateStreamToken,
   upsertStreamUser,
+  upsertStreamUsers,
+  syncAllUsersToStream,
 };

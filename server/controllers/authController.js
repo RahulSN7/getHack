@@ -5,6 +5,7 @@
 
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const { upsertStreamUser } = require("../services/streamService");
 
 const JWT_SECRET = process.env.JWT_SECRET || "gethack_super_secret_jwt_key_2026";
 const COOKIE_OPTIONS = {
@@ -73,6 +74,11 @@ const signup = async (req, res) => {
     // Generate JWT token & set cookie
     const token = generateToken(newUser._id);
     res.cookie("token", token, COOKIE_OPTIONS);
+
+    // Synchronize new user with Stream Chat server-side
+    upsertStreamUser(newUser).catch((e) =>
+      console.warn("Background Stream Chat signup sync warning:", e.message)
+    );
 
     return res.status(201).json({
       message: "Account created successfully",
@@ -149,6 +155,11 @@ const login = async (req, res) => {
     // Generate JWT token & set cookie
     const token = generateToken(user._id);
     res.cookie("token", token, COOKIE_OPTIONS);
+
+    // Synchronize logged in user with Stream Chat server-side
+    upsertStreamUser(user).catch((e) =>
+      console.warn("Background Stream Chat login sync warning:", e.message)
+    );
 
     return res.status(200).json({
       message: "Logged in successfully",

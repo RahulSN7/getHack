@@ -23,6 +23,7 @@ const networkRoutes = require("./routes/networkRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const { initHackathonSyncJob, runSyncTask } = require("./jobs/hackathonSyncJob");
+const { syncAllUsersToStream } = require("./services/streamService");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -89,6 +90,8 @@ mongoose
   })
   .then(() => {
     console.log("MongoDB connected successfully to getHack DB");
+    // Synchronize all existing MongoDB users into Stream Chat
+    syncAllUsersToStream();
     // Initialize multi-platform hackathon synchronization background scheduler
     initHackathonSyncJob();
   })

@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useMemo, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import NetworkFilters from "./NetworkFilters";
 import NetworkUserCard from "./NetworkUserCard";
 import { userService } from "../../../services/userService";
@@ -52,6 +52,7 @@ function matchesUserSearch(user, query) {
 // ---------------------------------------------------------------------------
 
 function Network() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const validTabs = ["connections", "requests", "sent"];
@@ -246,10 +247,17 @@ function Network() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleMessageClick = (userName, username) => {
-    const handleText = username ? `@${username}` : userName;
-    setToastMessage(`Direct messaging with ${handleText} coming soon!`);
-    setTimeout(() => setToastMessage(null), 3000);
+  const handleMessageClick = (person) => {
+    if (!person) return;
+    const targetId = typeof person === "object"
+      ? (person.userId || person.toUserId || person.fromUserId || person.user?.id || person.user?._id || person._id || person.id)
+      : person;
+
+    if (targetId) {
+      navigate(`/messages/${targetId}`, {
+        state: { targetUserId: targetId, user: person },
+      });
+    }
   };
 
   const handleApplyFilters = ({
