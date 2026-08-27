@@ -52,9 +52,14 @@ function LoginPage() {
       const loggedUser = await login({ email, password });
       setIsLoading(false);
 
-      // Redirect based on account role from DB
+      // Redirect based on account role or redirect query parameter
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectUrl = searchParams.get("redirect");
+
       if (loggedUser?.role === "organizer") {
         navigate("/organizer");
+      } else if (redirectUrl) {
+        navigate(redirectUrl);
       } else {
         navigate("/hackathons");
       }

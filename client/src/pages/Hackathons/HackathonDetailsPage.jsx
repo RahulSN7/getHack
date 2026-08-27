@@ -6,8 +6,9 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSaved } from "../../context/SavedContext";
+import { useAuth } from "../../context/useAuth";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../constants/themeTokens";
 import DeadlineDisplay from "../../components/pages/hackathons/DeadlineDisplay";
 import BackButton from "../../components/common/BackButton";
@@ -56,10 +57,18 @@ function isValidRegistrationUrl(urlStr) {
 
 function HackathonDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const { isSaved, toggleSave } = useSaved();
 
   const [hackathon, setHackathon] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate(`/login?redirect=/hackathons/${id}`, { replace: true });
+    }
+  }, [authLoading, isAuthenticated, id, navigate]);
 
   useEffect(() => {
     let isMounted = true;

@@ -3,9 +3,10 @@
 // Displays Platform, Themes, Prize Pool & Deadline. Zero Mode/Fee/TeamSize/Eligibility fields.
 // ---------------------------------------------------------------------------
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
+import { useAuth } from "../../../context/useAuth";
 import DeadlineDisplay from "./DeadlineDisplay";
 import {
   formatPrize,
@@ -115,6 +116,9 @@ function getCleanThemes(hackathon) {
 
 function HackathonCard({ hackathon }) {
   const currentLocation = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
   const id = hackathon.id || hackathon._id;
   const name = typeof hackathon.name === "string" ? hackathon.name : typeof hackathon.title === "string" ? hackathon.title : "Untitled Hackathon";
   const organizer = formatOrganizer(hackathon.organizerName, hackathon.organizer);
@@ -160,6 +164,16 @@ function HackathonCard({ hackathon }) {
     }
   };
 
+  const handleViewDetails = (e) => {
+    e.preventDefault();
+    if (!id) return;
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=/hackathons/${id}`, { state: { from: currentLocation } });
+      return;
+    }
+    navigate(`/hackathons/${id}`, { state: { from: currentLocation } });
+  };
+
   return (
     <article
       className="
@@ -190,6 +204,7 @@ function HackathonCard({ hackathon }) {
             {/* Logo / Avatar fallback */}
             <Link
               to={id ? `/hackathons/${id}` : "#"}
+              onClick={handleViewDetails}
               state={{ from: currentLocation }}
               aria-label={`View details for ${name}`}
               className="shrink-0 transition-opacity hover:opacity-90"
@@ -217,6 +232,7 @@ function HackathonCard({ hackathon }) {
               <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
                 <Link
                   to={id ? `/hackathons/${id}` : "#"}
+                  onClick={handleViewDetails}
                   state={{ from: currentLocation }}
                   className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
                 >
@@ -347,6 +363,7 @@ function HackathonCard({ hackathon }) {
 
         <Link
           to={id ? `/hackathons/${id}` : "#"}
+          onClick={handleViewDetails}
           state={{ from: currentLocation }}
           className="
             inline-flex
