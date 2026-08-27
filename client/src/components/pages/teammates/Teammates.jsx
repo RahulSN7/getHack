@@ -68,7 +68,16 @@ function searchMembers(members, query) {
 // Filters: Find Members
 // ---------------------------------------------------------------------------
 
-function filterMembers(members, { roleFilter, experienceFilter }) {
+function normalizeAvailability(val) {
+  if (!val || typeof val !== "string") return "not-available";
+  const clean = val.trim().toLowerCase().replace(/_/g, " ").replace(/-/g, " ");
+  if (clean === "available" || clean === "online") {
+    return "available";
+  }
+  return "not-available";
+}
+
+function filterMembers(members, { roleFilter, experienceFilter, availabilityFilter = "all" }) {
   let result = members;
 
   if (roleFilter !== "all") {
@@ -76,6 +85,18 @@ function filterMembers(members, { roleFilter, experienceFilter }) {
   }
   if (experienceFilter !== "all") {
     result = result.filter((m) => m.experience === experienceFilter);
+  }
+  if (availabilityFilter !== "all") {
+    result = result.filter((m) => {
+      const avail = normalizeAvailability(m.availability || m.profile?.availability);
+      if (availabilityFilter === "available") {
+        return avail === "available";
+      }
+      if (availabilityFilter === "not-available") {
+        return avail === "not-available";
+      }
+      return true;
+    });
   }
 
   return result;
@@ -127,8 +148,8 @@ function filterTeams(teams, currentUser) {
     const memberList = Array.isArray(t.memberIds)
       ? t.memberIds
       : Array.isArray(t.members)
-      ? t.members
-      : [];
+        ? t.members
+        : [];
     const currentCount = memberList.length || t.currentSize || 1;
     const maxSize = t.maxSize || t.maxTeamSize || 4;
     if (currentCount >= maxSize) {
@@ -490,6 +511,37 @@ function MyTeamsView({ currentUser, onShowToast }) {
 // Team Requests View Component (Incoming & Sent Sub-tabs)
 // ---------------------------------------------------------------------------
 
+function RequestUserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
+  const [imgError, setImgError] = useState(false);
+  const initials = name
+    ? name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+    : "U";
+
+  if (avatar && !imgError) {
+    return (
+      <img
+        src={avatar}
+        alt={name}
+        onError={() => setImgError(true)}
+        className={`${sizeClass} shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`grid ${sizeClass} shrink-0 place-items-center rounded-full bg-indigo-100 font-bold text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-300 border border-neutral-200 dark:border-neutral-800`}
+    >
+      {initials}
+    </div>
+  );
+}
+
 function TeamRequestsView({ onShowToast, onRequestStateChange }) {
   const [subTab, setSubTab] = useState("incoming");
   const [incoming, setIncoming] = useState([]);
@@ -589,18 +641,17 @@ function TeamRequestsView({ onShowToast, onRequestStateChange }) {
               const requester = req.requester || {};
               const team = req.team || {};
               const reqId = requester.id || requester._id || "user";
+              const requesterAvatar = requester.avatar || requester.profile?.avatar || "";
 
               return (
                 <div
                   key={req._id || req.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-300">
-                      {requester.name ? requester.name[0].toUpperCase() : "U"}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <RequestUserAvatar avatar={requesterAvatar} name={requester.name || "Applicant"} sizeClass="h-10 w-10 text-xs" />
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white truncate">
                         {requester.name || "Applicant"}
                       </h4>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -650,32 +701,39 @@ function TeamRequestsView({ onShowToast, onRequestStateChange }) {
           {sent.map((req) => {
             const team = req.team || {};
             const teamId = team.id || team._id;
+            const teamLeader = req.teamLeader || team.leader || team.createdBy || {};
+            const leaderAvatar = teamLeader.avatar || teamLeader.profile?.avatar || "";
+            const leaderName = teamLeader.name || team.teamName || "Team Leader";
+
             const statusClass =
               req.status === "accepted"
                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
                 : req.status === "rejected"
-                ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
-                : req.status === "cancelled"
-                ? "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
-                : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+                  ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                  : req.status === "cancelled"
+                    ? "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
 
             return (
               <div
                 key={req._id || req.id}
                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
               >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
-                      {team.teamName || "Team"}
-                    </h4>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusClass}`}>
-                      {req.status}
-                    </span>
+                <div className="flex items-start gap-3 min-w-0">
+                  <RequestUserAvatar avatar={leaderAvatar} name={leaderName} sizeClass="h-10 w-10 text-xs" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-neutral-900 dark:text-white truncate">
+                        {team.teamName || "Team"}
+                      </h4>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${statusClass}`}>
+                        {req.status}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                      {team.hackathonName}
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-                    {team.hackathonName}
-                  </p>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -929,6 +987,7 @@ function Teammates() {
   // Filters — Members
   const [roleFilter, setRoleFilter] = useState("all");
   const [experienceFilter, setExperienceFilter] = useState("all");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
 
   // Filters — Teams
   const [teamStatusFilter, setTeamStatusFilter] = useState("all");
@@ -941,7 +1000,7 @@ function Teammates() {
   const hasFilters =
     searchQuery.trim() !== "" ||
     (activeTab === "members" &&
-      (roleFilter !== "all" || experienceFilter !== "all")) ||
+      (roleFilter !== "all" || experienceFilter !== "all" || availabilityFilter !== "all")) ||
     (activeTab === "teams" && teamStatusFilter !== "all");
 
   // Clear all state
@@ -949,17 +1008,20 @@ function Teammates() {
     setSearchQuery("");
     setRoleFilter("all");
     setExperienceFilter("all");
+    setAvailabilityFilter("all");
     setTeamStatusFilter("all");
     setMemberSort("default");
     setTeamSort("default");
   };
 
+
+
   // Pipeline: Members
   const memberResults = useMemo(() => {
     const searched = searchMembers(members, searchQuery);
-    const filtered = filterMembers(searched, { roleFilter, experienceFilter });
+    const filtered = filterMembers(searched, { roleFilter, experienceFilter, availabilityFilter });
     return sortMembers(filtered, memberSort);
-  }, [members, searchQuery, roleFilter, experienceFilter, memberSort]);
+  }, [members, searchQuery, roleFilter, experienceFilter, availabilityFilter, memberSort]);
 
   // Pipeline: Teams (only teams with open spots: currentSize < maxSize)
   const teamResults = useMemo(() => {
@@ -977,16 +1039,19 @@ function Teammates() {
   const handleFilterApply = ({
     roleFilter: r,
     experienceFilter: e,
+    availabilityFilter: a,
     teamStatusFilter: ts,
   }) => {
     setRoleFilter(r);
     setExperienceFilter(e);
+    if (a) setAvailabilityFilter(a);
     setTeamStatusFilter(ts);
   };
 
   const handleFilterClear = () => {
     setRoleFilter("all");
     setExperienceFilter("all");
+    setAvailabilityFilter("all");
     setTeamStatusFilter("all");
   };
 
@@ -1075,10 +1140,9 @@ function Teammates() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      activeTab === "members"
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${activeTab === "members"
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -1113,10 +1177,9 @@ function Teammates() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      activeTab === "teams"
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${activeTab === "teams"
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -1151,10 +1214,9 @@ function Teammates() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      activeTab === "my-teams"
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${activeTab === "my-teams"
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -1178,10 +1240,9 @@ function Teammates() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      activeTab === "requests"
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${activeTab === "requests"
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -1199,6 +1260,7 @@ function Teammates() {
                   activeTab={activeTab}
                   roleFilter={roleFilter}
                   experienceFilter={experienceFilter}
+                  availabilityFilter={availabilityFilter}
                   teamStatusFilter={teamStatusFilter}
                   onApply={handleFilterApply}
                   onClear={handleFilterClear}
@@ -1228,8 +1290,8 @@ function Teammates() {
                     ? "person"
                     : "people"
                   : results.length === 1
-                  ? "team"
-                  : "teams"}
+                    ? "team"
+                    : "teams"}
               </p>
 
               {/* Sort dropdown */}
@@ -1333,22 +1395,22 @@ function Teammates() {
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {activeTab === "members"
                   ? results.map((member) => (
-                      <TeammateCard
-                        key={member.id || member._id}
-                        teammate={member}
-                        onConnect={handleConnectClick}
-                        connectionStatus={sentMap[member.id || member._id] || member.connectionState?.status}
-                      />
-                    ))
+                    <TeammateCard
+                      key={member.id || member._id}
+                      teammate={member}
+                      onConnect={handleConnectClick}
+                      connectionStatus={sentMap[member.id || member._id] || member.connectionState?.status}
+                    />
+                  ))
                   : results.map((team) => (
-                      <TeamCard
-                        key={team.id || team._id}
-                        team={team}
-                        currentUser={currentUser}
-                        sentRequests={sentRequests}
-                        onRequestJoin={handleRequestToJoinTeam}
-                      />
-                    ))}
+                    <TeamCard
+                      key={team.id || team._id}
+                      team={team}
+                      currentUser={currentUser}
+                      sentRequests={sentRequests}
+                      onRequestJoin={handleRequestToJoinTeam}
+                    />
+                  ))}
               </div>
             ) : (
               <EmptyState

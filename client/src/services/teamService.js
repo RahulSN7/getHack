@@ -182,6 +182,19 @@ export const teamService = {
     });
     return handleResponse(response);
   },
+
+  // Remove a team member (Team Leader only)
+  async removeMember(teamId, memberId) {
+    const response = await fetch(`${API_BASE}/${teamId}/members/${memberId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+    return handleResponse(response);
+  },
 };
 
 export default teamService;
+

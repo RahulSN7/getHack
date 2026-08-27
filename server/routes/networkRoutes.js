@@ -12,5 +12,6 @@ router.post("/requests", requireAuth, networkController.sendConnectionRequest);
 router.get("/requests", requireAuth, networkController.getNetworkRequests);
 router.put("/requests/:id", requireAuth, networkController.respondToConnectionRequest);
 router.delete("/requests/:id", requireAuth, networkController.cancelConnectionRequest);
+router.delete("/connections/:targetUserId", requireAuth, networkController.removeConnection);
 
 module.exports = router;

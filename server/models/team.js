@@ -37,6 +37,14 @@ const teamSchema = new mongoose.Schema(
       default: "",
     },
 
+    startDate: {
+      type: Date,
+    },
+
+    endDate: {
+      type: Date,
+    },
+
     description: {
       type: String,
       trim: true,

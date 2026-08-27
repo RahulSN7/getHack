@@ -230,9 +230,9 @@ const updateOwnParticipantProfile = async (req, res) => {
 
     let cleanSkills = Array.isArray(parsedSkills)
       ? parsedSkills
-          .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
-          .map((skill) => skill.trim())
-          .filter((skill) => skill.length > 0)
+        .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
+        .map((skill) => skill.trim())
+        .filter((skill) => skill.length > 0)
       : currentProfile.skills || [];
 
     // Remove duplicate skills
@@ -273,26 +273,26 @@ const updateOwnParticipantProfile = async (req, res) => {
 
     const educationCollege = String(
       cleanEducation.college ??
-        currentProfile.education?.college ??
-        ""
+      currentProfile.education?.college ??
+      ""
     ).trim();
 
     const educationDegree = String(
       cleanEducation.degree ??
-        currentProfile.education?.degree ??
-        ""
+      currentProfile.education?.degree ??
+      ""
     ).trim();
 
     const educationField = String(
       cleanEducation.fieldOfStudy ??
-        currentProfile.education?.fieldOfStudy ??
-        ""
+      currentProfile.education?.fieldOfStudy ??
+      ""
     ).trim();
 
     const educationYear = String(
       cleanEducation.graduationYear ??
-        currentProfile.education?.graduationYear ??
-        ""
+      currentProfile.education?.graduationYear ??
+      ""
     ).trim();
 
     if (!educationCollege && !educationDegree) {
@@ -325,9 +325,9 @@ const updateOwnParticipantProfile = async (req, res) => {
 
     let cleanInterests = Array.isArray(parsedInterests)
       ? parsedInterests
-          .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0)
+        .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
       : currentProfile.interests || [];
 
     cleanInterests = [
@@ -379,7 +379,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     // Check if any validation errors occurred
     if (Object.keys(validationErrors).length > 0) {
       if (req.file && req.file.path) {
-        fs.unlink(req.file.path, () => {});
+        fs.unlink(req.file.path, () => { });
       }
       const firstErrorKey = Object.keys(validationErrors)[0];
       return res.status(400).json({
@@ -475,7 +475,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     // Reject Available selection if candidate profile is incomplete
     if (cleanAvailability === "Available" && !isProfileComplete(user)) {
       if (req.file?.path) {
-        fs.unlink(req.file.path, () => {});
+        fs.unlink(req.file.path, () => { });
       }
       return res.status(400).json({
         success: false,
@@ -493,7 +493,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     } catch (saveError) {
       // If DB save fails, remove newly uploaded image.
       if (req.file?.path) {
-        fs.unlink(req.file.path, () => {});
+        fs.unlink(req.file.path, () => { });
       }
 
       throw saveError;
@@ -599,7 +599,7 @@ const getParticipantProfile = async (req, res) => {
     const isOwner =
       req.user &&
       req.user._id.toString() ===
-        targetUser._id.toString();
+      targetUser._id.toString();
 
     let connectionState = {
       status: "none",
@@ -682,7 +682,7 @@ const getOrganizerProfile = async (req, res) => {
     const isOwner =
       req.user &&
       req.user._id.toString() ===
-        organizer._id.toString();
+      organizer._id.toString();
 
     const now = new Date();
 
@@ -746,8 +746,8 @@ const getOrganizerProfile = async (req, res) => {
         new Date(h.endDate) < now
           ? "Completed"
           : new Date(h.registrationDeadline) >= now
-          ? "Active"
-          : "Upcoming",
+            ? "Active"
+            : "Upcoming",
     }));
 
     const safeUser =
@@ -916,27 +916,27 @@ const updateOwnOrganizerProfile = async (
       organizationName:
         organizationName !== undefined
           ? String(
-              organizationName
-            ).trim()
+            organizationName
+          ).trim()
           : currentProfile.organizationName ||
-            "",
+          "",
 
       organizationType:
         organizationType !== undefined
           ? String(
-              organizationType
-            ).trim()
+            organizationType
+          ).trim()
           : currentProfile.organizationType ||
-            "Student Club",
+          "Student Club",
 
       organizationDescription:
         organizationDescription !==
-        undefined
+          undefined
           ? String(
-              organizationDescription
-            ).trim()
+            organizationDescription
+          ).trim()
           : currentProfile.organizationDescription ||
-            "",
+          "",
 
       website:
         website !== undefined
@@ -971,10 +971,10 @@ const updateOwnOrganizerProfile = async (
       contactNumber:
         contactNumber !== undefined
           ? String(
-              contactNumber
-            ).trim()
+            contactNumber
+          ).trim()
           : currentProfile.contactNumber ||
-            "",
+          "",
 
       handle:
         handle !== undefined
@@ -1016,25 +1016,10 @@ const getAllParticipants = async (req, res) => {
     const currentUserId = req.user?._id ? req.user._id.toString() : null;
     const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : null;
 
-    // Fetch users with role 'participant' and explicit availability 'Available'
-    const users = await User.find({
-      role: "participant",
-      "profile.availability": "Available",
-    }).sort({ createdAt: -1 });
-
-    // Filter out current user and enforce complete profile + explicit Available
-    let eligibleUsers = users.filter((u) => {
-      const isNotCurrent = currentUserId ? u._id.toString() !== currentUserId : true;
-      return isNotCurrent && isProfileComplete(u) && u.profile?.availability === "Available";
-    });
-
-    // Apply limit if specified
-    if (limitParam && !isNaN(limitParam) && limitParam > 0) {
-      eligibleUsers = eligibleUsers.slice(0, limitParam);
-    }
-
-    // Fetch connection states for current user if logged in
+    // Fetch connection records for current user if logged in
+    let acceptedConnectedUserIds = new Set();
     let connectionsMap = {};
+
     if (currentUserId) {
       const connections = await Connection.find({
         $or: [{ sender: req.user._id }, { receiver: req.user._id }],
@@ -1044,12 +1029,41 @@ const getAllParticipants = async (req, res) => {
         const senderId = c.sender.toString();
         const receiverId = c.receiver.toString();
         const otherId = senderId === currentUserId ? receiverId : senderId;
+
+        if (c.status === "accepted") {
+          acceptedConnectedUserIds.add(otherId);
+        }
+
         connectionsMap[otherId] = {
           status: c.status,
           isSender: senderId === currentUserId,
           requestId: c._id.toString(),
         };
       });
+    }
+
+    // Build excluded user IDs list: current user + all accepted connection partner IDs
+    const excludedUserIds = currentUserId
+      ? [currentUserId, ...Array.from(acceptedConnectedUserIds)]
+      : [];
+
+    // Fetch participant users excluding current user and accepted connections
+    const users = await User.find({
+      role: "participant",
+      ...(excludedUserIds.length > 0 ? { _id: { $nin: excludedUserIds } } : {}),
+    }).sort({ createdAt: -1 });
+
+    // Enforce profile completion requirements and double check exclusions
+    let eligibleUsers = users.filter((u) => {
+      const isNotExcluded = currentUserId
+        ? !excludedUserIds.includes(u._id.toString())
+        : true;
+      return isNotExcluded && isProfileComplete(u);
+    });
+
+    // Apply limit if specified
+    if (limitParam && !isNaN(limitParam) && limitParam > 0) {
+      eligibleUsers = eligibleUsers.slice(0, limitParam);
     }
 
     const participants = eligibleUsers.map((u) => {

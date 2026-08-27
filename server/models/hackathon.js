@@ -214,46 +214,58 @@ hackathonSchema.index({ title: 1, startDate: 1 });
 
 // Helper pre-save hook to ensure legacy and nested fields stay in sync
 hackathonSchema.pre("save", function () {
-  if (this.registration && this.registration.deadline) {
+  if (this.isModified("registrationDeadline") || !this.registration?.deadline) {
+    if (this.registrationDeadline) {
+      if (!this.registration) this.registration = {};
+      this.registration.deadline = this.registrationDeadline;
+    }
+  } else if (this.registration?.deadline) {
     this.registrationDeadline = this.registration.deadline;
-  } else if (this.registrationDeadline) {
-    if (!this.registration) this.registration = {};
-    this.registration.deadline = this.registrationDeadline;
   }
 
-  if (this.registration && this.registration.startDate) {
+  if (this.isModified("registrationOpens") || !this.registration?.startDate) {
+    if (this.registrationOpens) {
+      if (!this.registration) this.registration = {};
+      this.registration.startDate = this.registrationOpens;
+    }
+  } else if (this.registration?.startDate) {
     this.registrationOpens = this.registration.startDate;
-  } else if (this.registrationOpens) {
-    if (!this.registration) this.registration = {};
-    this.registration.startDate = this.registrationOpens;
   }
 
-  if (this.event && this.event.startDate) {
+  if (this.isModified("startDate") || !this.event?.startDate) {
+    if (this.startDate) {
+      if (!this.event) this.event = {};
+      this.event.startDate = this.startDate;
+    }
+  } else if (this.event?.startDate) {
     this.startDate = this.event.startDate;
-  } else if (this.startDate) {
-    if (!this.event) this.event = {};
-    this.event.startDate = this.startDate;
   }
 
-  if (this.event && this.event.endDate) {
+  if (this.isModified("endDate") || !this.event?.endDate) {
+    if (this.endDate) {
+      if (!this.event) this.event = {};
+      this.event.endDate = this.endDate;
+    }
+  } else if (this.event?.endDate) {
     this.endDate = this.event.endDate;
-  } else if (this.endDate) {
-    if (!this.event) this.event = {};
-    this.event.endDate = this.endDate;
   }
 
-  if (this.event && this.event.mode) {
+  if (this.isModified("format") || !this.event?.mode) {
+    if (this.format) {
+      if (!this.event) this.event = {};
+      this.event.mode = this.format;
+    }
+  } else if (this.event?.mode) {
     this.format = this.event.mode;
-  } else if (this.format) {
-    if (!this.event) this.event = {};
-    this.event.mode = this.format;
   }
 
-  if (this.registration && this.registration.url) {
+  if (this.isModified("registrationUrl") || !this.registration?.url) {
+    if (this.registrationUrl) {
+      if (!this.registration) this.registration = {};
+      this.registration.url = this.registrationUrl;
+    }
+  } else if (this.registration?.url) {
     this.registrationUrl = this.registration.url;
-  } else if (this.registrationUrl) {
-    if (!this.registration) this.registration = {};
-    this.registration.url = this.registrationUrl;
   }
 
   if (this.teamSize) {
@@ -261,6 +273,7 @@ hackathonSchema.pre("save", function () {
     if (this.teamSize.max !== undefined) this.maxTeamSize = this.teamSize.max;
   }
 });
+
 
 // Dynamic Virtual Property: status
 hackathonSchema.virtual("status").get(function () {

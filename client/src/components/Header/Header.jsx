@@ -674,8 +674,18 @@ function Header() {
                     dark:hover:bg-neutral-800
                   "
                 >
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                    {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden">
+                    {user?.profile?.avatar || user?.avatar ? (
+                      <img
+                        src={user.profile?.avatar || user.avatar}
+                        alt={user?.name || "User"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : user?.name ? (
+                      user.name.charAt(0).toUpperCase()
+                    ) : (
+                      "U"
+                    )}
                   </span>
                   <span className="max-w-[100px] truncate">{user?.name || "Profile"}</span>
                 </Link>

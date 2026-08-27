@@ -136,4 +136,14 @@ export const userService = {
         }
       );
     },
+
+  removeConnection:
+    async (targetUserId) => {
+      return request(
+        `/network/connections/${targetUserId}`,
+        {
+          method: "DELETE",
+        }
+      );
+    },
 };

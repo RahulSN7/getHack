@@ -390,6 +390,41 @@ const updateHackathon = async (req, res) => {
     }
 
     Object.assign(hackathon, req.body);
+
+    // Explicitly sync nested date & event structures if date strings are provided in payload
+    if (req.body.startDate) {
+      const sDate = new Date(req.body.startDate);
+      if (!isNaN(sDate.getTime())) {
+        hackathon.startDate = sDate;
+        if (!hackathon.event) hackathon.event = {};
+        hackathon.event.startDate = sDate;
+      }
+    }
+    if (req.body.endDate) {
+      const eDate = new Date(req.body.endDate);
+      if (!isNaN(eDate.getTime())) {
+        hackathon.endDate = eDate;
+        if (!hackathon.event) hackathon.event = {};
+        hackathon.event.endDate = eDate;
+      }
+    }
+    if (req.body.registrationOpens) {
+      const roDate = new Date(req.body.registrationOpens);
+      if (!isNaN(roDate.getTime())) {
+        hackathon.registrationOpens = roDate;
+        if (!hackathon.registration) hackathon.registration = {};
+        hackathon.registration.startDate = roDate;
+      }
+    }
+    if (req.body.registrationDeadline) {
+      const rdDate = new Date(req.body.registrationDeadline);
+      if (!isNaN(rdDate.getTime())) {
+        hackathon.registrationDeadline = rdDate;
+        if (!hackathon.registration) hackathon.registration = {};
+        hackathon.registration.deadline = rdDate;
+      }
+    }
+
     const updated = await hackathon.save();
     return res.json({
       success: true,

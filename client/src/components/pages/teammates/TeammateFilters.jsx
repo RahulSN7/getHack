@@ -71,6 +71,12 @@ const EXPERIENCE_OPTIONS = [
   { id: "Advanced", label: "Advanced" },
 ];
 
+const AVAILABILITY_OPTIONS = [
+  { id: "all", label: "All" },
+  { id: "available", label: "Available" },
+  { id: "not-available", label: "Not Available" },
+];
+
 const TEAM_STATUS_OPTIONS = [
   { id: "all", label: "All Teams" },
   { id: "Recruiting", label: "Looking for teammates" },
@@ -85,6 +91,7 @@ function TeammateFilters({
   activeTab,
   roleFilter,
   experienceFilter,
+  availabilityFilter = "all",
   teamStatusFilter,
   onApply,
   onClear,
@@ -95,6 +102,7 @@ function TeammateFilters({
   // Local draft state (only committed on Apply)
   const [draftRole, setDraftRole] = useState(roleFilter);
   const [draftExperience, setDraftExperience] = useState(experienceFilter);
+  const [draftAvailability, setDraftAvailability] = useState(availabilityFilter);
   const [draftTeamStatus, setDraftTeamStatus] = useState(teamStatusFilter);
 
   // Close on outside click
@@ -113,6 +121,7 @@ function TeammateFilters({
     if (!open) {
       setDraftRole(roleFilter);
       setDraftExperience(experienceFilter);
+      setDraftAvailability(availabilityFilter);
       setDraftTeamStatus(teamStatusFilter);
     }
     setOpen((p) => !p);
@@ -120,13 +129,14 @@ function TeammateFilters({
 
   const hasActiveFilters =
     activeTab === "members"
-      ? roleFilter !== "all" || experienceFilter !== "all"
+      ? roleFilter !== "all" || experienceFilter !== "all" || availabilityFilter !== "all"
       : teamStatusFilter !== "all";
 
   const handleApply = () => {
     onApply({
       roleFilter: draftRole,
       experienceFilter: draftExperience,
+      availabilityFilter: draftAvailability,
       teamStatusFilter: draftTeamStatus,
     });
     setOpen(false);
@@ -135,6 +145,7 @@ function TeammateFilters({
   const handleClear = () => {
     setDraftRole("all");
     setDraftExperience("all");
+    setDraftAvailability("all");
     setDraftTeamStatus("all");
     onClear();
     setOpen(false);
@@ -158,10 +169,9 @@ function TeammateFilters({
           font-semibold
           transition-all
           duration-150
-          ${
-            hasActiveFilters
-              ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
-              : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
+          ${hasActiveFilters
+            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
+            : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
           }
         `}
       >
@@ -182,7 +192,7 @@ function TeammateFilters({
         {hasActiveFilters && (
           <span className="grid h-4 min-w-4 place-items-center rounded-full bg-indigo-500 px-1 text-[10px] font-bold text-white">
             {activeTab === "members"
-              ? [roleFilter, experienceFilter].filter((f) => f !== "all").length
+              ? [availabilityFilter, roleFilter, experienceFilter].filter((f) => f && f !== "all").length
               : teamStatusFilter !== "all"
                 ? 1
                 : 0}
@@ -214,6 +224,12 @@ function TeammateFilters({
           <div className="space-y-4 p-4">
             {activeTab === "members" ? (
               <>
+                <OptionGroup
+                  label="Availability"
+                  options={AVAILABILITY_OPTIONS}
+                  value={draftAvailability}
+                  onChange={setDraftAvailability}
+                />
                 <OptionGroup
                   label="Role"
                   options={ROLE_OPTIONS}

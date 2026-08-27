@@ -40,11 +40,11 @@ function UserAvatar({ avatar, name, sizeClass = "h-24 w-24 text-2xl" }) {
   const [imgError, setImgError] = useState(false);
   const initials = name
     ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "GH";
 
   if (avatar && !imgError) {
@@ -103,6 +103,11 @@ export default function UserProfile() {
   const [connectNote, setConnectNote] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
   const [requestError, setRequestError] = useState(null);
+
+  // Remove Connection Modal state
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [removingConnection, setRemovingConnection] = useState(false);
+  const [removeError, setRemoveError] = useState(null);
 
   const targetId = id || "me";
 
@@ -261,6 +266,23 @@ export default function UserProfile() {
     }
   };
 
+  // Handle removing accepted connection
+  const handleRemoveConnection = async () => {
+    setRemoveError(null);
+    try {
+      setRemovingConnection(true);
+      const targetUserId = profileUser.id || profileUser._id;
+      await userService.removeConnection(targetUserId);
+      setConnectionState({ status: "none" });
+      setIsRemoveModalOpen(false);
+    } catch (err) {
+      console.error("Failed to remove connection:", err);
+      setRemoveError(err.message || "Unable to remove connection. Please try again.");
+    } finally {
+      setRemovingConnection(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
@@ -326,7 +348,7 @@ export default function UserProfile() {
 
   const profile = profileUser.profile || {};
   const name = profileUser.name || "Participant";
-  const avatar = profile.avatar || "";
+  const avatar = profile.avatar || profileUser.avatar || "";
   const role = profile.role || "Participant";
   const bio = profile.bio || "";
   const availability = profile.availability || "";
@@ -382,7 +404,7 @@ export default function UserProfile() {
 
                   {location && (
                     <span className="flex items-center gap-1">
-                      <svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                       {location}
                     </span>
                   )}
@@ -432,13 +454,25 @@ export default function UserProfile() {
                   onClick={() => setIsEditOpen(true)}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
                 >
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                   <span>Edit Profile</span>
                 </button>
               ) : connectionState.status === "accepted" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-                  <span>✓ Connected</span>
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRemoveError(null);
+                    setIsRemoveModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/20 hover:border-red-500/40 dark:border-red-500/40 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25"
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="18" y1="11" x2="23" y2="11" />
+                  </svg>
+                  <span>Remove Connection</span>
+                </button>
               ) : connectionState.status === "pending" ? (
                 <button
                   type="button"
@@ -453,7 +487,7 @@ export default function UserProfile() {
                   onClick={handleConnectClick}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
                 >
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
                   <span>Connect</span>
                 </button>
               )}
@@ -771,6 +805,48 @@ export default function UserProfile() {
                 className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
               >
                 Complete Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Connection Confirmation Modal */}
+      {isRemoveModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 p-4 backdrop-blur-xs">
+          <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Remove Connection?
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+              Are you sure you want to remove your connection with <span className="font-semibold text-neutral-900 dark:text-white">{name}</span>? You can reconnect with this person later.
+            </p>
+
+            {removeError && (
+              <div className="mt-3 rounded-lg bg-red-500/10 p-3 text-xs font-medium text-red-600 dark:bg-red-500/15 dark:text-red-400">
+                {removeError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={removingConnection}
+                onClick={() => {
+                  setIsRemoveModalOpen(false);
+                  setRemoveError(null);
+                }}
+                className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={removingConnection}
+                onClick={handleRemoveConnection}
+                className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-50 dark:bg-red-600 dark:hover:bg-red-500"
+              >
+                {removingConnection ? "Removing..." : "Remove Connection"}
               </button>
             </div>
           </div>

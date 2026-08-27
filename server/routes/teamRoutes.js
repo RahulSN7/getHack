@@ -14,6 +14,7 @@ const {
   updateTeam,
   joinTeam,
   leaveTeam,
+  removeMember,
 } = require("../controllers/teamController");
 
 const {
@@ -53,5 +54,8 @@ router.post("/:id/join", requireAuth, joinTeam);
 
 // Leave team — non-leader member
 router.post("/:id/leave", requireAuth, leaveTeam);
+
+// Remove team member — team leader only
+router.delete("/:id/members/:memberId", requireAuth, removeMember);
 
 module.exports = router;

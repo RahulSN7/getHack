@@ -16,6 +16,8 @@ const createTeam = async (req, res) => {
       hackathonName,
       hackathonLink,
       hackathonDates,
+      startDate,
+      endDate,
       description,
       lookingForDescription,
       rolesNeeded = [],
@@ -43,6 +45,8 @@ const createTeam = async (req, res) => {
       hackathonName: hackathonName.trim(),
       hackathonLink: (hackathonLink || "").trim(),
       hackathonDates: (hackathonDates || "").trim(),
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
       description: (description || "").trim(),
       lookingForDescription: (lookingForDescription || "").trim(),
       rolesNeeded: Array.isArray(rolesNeeded) ? rolesNeeded : [],
@@ -263,6 +267,8 @@ const updateTeam = async (req, res) => {
       hackathonName,
       hackathonLink,
       hackathonDates,
+      startDate,
+      endDate,
       description,
       lookingForDescription,
       rolesNeeded,
@@ -276,6 +282,8 @@ const updateTeam = async (req, res) => {
     if (hackathonName !== undefined && hackathonName.trim()) team.hackathonName = hackathonName.trim();
     if (hackathonLink !== undefined) team.hackathonLink = hackathonLink.trim();
     if (hackathonDates !== undefined) team.hackathonDates = hackathonDates.trim();
+    if (startDate !== undefined) team.startDate = startDate ? new Date(startDate) : undefined;
+    if (endDate !== undefined) team.endDate = endDate ? new Date(endDate) : undefined;
     if (description !== undefined) team.description = description.trim();
     if (lookingForDescription !== undefined) team.lookingForDescription = lookingForDescription.trim();
     if (Array.isArray(rolesNeeded)) team.rolesNeeded = rolesNeeded;
@@ -366,6 +374,74 @@ const leaveTeam = async (req, res) => {
   }
 };
 
+// DELETE /api/teams/:id/members/:memberId — Remove team member (Team Leader only)
+const removeMember = async (req, res) => {
+  try {
+    const { id, memberId } = req.params;
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+
+    let team = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      team = await Team.findById(id);
+    }
+    if (!team) {
+      team = await Team.findOne({ id });
+    }
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found." });
+    }
+
+    // Leader authorization check
+    const isLeader = team.createdBy.toString() === userIdStr || (team.leader && team.leader.toString() === userIdStr);
+    if (!isLeader) {
+      return res.status(403).json({ message: "Only the team leader can remove team members." });
+    }
+
+    // Cannot remove team leader
+    const rawCreator = team.createdBy || team.leader;
+    const creatorIdStr = (typeof rawCreator === "object" ? (rawCreator._id || rawCreator.id) : rawCreator).toString();
+    if (memberId === creatorIdStr) {
+      return res.status(400).json({ message: "Cannot remove the team leader." });
+    }
+
+    // Member check
+    const isMember = team.memberIds.includes(memberId) || team.members.some((m) => m.user && m.user.toString() === memberId);
+    if (!isMember) {
+      return res.status(400).json({ message: "User is not a member of this team." });
+    }
+
+    // Remove user from members & memberIds
+    team.members = team.members.filter((m) => m.user && m.user.toString() !== memberId);
+    team.memberIds = team.memberIds.filter((mId) => mId !== memberId);
+    team.currentSize = team.members.length;
+
+    if (team.status === "Full" && team.currentSize < team.maxSize) {
+      team.status = "Recruiting";
+    }
+
+    await team.save();
+
+    const updatedTeam = await Team.findById(team._id)
+      .populate("createdBy", "name email role profile")
+      .populate("leader", "name email role profile")
+      .populate("members.user", "name email role profile");
+
+    return res.json({
+      success: true,
+      message: "Team member removed successfully.",
+      team: updatedTeam,
+    });
+  } catch (error) {
+    console.error("Remove team member error:", error);
+    return res.status(500).json({
+      message: "Server error occurred while removing team member.",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createTeam,
   getTeams,
@@ -374,4 +450,6 @@ module.exports = {
   updateTeam,
   joinTeam,
   leaveTeam,
+  removeMember,
 };
+

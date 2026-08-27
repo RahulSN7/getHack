@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-function UserAvatar({ avatar, name, isOnline = true }) {
+function UserAvatar({ avatar, name }) {
   const [imgError, setImgError] = useState(false);
   const initials = name
     ? name
@@ -31,10 +31,6 @@ function UserAvatar({ avatar, name, isOnline = true }) {
         <div className="grid h-[56px] w-[56px] place-items-center rounded-full bg-[#885CF6]/20 font-bold text-base text-[#885CF6] border border-[#232336]">
           {initials}
         </div>
-      )}
-
-      {isOnline && (
-        <span className="absolute bottom-0.5 right-0.5 h-[10px] w-[10px] rounded-full bg-[#22C55E] ring-2 ring-[#11121A]" />
       )}
     </div>
   );
@@ -61,7 +57,6 @@ export default function NetworkUserCard({
     role = "Full Stack Developer",
     skills = [],
     location = "",
-    avatar = "",
     note = "",
     createdAt = "",
     connectedAt = "",
@@ -69,6 +64,8 @@ export default function NetworkUserCard({
     mutualConnections = [],
     availability = "available",
   } = person;
+
+  const avatar = person.avatar || person.profile?.avatar || "";
 
   const currentLocation = useLocation();
   const isIncoming = variant === "incoming-request";
@@ -132,7 +129,7 @@ export default function NetworkUserCard({
             aria-label={`View ${name}'s profile`}
             className="shrink-0 transition-opacity hover:opacity-90"
           >
-            <UserAvatar avatar={avatar} name={name} isOnline={isOnline} />
+            <UserAvatar avatar={avatar} name={name} />
           </Link>
 
           <div className="min-w-0 flex-1 space-y-0.5">

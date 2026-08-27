@@ -319,9 +319,61 @@ const cancelConnectionRequest = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// DELETE /api/network/connections/:targetUserId — Remove Accepted Connection
+// ---------------------------------------------------------------------------
+const removeConnection = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthenticated." });
+    }
+
+    const { targetUserId } = req.params;
+
+    if (!targetUserId || typeof targetUserId !== "string" || !targetUserId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: "Invalid target user specified." });
+    }
+
+    const currentUserId = req.user._id;
+
+    if (currentUserId.toString() === targetUserId) {
+      return res.status(400).json({ success: false, message: "You cannot remove a connection with yourself." });
+    }
+
+    // Find accepted connection where current user is either sender or receiver
+    const connection = await Connection.findOne({
+      $or: [
+        { sender: currentUserId, receiver: targetUserId },
+        { sender: targetUserId, receiver: currentUserId },
+      ],
+      status: "accepted",
+    });
+
+    if (!connection) {
+      return res.status(404).json({
+        success: false,
+        message: "No accepted connection found with this user.",
+      });
+    }
+
+    // Delete connection record
+    await Connection.findByIdAndDelete(connection._id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Connection removed successfully.",
+      targetUserId,
+    });
+  } catch (error) {
+    console.error("Error in removeConnection:", error);
+    return res.status(500).json({ success: false, message: "Failed to remove connection." });
+  }
+};
+
 module.exports = {
   sendConnectionRequest,
   getNetworkRequests,
   respondToConnectionRequest,
   cancelConnectionRequest,
+  removeConnection,
 };

@@ -181,7 +181,7 @@ export function getTeamActionState(team, currentUser, sentRequests = []) {
 
   const isLeader = Boolean(
     currentUserIdStr &&
-      (currentUserIdStr === leaderIdStr || leaderIdStr === "priya-sharma" || leaderIdStr === "user-current")
+    (currentUserIdStr === leaderIdStr || leaderIdStr === "priya-sharma" || leaderIdStr === "user-current")
   );
   if (isLeader) {
     return { type: "leader", label: "Your Team", disabled: true };
@@ -191,8 +191,8 @@ export function getTeamActionState(team, currentUser, sentRequests = []) {
   const membersList = Array.isArray(team.members) ? team.members : [];
   const isMember = Boolean(
     currentUserIdStr &&
-      (memberIdsList.includes(currentUserIdStr) ||
-        membersList.some((m) => (m.user?._id || m.user?.id || m.user || m)?.toString() === currentUserIdStr))
+    (memberIdsList.includes(currentUserIdStr) ||
+      membersList.some((m) => (m.user?._id || m.user?.id || m.user || m)?.toString() === currentUserIdStr))
   );
   if (isMember) {
     return { type: "member", label: "You are a member", disabled: true };
@@ -200,8 +200,8 @@ export function getTeamActionState(team, currentUser, sentRequests = []) {
 
   const pendingReq = Array.isArray(sentRequests)
     ? sentRequests.find(
-        (r) => (r.team?._id || r.team?.id || r.team)?.toString() === teamIdStr && r.status === "pending"
-      )
+      (r) => (r.team?._id || r.team?.id || r.team)?.toString() === teamIdStr && r.status === "pending"
+    )
     : null;
   if (pendingReq) {
     return { type: "pending", label: "✓ Request Sent", disabled: true };

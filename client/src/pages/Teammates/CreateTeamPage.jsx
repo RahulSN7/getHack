@@ -12,16 +12,17 @@ import { TEAMS } from "../../data/teams";
 import { TEAMMATES } from "../../data/teammates";
 import { useAuth } from "../../context/useAuth";
 import { teamService } from "../../services/teamService";
+import { resolveTeamMembers } from "../../utils/teamMemberResolver";
 
 function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
   const initials = name
     ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "GH";
 
   if (avatar && !imgError) {
@@ -49,6 +50,13 @@ export default function CreateTeamPage() {
   const { id: editTeamId } = useParams();
   const isEditMode = Boolean(editTeamId);
   const { user: currentUser } = useAuth();
+
+  // Team Data & Member Fetching State
+  const [teamData, setTeamData] = useState(null);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [memberToRemove, setMemberToRemove] = useState(null);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
 
   // Section 01: Team Information (Empty Initial State)
   const [teamName, setTeamName] = useState("");
@@ -80,28 +88,94 @@ export default function CreateTeamPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load team data if in edit mode
-  useEffect(() => {
-    if (!editTeamId) return;
-    async function loadTeamForEdit() {
-      try {
-        const res = await teamService.getTeamById(editTeamId);
-        const team = res?.team;
-        if (team) {
-          setTeamName(team.teamName || "");
-          setDescription(team.description || "");
-          setHackathonName(team.hackathonName || "");
-          setHackathonLink(team.hackathonLink || "");
-          setMode(team.location || "Online");
-          setRolesNeeded(team.rolesNeeded || []);
-          setTechStack(team.techStack || []);
-          setLookingForDescription(team.lookingForDescription || "");
-          setMaxSize(team.maxSize || 4);
-        }
-      } catch (err) {
-        console.error("Failed to load team for edit:", err);
-      }
+  function formatDateForInput(dateVal) {
+    if (!dateVal) return "";
+    if (typeof dateVal === "string") {
+      const trimmed = dateVal.trim();
+      const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (match) return match[1];
     }
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return "";
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "";
+    }
+  }
+
+  function parseDatesFromHackathonDatesString(str) {
+    if (!str || typeof str !== "string") return { startDate: "", endDate: "" };
+
+    const parts = str.split(/\s*[\u2013\u2014-]\s*/);
+    if (parts.length < 2) {
+      const singleDate = formatDateForInput(str);
+      return { startDate: singleDate, endDate: singleDate };
+    }
+
+    let startRaw = parts[0].trim();
+    let endRaw = parts[1].trim();
+
+    const yearMatch = endRaw.match(/\b(20\d{2})\b/);
+    if (yearMatch && !startRaw.match(/\b(20\d{2})\b/)) {
+      startRaw = `${startRaw} ${yearMatch[1]}`;
+    }
+
+    const startDate = formatDateForInput(startRaw);
+    const endDate = formatDateForInput(endRaw);
+
+    return { startDate, endDate };
+  }
+
+  // Load team data if in edit mode
+  const loadTeamForEdit = async () => {
+    if (!editTeamId) return;
+    try {
+      setLoadingTeam(true);
+      setLoadError(null);
+      console.log("Manage Team teamId:", editTeamId);
+      const res = await teamService.getTeamById(editTeamId);
+      const team = res?.team;
+      console.log("Latest team API response:", res);
+      console.log("Latest members:", team?.members);
+      if (team) {
+        setTeamData(team);
+        setTeamName(team.teamName || "");
+        setDescription(team.description || "");
+        setHackathonName(team.hackathonName || "");
+        setHackathonLink(team.hackathonLink || "");
+
+        let startVal = formatDateForInput(team.startDate);
+        let endVal = formatDateForInput(team.endDate);
+
+        if ((!startVal || !endVal) && team.hackathonDates) {
+          const parsed = parseDatesFromHackathonDatesString(team.hackathonDates);
+          if (!startVal) startVal = parsed.startDate;
+          if (!endVal) endVal = parsed.endDate;
+        }
+
+        setStartDate(startVal);
+        setEndDate(endVal);
+        setMode(team.location || "Online");
+        setRolesNeeded(team.rolesNeeded || []);
+        setTechStack(team.techStack || []);
+        setLookingForDescription(team.lookingForDescription || "");
+        setMaxSize(team.maxSize || 4);
+      } else {
+        setLoadError("Team not found.");
+      }
+    } catch (err) {
+      console.error("Failed to load team for edit:", err);
+      setLoadError("Unable to load team members.");
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+
+  useEffect(() => {
     loadTeamForEdit();
   }, [editTeamId]);
 
@@ -111,8 +185,34 @@ export default function CreateTeamPage() {
   const creatorAvatar = currentUser?.avatar || currentUser?.profile?.avatar || "";
   const creatorId = currentUser?.id || currentUser?._id || "user-current";
 
-  // Calculated current member count (Only Creator is full member initially)
-  const currentMemberCount = 1;
+  // Resolve team members dynamically from MongoDB populated team object
+  const resolvedMembers = teamData ? resolveTeamMembers(teamData, currentUser) : [];
+  const currentMemberCount = isEditMode
+    ? resolvedMembers.length > 0 ? resolvedMembers.length : 1
+    : 1;
+
+  const handleConfirmRemoveMember = async () => {
+    if (!memberToRemove || !editTeamId) return;
+    try {
+      setIsRemovingMember(true);
+      console.log("Removing member:", memberToRemove.id, "from team:", editTeamId);
+      const res = await teamService.removeMember(editTeamId, memberToRemove.id);
+      console.log("Remove member response:", res);
+      if (res?.team) {
+        setTeamData(res.team);
+      } else {
+        await loadTeamForEdit();
+      }
+      showToast(`${memberToRemove.name} removed from team.`);
+      setMemberToRemove(null);
+    } catch (err) {
+      console.error("Failed to remove member:", err);
+      showToast(err.message || "Failed to remove member.");
+    } finally {
+      setIsRemovingMember(false);
+    }
+  };
+
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -251,6 +351,8 @@ export default function CreateTeamPage() {
       hackathonName: hackathonName.trim(),
       hackathonLink: hackathonLink.trim(),
       hackathonDates: formattedDates,
+      startDate: startDate,
+      endDate: endDate,
       description: description.trim(),
       lookingForDescription: lookingForDescription.trim(),
       rolesNeeded: rolesNeeded,
@@ -591,10 +693,9 @@ export default function CreateTeamPage() {
                         text-xs
                         font-semibold
                         transition-all
-                        ${
-                          isActive
-                            ? "bg-indigo-600 text-white shadow-2xs dark:bg-indigo-500"
-                            : "border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                        ${isActive
+                          ? "bg-indigo-600 text-white shadow-2xs dark:bg-indigo-500"
+                          : "border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                         }
                       `}
                     >
@@ -620,7 +721,9 @@ export default function CreateTeamPage() {
                     Team Members
                   </h2>
                   <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                    You are automatically added as the team owner.
+                    {isEditMode
+                      ? "Manage team members and view current roster."
+                      : "You are automatically added as the team owner."}
                   </p>
                 </div>
               </div>
@@ -629,27 +732,100 @@ export default function CreateTeamPage() {
               </span>
             </div>
 
-            {/* Authenticated Creator Row */}
-            <div className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50/50 p-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
-              <div className="flex items-center gap-3">
-                <UserAvatar avatar={creatorAvatar} name={creatorName} sizeClass="h-10 w-10 text-xs" />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-neutral-900 dark:text-white">
-                      {creatorName}
-                    </p>
-                    <span className="rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
-                      Team Owner
-                    </span>
+            {/* Loading State */}
+            {loadingTeam ? (
+              <div className="space-y-3 py-2 animate-pulse">
+                <div className="h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800/50" />
+                <div className="h-14 rounded-xl bg-neutral-100 dark:bg-neutral-800/50" />
+              </div>
+            ) : loadError ? (
+              /* Error State */
+              <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 text-center dark:border-rose-900/30 dark:bg-rose-950/20 space-y-2">
+                <p className="text-xs font-medium text-rose-700 dark:text-rose-400">
+                  {loadError}
+                </p>
+                <button
+                  type="button"
+                  onClick={loadTeamForEdit}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-400"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : isEditMode && resolvedMembers.length > 0 ? (
+              /* Populated Team Members List from MongoDB */
+              <div className="space-y-3">
+                {resolvedMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50/50 p-3.5 dark:border-neutral-800 dark:bg-neutral-800/30"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <UserAvatar avatar={member.avatar} name={member.name} sizeClass="h-10 w-10 text-xs" />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+                            {member.name}
+                          </p>
+                          <span
+                            className={`rounded px-2 py-0.5 text-[10px] font-bold ${member.isOwner
+                                ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
+                                : "bg-neutral-200/60 text-neutral-700 dark:bg-neutral-700/60 dark:text-neutral-300"
+                              }`}
+                          >
+                            {member.isOwner ? "Team Owner" : member.role || "Member"}
+                          </span>
+                        </div>
+                        {member.skills && member.skills.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {member.skills.slice(0, 3).map((skill, idx) => (
+                              <span
+                                key={idx}
+                                className="rounded bg-neutral-200/50 px-1.5 py-0.5 text-[9px] font-medium text-neutral-600 dark:bg-neutral-700/40 dark:text-neutral-400"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {!member.isOwner && isEditMode && (
+                      <button
+                        type="button"
+                        onClick={() => setMemberToRemove(member)}
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  {creatorRole && (
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      {creatorRole}
-                    </p>
-                  )}
+                ))}
+              </div>
+            ) : (
+              /* Authenticated Creator Fallback */
+              <div className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50/50 p-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
+                <div className="flex items-center gap-3">
+                  <UserAvatar avatar={creatorAvatar} name={creatorName} sizeClass="h-10 w-10 text-xs" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold text-neutral-900 dark:text-white">
+                        {creatorName}
+                      </p>
+                      <span className="rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+                        Team Owner
+                      </span>
+                    </div>
+                    {creatorRole && (
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                        {creatorRole}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Invited Members (Pending Invitations List) */}
             {invitedMemberIds.length > 0 && (
@@ -748,146 +924,145 @@ export default function CreateTeamPage() {
               </div>
             </div>
 
-            {/* Skills Needed */}
-            <div>
+            {/* Tech Stack Input */}
+            <div className="space-y-2">
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Skills Needed
+                Required Tech Stack
               </label>
-              <div className="mt-1.5 flex gap-2">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={skillInput}
                   onChange={(e) => setSkillInput(e.target.value)}
-                  placeholder="Add skills you're looking for..."
+                  placeholder="e.g. React, Python, Figma"
                   className="
                     flex-1
                     rounded-lg
                     border
                     border-neutral-300
                     bg-white
-                    p-2.5
+                    px-3
+                    py-2
                     text-xs
                     text-neutral-900
-                    shadow-2xs
-                    outline-none
+                    placeholder:text-neutral-400
                     focus:border-indigo-500
+                    focus:outline-hidden
                     dark:border-neutral-700
                     dark:bg-neutral-800
                     dark:text-white
                   "
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddSkill(e);
+                    }
+                  }}
                 />
                 <button
                   type="button"
                   onClick={handleAddSkill}
-                  className="rounded-lg bg-neutral-950 px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                  className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                 >
-                  + Add Skill
+                  Add
                 </button>
               </div>
 
-              <div className="mt-2.5">
-                {techStack.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {techStack.map((s) => (
-                      <span
-                        key={s}
-                        className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+              {techStack.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {techStack.map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
+                    >
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(s)}
+                        className="hover:text-indigo-900 dark:hover:text-white"
                       >
-                        {s}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSkill(s)}
-                          className="text-neutral-400 hover:text-neutral-700 dark:hover:text-white"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 italic">
-                    No skills added yet
-                  </p>
-                )}
-              </div>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Roles Needed */}
-            <div>
+            {/* Roles Needed Input */}
+            <div className="space-y-2">
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                Specific Roles Needed
+                Roles Needed
               </label>
-              <div className="mt-1.5 flex gap-2">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={roleInput}
                   onChange={(e) => setRoleInput(e.target.value)}
-                  placeholder="Add specific roles..."
+                  placeholder="e.g. Frontend Developer, UI Designer"
                   className="
                     flex-1
                     rounded-lg
                     border
                     border-neutral-300
                     bg-white
-                    p-2.5
+                    px-3
+                    py-2
                     text-xs
                     text-neutral-900
-                    shadow-2xs
-                    outline-none
+                    placeholder:text-neutral-400
                     focus:border-indigo-500
+                    focus:outline-hidden
                     dark:border-neutral-700
                     dark:bg-neutral-800
                     dark:text-white
                   "
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddRole(e);
+                    }
+                  }}
                 />
                 <button
                   type="button"
                   onClick={handleAddRole}
-                  className="rounded-lg bg-neutral-950 px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                  className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                 >
-                  + Add Role
+                  Add
                 </button>
               </div>
 
-              <div className="mt-2.5">
-                {rolesNeeded.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {rolesNeeded.map((r) => (
-                      <span
-                        key={r}
-                        className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
+              {rolesNeeded.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {rolesNeeded.map((r) => (
+                    <span
+                      key={r}
+                      className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                    >
+                      {r}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRole(r)}
+                        className="hover:text-neutral-900 dark:hover:text-white"
                       >
-                        {r}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRole(r)}
-                          className="text-indigo-400 hover:text-indigo-700 dark:hover:text-white"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-neutral-400 dark:text-neutral-500 italic">
-                    No roles added yet
-                  </p>
-                )}
-              </div>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* What kind of teammate are you looking for? */}
-            <div>
+            {/* Looking For Description */}
+            <div className="space-y-2">
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                What kind of teammate are you looking for?
+                Ideal Teammate Description
               </label>
               <textarea
-                rows={3}
                 value={lookingForDescription}
                 onChange={(e) => setLookingForDescription(e.target.value)}
-                placeholder="Describe the mindset, skills, or availability you're looking for in potential teammates..."
+                rows={3}
+                placeholder="Describe what kind of teammate you are looking for..."
                 className="
-                  mt-1.5
                   w-full
                   rounded-lg
                   border
@@ -896,10 +1071,9 @@ export default function CreateTeamPage() {
                   p-3
                   text-xs
                   text-neutral-900
-                  shadow-2xs
-                  outline-none
-                  transition-colors
+                  placeholder:text-neutral-400
                   focus:border-indigo-500
+                  focus:outline-hidden
                   dark:border-neutral-700
                   dark:bg-neutral-800
                   dark:text-white
@@ -921,162 +1095,93 @@ export default function CreateTeamPage() {
                   Team Settings
                 </h2>
                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                  Set the maximum number of team members.
+                  Configure maximum size and team visibility.
                 </p>
               </div>
             </div>
 
-            {/* Maximum Team Size Counter */}
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                Maximum Team Size <span className="text-red-500">*</span>
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                Maximum Team Size (1 - 10)
               </label>
-              
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={handleDecrementSize}
-                  disabled={maxSize <= (currentMemberCount + invitedMemberIds.length)}
-                  className="
-                    grid
-                    h-10
-                    w-10
-                    place-items-center
-                    rounded-lg
-                    border
-                    border-neutral-300
-                    bg-white
-                    text-base
-                    font-bold
-                    text-neutral-700
-                    shadow-2xs
-                    transition-colors
-                    hover:bg-neutral-100
-                    disabled:opacity-40
-                    dark:border-neutral-700
-                    dark:bg-neutral-800
-                    dark:text-neutral-200
-                    dark:hover:bg-neutral-700
-                  "
+                  className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-300 bg-white font-bold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                 >
-                  −
+                  -
                 </button>
-
                 <input
                   type="number"
-                  min={currentMemberCount + invitedMemberIds.length}
+                  min={1}
                   max={10}
                   value={maxSize}
                   onChange={handleManualSizeChange}
-                  className="
-                    h-10
-                    w-16
-                    rounded-lg
-                    border
-                    border-neutral-300
-                    bg-white
-                    text-center
-                    text-sm
-                    font-bold
-                    text-neutral-900
-                    shadow-2xs
-                    outline-none
-                    focus:border-indigo-500
-                    dark:border-neutral-700
-                    dark:bg-neutral-800
-                    dark:text-white
-                  "
+                  className="w-16 rounded-lg border border-neutral-300 bg-white py-1.5 text-center text-xs font-bold text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                 />
-
                 <button
                   type="button"
                   onClick={handleIncrementSize}
-                  disabled={maxSize >= 10}
-                  className="
-                    grid
-                    h-10
-                    w-10
-                    place-items-center
-                    rounded-lg
-                    border
-                    border-neutral-300
-                    bg-white
-                    text-base
-                    font-bold
-                    text-neutral-700
-                    shadow-2xs
-                    transition-colors
-                    hover:bg-neutral-100
-                    disabled:opacity-40
-                    dark:border-neutral-700
-                    dark:bg-neutral-800
-                    dark:text-neutral-200
-                    dark:hover:bg-neutral-700
-                  "
+                  className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-300 bg-white font-bold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                 >
                   +
                 </button>
               </div>
-
-              <p className="mt-2 text-[11px] text-neutral-500 dark:text-neutral-400">
-                Current members: <strong>{currentMemberCount}</strong> · Pending invitations: <strong>{invitedMemberIds.length}</strong> · Open spots: <strong>{Math.max(0, maxSize - currentMemberCount - invitedMemberIds.length)}</strong>.
-              </p>
             </div>
           </section>
 
-          {/* ── Fixed Bottom Actions Bar ── */}
-          <div className="fixed bottom-0 inset-x-0 z-40 border-t border-neutral-200 bg-white/90 p-4 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/90">
-            <div className="mx-auto flex max-w-3xl items-center justify-between">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="
-                  rounded-lg
-                  border
-                  border-neutral-200
-                  bg-white
-                  px-5
-                  py-2.5
-                  text-xs
-                  font-semibold
-                  text-neutral-700
-                  shadow-2xs
-                  transition-colors
-                  hover:bg-neutral-50
-                  dark:border-neutral-800
-                  dark:bg-neutral-900
-                  dark:text-neutral-300
-                  dark:hover:bg-neutral-800
-                "
-              >
-                Cancel
-              </button>
+          {/* Form Actions */}
+          <div className="flex items-center justify-between pt-4">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="
+                rounded-lg
+                border
+                border-neutral-200
+                bg-white
+                px-5
+                py-2.5
+                text-xs
+                font-semibold
+                text-neutral-700
+                shadow-2xs
+                transition-colors
+                hover:bg-neutral-50
+                dark:border-neutral-800
+                dark:bg-neutral-900
+                dark:text-neutral-300
+                dark:hover:bg-neutral-800
+              "
+            >
+              Cancel
+            </button>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-lg
-                  bg-indigo-600
-                  px-6
-                  py-2.5
-                  text-xs
-                  font-semibold
-                  text-white
-                  shadow-2xs
-                  transition-colors
-                  hover:bg-indigo-500
-                  disabled:opacity-50
-                  dark:bg-indigo-500
-                  dark:hover:bg-indigo-400
-                "
-              >
-                <span>{isSubmitting ? "Creating Team..." : "Create Team"}</span>
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="
+                inline-flex
+                items-center
+                gap-2
+                rounded-lg
+                bg-indigo-600
+                px-6
+                py-2.5
+                text-xs
+                font-semibold
+                text-white
+                shadow-2xs
+                transition-colors
+                hover:bg-indigo-500
+                disabled:opacity-50
+                dark:bg-indigo-500
+                dark:hover:bg-indigo-400
+              "
+            >
+              <span>{isSubmitting ? "Saving..." : isEditMode ? "Save Changes" : "Create Team"}</span>
+            </button>
           </div>
         </form>
 
@@ -1090,7 +1195,46 @@ export default function CreateTeamPage() {
           pendingInvitationIds={invitedMemberIds}
           onSendInvitations={handleSendInvitations}
         />
+
+        {/* Remove Member Confirmation Modal */}
+        {memberToRemove && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in backdrop-blur-xs">
+            <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                  Remove Team Member?
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Are you sure you want to remove{" "}
+                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                    {memberToRemove.name}
+                  </span>{" "}
+                  from {teamName || "this team"}? They will no longer be a part of this team.
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setMemberToRemove(null)}
+                  disabled={isRemovingMember}
+                  className="rounded-lg border border-neutral-300 px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmRemoveMember}
+                  disabled={isRemovingMember}
+                  className="rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 disabled:opacity-50 dark:bg-rose-500 dark:hover:bg-rose-400"
+                >
+                  {isRemovingMember ? "Removing..." : "Remove Member"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
 }
+

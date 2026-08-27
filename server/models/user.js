@@ -70,13 +70,16 @@ userSchema.methods.toSafeUser = function () {
   const rawAvailability = typeof p.availability === "string" ? p.availability : "";
   const safeAvailability = !complete && rawAvailability === "Available" ? "" : rawAvailability;
 
+  const userAvatar = typeof p.avatar === "string" ? p.avatar : "";
+
   return {
     id: this._id.toString(),
     name: this.name,
     email: this.email,
     role: this.role,
+    avatar: userAvatar,
     profile: {
-      avatar: typeof p.avatar === "string" ? p.avatar : "",
+      avatar: userAvatar,
       gender: typeof p.gender === "string" ? p.gender : "",
       dateOfBirth: typeof p.dateOfBirth === "string" ? p.dateOfBirth : p.dateOfBirth instanceof Date ? p.dateOfBirth.toISOString() : "",
       role: typeof p.role === "string" ? p.role : "Participant",

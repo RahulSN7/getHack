@@ -6,15 +6,15 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-function UserAvatar({ avatar, name, isOnline = true }) {
+function UserAvatar({ avatar, name }) {
   const [imgError, setImgError] = useState(false);
   const initials = name
     ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "GH";
 
   return (
@@ -31,10 +31,6 @@ function UserAvatar({ avatar, name, isOnline = true }) {
           {initials}
         </div>
       )}
-
-      {isOnline && (
-        <span className="absolute bottom-0.5 right-0.5 h-[10px] w-[10px] rounded-full bg-[#22C55E] ring-2 ring-[#11121A]" />
-      )}
     </div>
   );
 }
@@ -46,10 +42,11 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
     name = "",
     bio = "",
     location = "",
-    avatar = "",
     username = "",
     availability = "",
   } = teammate;
+
+  const avatar = teammate.avatar || teammate.profile?.avatar || "";
 
   const currentLocation = useLocation();
   const navigate = useNavigate();
@@ -67,8 +64,8 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
   const skillsList = Array.isArray(rawSkills)
     ? rawSkills
     : typeof rawSkills === "string"
-    ? rawSkills.split(",").map((s) => s.trim()).filter(Boolean)
-    : [];
+      ? rawSkills.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
 
   const MAX_SKILLS = 3;
   const visibleSkills = skillsList.slice(0, MAX_SKILLS);
@@ -107,7 +104,7 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
             aria-label={`View ${name}'s profile`}
             className="shrink-0 transition-opacity hover:opacity-90"
           >
-            <UserAvatar avatar={avatar} name={name} isOnline={isOnline} />
+            <UserAvatar avatar={avatar} name={name} />
           </Link>
 
           <div className="min-w-0 flex-1 space-y-0.5">

@@ -5,13 +5,29 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { hackathonService } from "../../services/hackathonService";
+import { ORGANIZER_HACKATHONS } from "../../data/organizerData";
 
-function formatDateForInput(dateStr) {
-  if (!dateStr) return "";
+function formatDateForInput(dateVal) {
+  if (!dateVal) return "";
+
+  // If dateVal is already a YYYY-MM-DD string (e.g. "2026-09-15" or "2026-09-15T...")
+  if (typeof dateVal === "string") {
+    const trimmed = dateVal.trim();
+    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  // If it's a Date object or ISO timestamp
   try {
-    const d = new Date(dateStr);
+    const d = new Date(dateVal);
     if (isNaN(d.getTime())) return "";
-    return d.toISOString().split("T")[0];
+
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   } catch {
     return "";
   }
@@ -55,32 +71,68 @@ function EditHackathonPage() {
     async function loadHackathon() {
       try {
         setLoading(true);
-        const data = await hackathonService.getHackathonById(id);
-        if (isMounted && data?.hackathon) {
-          const h = data.hackathon;
+        console.log("Hackathon ID:", id);
+
+        let h = null;
+        try {
+          const res = await hackathonService.getOrganizerHackathonById(id);
+          h = res?.hackathon || res?.data;
+        } catch {
+          try {
+            const res = await hackathonService.getHackathonById(id);
+            h = res?.hackathon || res?.data;
+          } catch {
+            const staticItem = ORGANIZER_HACKATHONS.find((item) => item.id === id);
+            if (staticItem) h = staticItem;
+          }
+        }
+
+        console.log("Fetched hackathon:", h);
+
+        if (isMounted && h) {
+          const startDateRaw = h.startDate || h.event?.startDate || h.eventStartDate;
+          const endDateRaw = h.endDate || h.event?.endDate || h.eventEndDate;
+          const regOpensRaw = h.registrationOpens || h.registration?.startDate || h.registrationStart;
+          const regDeadlineRaw = h.registrationDeadline || h.registration?.deadline || h.deadline;
+
+          console.log("Saved start date:", startDateRaw);
+          console.log("Saved end date:", endDateRaw);
+
+          const formattedStartDate = formatDateForInput(startDateRaw);
+          const formattedEndDate = formatDateForInput(endDateRaw);
+
+          console.log("Edit form start date:", formattedStartDate);
+          console.log("Edit form end date:", formattedEndDate);
+
           setFormData({
             title: h.title || h.name || "",
             shortDescription: h.shortDescription || "",
             description: h.description || "",
-            organizerName: h.organizerName || "",
-            registrationOpens: formatDateForInput(h.registrationOpens),
-            registrationDeadline: formatDateForInput(h.registrationDeadline),
-            startDate: formatDateForInput(h.startDate || h.hackathonDate),
-            endDate: formatDateForInput(h.endDate || h.eventEndDate),
-            format: h.format || h.mode || "Online",
-            venue: h.location?.venue || "",
-            city: h.location?.city || "",
-            country: h.location?.country || "",
-            registrationUrl: h.registrationUrl || h.url || "",
+            organizerName:
+              h.organizerName ||
+              (typeof h.organizer === "object" ? h.organizer?.name : h.organizer) ||
+              "",
+            registrationOpens: formatDateForInput(regOpensRaw),
+            registrationDeadline: formatDateForInput(regDeadlineRaw),
+            startDate: formattedStartDate,
+            endDate: formattedEndDate,
+            format: h.format || h.mode || h.event?.mode || "Online",
+            venue: h.location?.venue || h.venue || "",
+            city: h.location?.city || h.city || "",
+            country: h.location?.country || h.country || "",
+            registrationUrl: h.registrationUrl || h.url || h.source?.externalUrl || "",
             skills: Array.isArray(h.skills) ? h.skills.join(", ") : h.skills || "",
             themes: Array.isArray(h.themes) ? h.themes.join(", ") : h.themes || "",
             eligibility: h.eligibility || "",
-            minTeamSize: h.minTeamSize || 1,
-            maxTeamSize: h.maxTeamSize || 4,
-            prizes: h.prizes || h.prizePool || "",
+            minTeamSize: h.minTeamSize || h.teamSize?.min || 1,
+            maxTeamSize: h.maxTeamSize || h.teamSize?.max || 4,
+            prizes:
+              typeof h.prizes === "string"
+                ? h.prizes
+                : h.prizePool?.description || h.prizes || "",
             rules: h.rules || "",
             contact: h.contact || "",
-            fee: h.fee || "Free",
+            fee: typeof h.fee === "string" ? h.fee : "Free",
           });
         }
       } catch (err) {
