@@ -21,6 +21,7 @@ const hackathonRoutes = require("./routes/hackathonRoutes");
 const userRoutes = require("./routes/userRoutes");
 const networkRoutes = require("./routes/networkRoutes");
 const teamRoutes = require("./routes/teamRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 const { initHackathonSyncJob, runSyncTask } = require("./jobs/hackathonSyncJob");
 
 const app = express();
@@ -47,6 +48,7 @@ app.use("/api/hackathons", hackathonRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/network", networkRoutes);
 app.use("/api/teams", teamRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Admin sync endpoint alias
 app.post("/api/admin/hackathons/sync", (req, res) => {

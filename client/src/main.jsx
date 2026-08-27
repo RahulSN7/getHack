@@ -13,9 +13,11 @@ import CreateTeamPage from "./pages/Teammates/CreateTeamPage.jsx";
 import TeamDetailsPage from "./pages/Teammates/TeamDetailsPage.jsx";
 import ProfilePage from "./pages/Profile/ProfilePage.jsx";
 import NetworkPage from "./pages/Network/NetworkPage.jsx";
+import MessagesPage from "./pages/Messages/MessagesPage.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { SavedProvider } from "./context/SavedContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { ChatProvider } from "./context/ChatContext.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute.jsx";
 import OrganizerLayout from "./components/organizer/OrganizerLayout.jsx";
@@ -96,6 +98,14 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "messages",
+        element: (
+          <ProtectedRoute>
+            <MessagesPage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
 
@@ -168,11 +178,13 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
-      <SavedProvider>
-        <ThemeProvider>
-          <RouterProvider router={router} />
-        </ThemeProvider>
-      </SavedProvider>
+      <ChatProvider>
+        <SavedProvider>
+          <ThemeProvider>
+            <RouterProvider router={router} />
+          </ThemeProvider>
+        </SavedProvider>
+      </ChatProvider>
     </AuthProvider>
   </StrictMode>
 );
