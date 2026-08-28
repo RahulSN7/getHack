@@ -5,11 +5,12 @@
 // attachments, per-user remove chat, and complete Block/Unblock system.
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatService } from "../../../services/chatService";
 import TeamInvitationCard from "./TeamInvitationCard";
+import MessageStatus, { getMessageStatusDetails } from "./MessageStatus";
 
 function formatMessageTime(dateStr) {
   if (!dateStr) return "";
@@ -173,54 +174,67 @@ function getDisplayEmoji(typeKey) {
 const EMOJI_PICKER_LIST = ["👍", "❤️", "😂", "🎉", "🔥", "😊", "🙏", "🚀", "💡", "💯", "👏", "✨", "😍", "🙌", "🤔", "😮"];
 
 // ---------------------------------------------------------------------------
-// FloatingMessageMenu Component (WhatsApp-Style Floating Context Menu)
-// Rendered via React Portal (document.body) anchored directly to the ⋮ button.
-// Guarantees zero layout shift, zero extra card height, and upward/downward placement.
+// Message Info Modal Component
+// Displays Sent, Delivered, and Read status with exact timestamps and recipient names
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Floating Action Menu Component for Message Options (Reply, Copy, Edit, Message Info, Delete, Report)
+// Positioned relative to message button trigger with zero flicker (pre-calculated initialCoords + useLayoutEffect)
 // ---------------------------------------------------------------------------
 function FloatingMessageMenu({
   msg,
+  initialCoords,
+  anchorRect,
   btnRef,
+  containerRef,
   isMine,
   isBlocked,
   onClose,
   onReply,
   onCopy,
   onEdit,
+  onMessageInfo,
   onDelete,
   onReport,
 }) {
   const menuRef = useRef(null);
-  const [coords, setCoords] = useState({ top: -9999, left: -9999, opacity: 0 });
+  const [coords, setCoords] = useState(initialCoords || { top: -9999, left: -9999 });
 
-  useEffect(() => {
-    if (!btnRef?.current) return;
-    const btnRect = btnRef.current.getBoundingClientRect();
+  useLayoutEffect(() => {
+    const rect = anchorRect || (btnRef?.current ? btnRef.current.getBoundingClientRect() : null);
+    if (!rect) return;
+
     const menuWidth = 148;
-    const menuHeight = 160;
+    // Measure actual rendered DOM height of menu container (fallback 156px for mine / 98px for other)
+    const menuHeight = menuRef.current?.offsetHeight || (isMine ? 156 : 98);
+    const GAP = 6;
+    const requiredSpace = menuHeight + GAP;
 
-    const spaceBelow = window.innerHeight - btnRect.bottom;
-    const spaceAbove = btnRect.top;
+    // Get bounding rect of the scrollable chat container (messagesContainerRef)
+    const containerRect = containerRef?.current
+      ? containerRef.current.getBoundingClientRect()
+      : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
 
-    let top = btnRect.bottom + 4; // default downward
-    if (spaceBelow < menuHeight && spaceAbove >= menuHeight) {
-      top = btnRect.top - menuHeight - 4; // upward anchor above ⋮ button
-    } else if (spaceBelow < menuHeight && spaceAbove < menuHeight) {
-      top = spaceAbove > spaceBelow ? Math.max(8, btnRect.top - menuHeight - 4) : btnRect.bottom + 4;
+    // Available space inside the scrollable chat viewport
+    const spaceBelow = containerRect.bottom - rect.bottom;
+    const spaceAbove = rect.top - containerRect.top;
+
+    let top = rect.bottom + GAP; // default downward (tight 6px gap)
+    if (spaceBelow < requiredSpace && spaceAbove >= requiredSpace) {
+      top = rect.top - menuHeight - GAP; // upward anchor (tight 6px gap above button trigger)
+    } else if (spaceBelow < requiredSpace && spaceAbove < requiredSpace) {
+      top = spaceAbove > spaceBelow ? Math.max(containerRect.top + 8, rect.top - menuHeight - GAP) : rect.bottom + GAP;
     }
 
-    // Clamp vertical position inside screen bounds
+    // Clamp vertical position inside screen & container bounds cleanly
     top = Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8));
 
     // Horizontal alignment: right edge aligned for sent messages (isMine), left edge for received
-    let left = isMine ? btnRect.right - menuWidth : btnRect.left;
+    let left = isMine ? rect.right - menuWidth : rect.left;
     left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
 
-    setCoords({
-      top,
-      left,
-      opacity: 1,
-    });
-  }, [btnRef, isMine]);
+    setCoords({ top, left });
+  }, [anchorRect, btnRef, containerRef, isMine]);
 
   // Handle ESC key press and PointerDown outside to dismiss menu cleanly
   useEffect(() => {
@@ -250,6 +264,8 @@ function FloatingMessageMenu({
 
   if (!msg || isBlocked) return null;
 
+  const isReady = coords.top !== -9999;
+
   return createPortal(
     <div
       ref={menuRef}
@@ -257,13 +273,13 @@ function FloatingMessageMenu({
         position: "fixed",
         top: `${coords.top}px`,
         left: `${coords.left}px`,
-        opacity: coords.opacity,
+        visibility: isReady ? "visible" : "hidden",
         zIndex: 9999,
       }}
       className="
         w-36 rounded-2xl border border-neutral-200 bg-white/95 py-1.5 shadow-2xl backdrop-blur-md
         dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-white
-        animate-in fade-in zoom-in-95 duration-100 max-h-56 overflow-y-auto
+        max-h-56 overflow-y-auto
       "
       onClick={(e) => e.stopPropagation()}
     >
@@ -300,6 +316,21 @@ function FloatingMessageMenu({
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800/80 transition-colors"
           >
             <span>✏️</span> Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onMessageInfo(msg);
+            }}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800/80 transition-colors"
+          >
+            <svg className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <span>Message Info</span>
           </button>
           <button
             type="button"
@@ -358,10 +389,13 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
   // Message Interaction States
   const [activeMessageMenu, setActiveMessageMenu] = useState(null); // msg.id
+  const [menuAnchorRect, setMenuAnchorRect] = useState(null); // { top, bottom, left, right, width, height }
+  const [initialMenuCoords, setInitialMenuCoords] = useState(null); // { top, left }
   const [menuDirections, setMenuDirections] = useState({}); // { [msgId]: "up" | "down" }
   const [replyingToMessage, setReplyingToMessage] = useState(null); // msg object
   const [editingMessage, setEditingMessage] = useState(null); // msg object
   const [deleteConfirmMsg, setDeleteConfirmMsg] = useState(null); // msg object
+  const [activeMessageInfoMsgId, setActiveMessageInfoMsgId] = useState(null); // msg.id
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeReactionMsgId, setActiveReactionMsgId] = useState(null);
   const [showExpandedReactionPickerId, setShowExpandedReactionPickerId] = useState(null);
@@ -382,41 +416,93 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     const handleResize = () => {
       if (activeMessageMenu) {
         setActiveMessageMenu(null);
+        setMenuAnchorRect(null);
+        setInitialMenuCoords(null);
       }
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [activeMessageMenu]);
 
-  // Smart toggle handler calculating available space above and below message button
-  const handleToggleMessageMenu = (msgId, e) => {
-    if (e) e.stopPropagation();
+  // Close active message menu on chat container scroll
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (activeMessageMenu) {
+        setActiveMessageMenu(null);
+        setMenuAnchorRect(null);
+        setInitialMenuCoords(null);
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [activeMessageMenu]);
+
+  // Smart toggle handler pre-calculating final coordinates synchronously before mount
+  const handleToggleMessageMenu = (msgParam, e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    const msgId = typeof msgParam === "object" ? msgParam.id : msgParam;
 
     if (activeMessageMenu === msgId) {
       setActiveMessageMenu(null);
+      setMenuAnchorRect(null);
+      setInitialMenuCoords(null);
       return;
     }
 
-    const btnEl = menuBtnRefs.current[msgId];
-    const containerEl = messagesContainerRef.current;
-
-    let direction = "down";
-    if (btnEl && containerEl) {
-      const btnRect = btnEl.getBoundingClientRect();
-      const containerRect = containerEl.getBoundingClientRect();
-
-      const spaceBelow = containerRect.bottom - btnRect.bottom;
-      const spaceAbove = btnRect.top - containerRect.top;
-      const estimatedMenuHeight = 150;
-
-      if (spaceBelow < estimatedMenuHeight && spaceAbove >= estimatedMenuHeight) {
-        direction = "up";
-      } else if (spaceBelow < estimatedMenuHeight && spaceAbove < estimatedMenuHeight) {
-        direction = spaceAbove > spaceBelow ? "up" : "down";
+    let rect = null;
+    if (e && e.currentTarget && typeof e.currentTarget.getBoundingClientRect === "function") {
+      const r = e.currentTarget.getBoundingClientRect();
+      if (r.width > 0 || r.height > 0 || r.top > 0) {
+        rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height };
       }
     }
+    if (!rect && menuBtnRefs.current[msgId]) {
+      const r = menuBtnRefs.current[msgId].getBoundingClientRect();
+      rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height };
+    }
 
-    setMenuDirections((prev) => ({ ...prev, [msgId]: direction }));
+    // Synchronous Phase 1 Coordinate Pre-Calculation
+    let computedCoords = null;
+    if (rect) {
+      const isMine = typeof msgParam === "object"
+        ? String(msgParam.user_id || msgParam.user?.id) === String(currentUserId)
+        : false;
+      const menuWidth = 148;
+      const menuHeight = isMine ? 128 : 98;
+      const GAP = 6;
+      const requiredSpace = menuHeight + GAP;
+
+      const containerRect = messagesContainerRef.current
+        ? messagesContainerRef.current.getBoundingClientRect()
+        : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
+
+      const spaceBelow = containerRect.bottom - rect.bottom;
+      const spaceAbove = rect.top - containerRect.top;
+
+      let top = rect.bottom + GAP;
+      if (spaceBelow < requiredSpace && spaceAbove >= requiredSpace) {
+        top = rect.top - menuHeight - GAP;
+      } else if (spaceBelow < requiredSpace && spaceAbove < requiredSpace) {
+        top = spaceAbove > spaceBelow ? Math.max(containerRect.top + 8, rect.top - menuHeight - GAP) : rect.bottom + GAP;
+      }
+
+      top = Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8));
+      let left = isMine ? rect.right - menuWidth : rect.left;
+      left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
+
+      computedCoords = { top, left };
+    }
+
+    setMenuAnchorRect(rect);
+    setInitialMenuCoords(computedCoords);
     setActiveMessageMenu(msgId);
   };
 
@@ -487,7 +573,10 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
         await channel.watch();
         if (!cancelled) {
           setMessages([...(channel.state.messages || [])]);
-          channel.markRead().catch(() => { });
+          channel.markRead().then(() => {
+            if (channel.state) channel.state.unreadCount = 0;
+            if (onChannelRead) onChannelRead(channel.cid);
+          }).catch(() => { });
         }
       } catch (err) {
         console.error("Failed to load messages:", err);
@@ -505,8 +594,23 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
         if (isBlockedByMe && senderId === String(userId)) {
           return; // Ignore real-time messages from blocked user
         }
-        setMessages([...(channel.state.messages || [])]);
-        channel.markRead().catch(() => { });
+
+        // Populate channel.state.read explicitly on read events
+        if ((event.type === "message.read" || event.type === "notification.mark_read") && event.user?.id) {
+          if (!channel.state.read) channel.state.read = {};
+          channel.state.read[event.user.id] = {
+            last_read: event.created_at || new Date().toISOString(),
+            user: event.user,
+          };
+        }
+
+        setMessages((channel.state.messages || []).map((m) => ({ ...m })));
+        if (typeof channel.markRead === "function") {
+          channel.markRead().then(() => {
+            if (channel.state) channel.state.unreadCount = 0;
+            if (onChannelRead) onChannelRead(channel.cid);
+          }).catch(() => { });
+        }
       }
     };
 
@@ -527,6 +631,9 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     channel.on("message.new", handleNewMessage);
     channel.on("message.updated", handleNewMessage);
     channel.on("message.deleted", handleNewMessage);
+    channel.on("message.read", handleNewMessage);
+    channel.on("notification.mark_read", handleNewMessage);
+    channel.on("user.presence.changed", handleNewMessage);
     channel.on("reaction.new", handleNewMessage);
     channel.on("reaction.deleted", handleNewMessage);
     channel.on("typing.start", handleTypingStart);
@@ -537,6 +644,9 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       channel.off("message.new", handleNewMessage);
       channel.off("message.updated", handleNewMessage);
       channel.off("message.deleted", handleNewMessage);
+      channel.off("message.read", handleNewMessage);
+      channel.off("notification.mark_read", handleNewMessage);
+      channel.off("user.presence.changed", handleNewMessage);
       channel.off("reaction.new", handleNewMessage);
       channel.off("reaction.deleted", handleNewMessage);
       channel.off("typing.start", handleTypingStart);
@@ -792,7 +902,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       if (client && typeof client.deleteMessage === "function") {
         await client.deleteMessage(deleteConfirmMsg.id);
       }
-      setMessages((prev) => prev.filter((m) => m.id !== deleteConfirmMsg.id));
+      setMessages([...(channel.state.messages || [])]);
       showToast("Message deleted");
     } catch (err) {
       console.error("Failed to delete message:", err);
@@ -1244,6 +1354,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
             const msg = item.data;
             const isMine = String(msg.user?.id || msg.user_id) === String(currentUserId);
+            const isDeleted = Boolean(msg.deleted_at || msg.type === "deleted");
 
             // Flag for Team Invitation Messages
             const isInvitation =
@@ -1266,6 +1377,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             const parentMsg = msg.parent_id
               ? (msg.parent || messages.find((m) => m.id === msg.parent_id))
               : null;
+            const parentIsDeleted = Boolean(parentMsg?.deleted_at || parentMsg?.type === "deleted");
 
             return (
               <div
@@ -1274,12 +1386,13 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
               >
                 {/* Bubble Container with Hover Action Bar */}
                 <div className="relative max-w-[78%] group/bubble">
-                  {/* Action Bar (Triggered on hover/touch — disabled when blocked) */}
-                  {!isBlocked && (
+                  {/* Action Bar (Triggered on hover/touch — disabled when blocked or deleted) */}
+                  {!isBlocked && !isDeleted && (
                     <div
                       className={`
                         absolute -top-3 ${isMine ? "right-2" : "left-2"} z-10
-                        hidden group-hover/msg:flex items-center gap-0.5 rounded-full
+                        ${activeMessageMenu === msg.id || activeReactionMsgId === msg.id ? "flex" : "hidden group-hover/msg:flex"}
+                        items-center gap-0.5 rounded-full
                         bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700
                         px-1 py-0.5 shadow-md animate-in fade-in duration-100
                       `}
@@ -1330,7 +1443,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                         ref={(el) => {
                           if (el) menuBtnRefs.current[msg.id] = el;
                         }}
-                        onClick={(e) => handleToggleMessageMenu(msg.id, e)}
+                        onClick={(e) => handleToggleMessageMenu(msg, e)}
                         className="p-1 text-neutral-500 hover:text-indigo-600 dark:text-neutral-400 dark:hover:text-indigo-400 transition-colors"
                         title="More actions"
                       >
@@ -1416,26 +1529,61 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                   {activeMessageMenu === msg.id && !isBlocked && (
                     <FloatingMessageMenu
                       msg={msg}
+                      initialCoords={initialMenuCoords}
+                      anchorRect={menuAnchorRect}
                       btnRef={{ current: menuBtnRefs.current[msg.id] }}
+                      containerRef={messagesContainerRef}
                       isMine={isMine}
                       isBlocked={isBlocked}
-                      onClose={() => setActiveMessageMenu(null)}
+                      onClose={() => {
+                        setActiveMessageMenu(null);
+                        setMenuAnchorRect(null);
+                        setInitialMenuCoords(null);
+                      }}
                       onReply={handleStartReply}
                       onCopy={handleCopyMessage}
                       onEdit={handleStartEdit}
+                      onMessageInfo={(m) => {
+                        setActiveMessageMenu(null);
+                        setMenuAnchorRect(null);
+                        setInitialMenuCoords(null);
+                        setActiveMessageInfoMsgId(m.id);
+                      }}
                       onDelete={(m) => {
                         setActiveMessageMenu(null);
+                        setMenuAnchorRect(null);
+                        setInitialMenuCoords(null);
                         setDeleteConfirmMsg(m);
                       }}
                       onReport={() => {
                         setActiveMessageMenu(null);
+                        setMenuAnchorRect(null);
+                        setInitialMenuCoords(null);
                         setShowReportModal(true);
                       }}
                     />
                   )}
 
                   {/* Message Bubble Content */}
-                  {isInvitation ? (
+                  {isDeleted ? (
+                    <div
+                      className={`
+                        rounded-2xl px-4 py-2.5 text-xs italic shadow-2xs
+                        ${isMine
+                          ? "bg-indigo-500/20 text-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 border border-indigo-500/30 rounded-br-md"
+                          : "bg-neutral-100 dark:bg-neutral-800/60 text-neutral-400 dark:text-neutral-500 border border-neutral-200/80 dark:border-neutral-700/80 rounded-bl-md"
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <svg className="h-3.5 w-3.5 shrink-0 opacity-75" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
+                        <span>This message was deleted</span>
+                      </div>
+                    </div>
+                  ) : isInvitation ? (
                     <div className="space-y-1.5">
                       {parentMsg && (
                         <div
@@ -1451,15 +1599,20 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                             {parentMsg.sender_name || parentMsg.user?.name || "Participant"}
                           </p>
                           <p className="truncate text-[11px]">
-                            {(parentMsg.custom_type === "team_invitation" || parentMsg.type === "team_invitation")
-                              ? `🤝 Hackathon Team Invitation: Team ${parentMsg.team_name || parentMsg.teamName || "Team"}`
-                              : parentMsg.text}
+                            {parentIsDeleted
+                              ? "This message was deleted"
+                              : (parentMsg.custom_type === "team_invitation" || parentMsg.type === "team_invitation")
+                                ? `🤝 Hackathon Team Invitation: Team ${parentMsg.team_name || parentMsg.teamName || "Team"}`
+                                : parentMsg.text}
                           </p>
                         </div>
                       )}
                       <TeamInvitationCard
                         msg={msg}
+                        channel={channel}
                         currentUserId={currentUserId}
+                        forceOpen={activeMessageInfoMsgId === msg.id}
+                        onClosePopover={() => setActiveMessageInfoMsgId(null)}
                         onInvitationUpdated={() => {
                           if (channel && channel.state) {
                             setMessages([...(channel.state.messages || [])]);
@@ -1492,9 +1645,11 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                             {parentMsg.sender_name || parentMsg.user?.name || "Participant"}
                           </p>
                           <p className="truncate text-[11px]">
-                            {(parentMsg.custom_type === "team_invitation" || parentMsg.type === "team_invitation")
-                              ? `🤝 Hackathon Team Invitation: Team ${parentMsg.team_name || parentMsg.teamName || "Team"}`
-                              : parentMsg.text}
+                            {parentIsDeleted
+                              ? "This message was deleted"
+                              : (parentMsg.custom_type === "team_invitation" || parentMsg.type === "team_invitation")
+                                ? `🤝 Hackathon Team Invitation: Team ${parentMsg.team_name || parentMsg.teamName || "Team"}`
+                                : parentMsg.text}
                           </p>
                         </div>
                       )}
@@ -1572,10 +1727,24 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                     )}
 
                     <p
-                      className={`text-[10px] mt-1 text-right font-medium ${isMine ? "text-indigo-200" : "text-neutral-400 dark:text-neutral-500"
+                      className={`text-[10px] mt-1 text-right font-medium flex items-center justify-end ${isMine ? "text-indigo-200" : "text-neutral-400 dark:text-neutral-500"
                         }`}
                     >
-                      {formatMessageTime(msg.created_at)}
+                      <span>{formatMessageTime(msg.created_at)}</span>
+                      {isMine && !isDeleted && (
+                        <MessageStatus
+                          msg={msg}
+                          channel={channel}
+                          currentUserId={currentUserId}
+                          forceOpen={activeMessageInfoMsgId === msg.id}
+                          onClosePopover={() => setActiveMessageInfoMsgId(null)}
+                          onRetry={() => {
+                            if (channel && typeof channel.sendMessage === "function") {
+                              channel.sendMessage({ text: msg.text, attachments: msg.attachments }).catch(() => {});
+                            }
+                          }}
+                        />
+                      )}
                     </p>
                   </div>
                   )}
