@@ -113,9 +113,43 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
     ? lastMessage.created_at
     : (clearTime && visibleMessages.length === 0 ? "" : (channel.state?.last_message_at || channel.data?.last_message_at || ""));
 
-  // Unread count from Stream Chat SDK (evaluated as 0 when currently active or when cleared with no newer messages)
-  const rawUnread = isActive ? 0 : (channel.countUnread?.() || channel.state?.unreadCount || 0);
-  const unreadCount = (clearTime && visibleMessages.length === 0) ? 0 : rawUnread;
+function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
+  if (!channel) return 0;
+  if (isActive) return 0;
+
+  const clearTime = clearedAt ? new Date(clearedAt).getTime() : 0;
+  const rawMessages = channel.state?.messages || [];
+  const visibleMessages = clearTime
+    ? rawMessages.filter((m) => {
+        const t = new Date(m.created_at || m.createdAt).getTime();
+        return !isNaN(t) && t > clearTime;
+      })
+    : rawMessages;
+
+  if (clearTime && visibleMessages.length === 0) return 0;
+
+  const userReadState = channel.state?.read?.[String(currentUserId)];
+  if (userReadState?.last_read) {
+    const lastReadTime = new Date(userReadState.last_read).getTime();
+    if (!isNaN(lastReadTime)) {
+      const unreadIncoming = visibleMessages.filter((m) => {
+        const msgSenderId = String(m.user?.id || m.user_id || "");
+        if (msgSenderId === String(currentUserId)) return false;
+        const msgTime = new Date(m.created_at || m.createdAt).getTime();
+        return !isNaN(msgTime) && msgTime > lastReadTime;
+      });
+      return unreadIncoming.length;
+    }
+  }
+
+  if (typeof channel.state?.unreadCount === "number" && channel.state.unreadCount === 0) {
+    return 0;
+  }
+
+  return channel.countUnread?.() || channel.state?.unreadCount || 0;
+}
+
+  const unreadCount = getChannelUnreadCount(channel, currentUserId, isActive, clearedAt);
 
   // Initials fallback
   const initials = name

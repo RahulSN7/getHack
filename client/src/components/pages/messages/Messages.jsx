@@ -13,6 +13,72 @@ import { chatService } from "../../../services/chatService";
 import ConversationItem from "./ConversationItem";
 import ChatPanel from "./ChatPanel";
 
+function getChannelLatestTimestamp(channel, clearedAt) {
+  if (!channel) return 0;
+  const clearTime = clearedAt ? new Date(clearedAt).getTime() : 0;
+  const rawMessages = channel.state?.messages || [];
+  const visibleMessages = clearTime
+    ? rawMessages.filter((m) => {
+        const t = new Date(m.created_at || m.createdAt).getTime();
+        return !isNaN(t) && t > clearTime;
+      })
+    : rawMessages;
+
+  if (visibleMessages.length > 0) {
+    const lastMsg = visibleMessages[visibleMessages.length - 1];
+    const t = new Date(lastMsg.created_at || lastMsg.createdAt).getTime();
+    if (!isNaN(t)) return t;
+  }
+
+  const lastAt = channel.state?.last_message_at || channel.data?.last_message_at || channel.created_at;
+  const t = lastAt ? new Date(lastAt).getTime() : 0;
+  return isNaN(t) ? 0 : t;
+}
+
+function sortChannelsByLatest(channelsList, chatStatesMap = {}) {
+  return [...channelsList].sort((a, b) => {
+    const timeA = getChannelLatestTimestamp(a, chatStatesMap[a.cid]?.clearedAt);
+    const timeB = getChannelLatestTimestamp(b, chatStatesMap[b.cid]?.clearedAt);
+    return timeB - timeA;
+  });
+}
+
+function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
+  if (!channel) return 0;
+  if (isActive) return 0;
+
+  const clearTime = clearedAt ? new Date(clearedAt).getTime() : 0;
+  const rawMessages = channel.state?.messages || [];
+  const visibleMessages = clearTime
+    ? rawMessages.filter((m) => {
+        const t = new Date(m.created_at || m.createdAt).getTime();
+        return !isNaN(t) && t > clearTime;
+      })
+    : rawMessages;
+
+  if (clearTime && visibleMessages.length === 0) return 0;
+
+  const userReadState = channel.state?.read?.[String(currentUserId)];
+  if (userReadState?.last_read) {
+    const lastReadTime = new Date(userReadState.last_read).getTime();
+    if (!isNaN(lastReadTime)) {
+      const unreadIncoming = visibleMessages.filter((m) => {
+        const msgSenderId = String(m.user?.id || m.user_id || "");
+        if (msgSenderId === String(currentUserId)) return false;
+        const msgTime = new Date(m.created_at || m.createdAt).getTime();
+        return !isNaN(msgTime) && msgTime > lastReadTime;
+      });
+      return unreadIncoming.length;
+    }
+  }
+
+  if (typeof channel.state?.unreadCount === "number" && channel.state.unreadCount === 0) {
+    return 0;
+  }
+
+  return channel.countUnread?.() || channel.state?.unreadCount || 0;
+}
+
 function Messages() {
   const { user } = useAuth();
   const { chatClient, ready, error: chatError } = useChatContext();
@@ -247,7 +313,7 @@ function Messages() {
           }
         });
 
-        setChannels(combinedList);
+        setChannels(sortChannelsByLatest(combinedList, chatStatesRef.current));
 
         // ===================================================================
         // 6. Automatically open selected conversation on the right.
@@ -290,17 +356,46 @@ function Messages() {
   const activeChannelRef = useRef(activeChannel);
   useEffect(() => {
     activeChannelRef.current = activeChannel;
-    if (activeChannel) {
-      if (activeChannel.state) activeChannel.state.unreadCount = 0;
+    if (activeChannel && currentUserId) {
+      const nowIso = new Date().toISOString();
+      if (activeChannel.state) {
+        activeChannel.state.unreadCount = 0;
+        if (!activeChannel.state.read) activeChannel.state.read = {};
+        activeChannel.state.read[String(currentUserId)] = {
+          last_read: nowIso,
+          user: { id: String(currentUserId) },
+        };
+      }
+
       if (typeof activeChannel.markRead === "function") {
         activeChannel
           .markRead()
           .then(() => {
-            if (activeChannel.state) activeChannel.state.unreadCount = 0;
+            const readTime = new Date().toISOString();
+            if (activeChannel.state) {
+              activeChannel.state.unreadCount = 0;
+              if (!activeChannel.state.read) activeChannel.state.read = {};
+              activeChannel.state.read[String(currentUserId)] = {
+                last_read: readTime,
+                user: { id: String(currentUserId) },
+              };
+            }
             setChannels((prev) =>
               prev.map((c) =>
                 c.cid === activeChannel.cid
-                  ? Object.assign(Object.create(Object.getPrototypeOf(c)), c)
+                  ? Object.assign(Object.create(Object.getPrototypeOf(c)), c, {
+                      state: {
+                        ...c.state,
+                        unreadCount: 0,
+                        read: {
+                          ...(c.state?.read || {}),
+                          [String(currentUserId)]: {
+                            last_read: readTime,
+                            user: { id: String(currentUserId) },
+                          },
+                        },
+                      },
+                    })
                   : c
               )
             );
@@ -308,7 +403,7 @@ function Messages() {
           .catch(() => {});
       }
     }
-  }, [activeChannel]);
+  }, [activeChannel, currentUserId]);
 
   const chatStatesRef = useRef(chatStates);
   useEffect(() => {
@@ -353,31 +448,82 @@ function Messages() {
       }
 
       setChannels((previousChannels) => {
-        const exists = previousChannels.some((ch) => ch.cid === cid);
-        if (!exists && event.channel) {
-          return [event.channel, ...previousChannels];
+        let updatedList = [...previousChannels];
+        let targetChan = updatedList.find((ch) => ch.cid === cid);
+
+        if (!targetChan && event.channel) {
+          targetChan = event.channel;
+          updatedList.push(targetChan);
         }
 
-        if ((event.type === "message.read" || event.type === "notification.mark_read") && event.user?.id) {
-          const targetChan = previousChannels.find((c) => c.cid === cid) || event.channel;
-          if (targetChan && targetChan.state) {
+        if (targetChan) {
+          if (!targetChan.state) targetChan.state = { messages: [], unreadCount: 0 };
+          if (!targetChan.state.messages) targetChan.state.messages = [];
+
+          if ((event.type === "message.read" || event.type === "notification.mark_read") && event.user?.id) {
+            console.log("[CHAT DEBUG] message.read event:", cid, event.user.id);
             if (!targetChan.state.read) targetChan.state.read = {};
-            targetChan.state.read[event.user.id] = {
+            targetChan.state.read[String(event.user.id)] = {
               last_read: event.created_at || new Date().toISOString(),
               user: event.user,
             };
+            if (String(event.user.id) === String(currentUserId)) {
+              targetChan.state.unreadCount = 0;
+            }
+          }
+
+          if (event.message) {
+            const msg = event.message;
+            const idx = targetChan.state.messages.findIndex((m) => m.id === msg.id);
+
+            if (event.type === "message.deleted" || msg.type === "deleted" || msg.deleted_at) {
+              if (idx !== -1) {
+                targetChan.state.messages[idx] = {
+                  ...targetChan.state.messages[idx],
+                  ...msg,
+                  deleted_at: msg.deleted_at || new Date().toISOString(),
+                  type: "deleted",
+                };
+              }
+            } else if (idx !== -1) {
+              targetChan.state.messages[idx] = {
+                ...targetChan.state.messages[idx],
+                ...msg,
+              };
+            } else if (event.type === "message.new" || event.type === "notification.message_new") {
+              targetChan.state.messages.push(msg);
+            }
+
+            targetChan.state.last_message_at = msg.created_at || new Date().toISOString();
+          }
+
+          if (activeChannelRef.current?.cid === cid && targetChan.state) {
+            targetChan.state.unreadCount = 0;
+            if (!targetChan.state.read) targetChan.state.read = {};
+            targetChan.state.read[String(currentUserId)] = {
+              last_read: new Date().toISOString(),
+              user: { id: String(currentUserId) },
+            };
+          }
+
+          const clonedChan = Object.assign(Object.create(Object.getPrototypeOf(targetChan)), targetChan, {
+            state: {
+              ...targetChan.state,
+              messages: [...targetChan.state.messages],
+              read: { ...(targetChan.state.read || {}) },
+            },
+          });
+
+          const listIdx = updatedList.findIndex((ch) => ch.cid === cid);
+          if (listIdx !== -1) {
+            updatedList[listIdx] = clonedChan;
+          } else {
+            updatedList.push(clonedChan);
           }
         }
 
-        return previousChannels.map((c) => {
-          if (c.cid === cid) {
-            if (activeChannelRef.current?.cid === cid && c.state) {
-              c.state.unreadCount = 0;
-            }
-            return Object.assign(Object.create(Object.getPrototypeOf(c)), c);
-          }
-          return c;
-        });
+        console.log("[CHAT DEBUG] chat list rebuilt:", cid, targetChan?.state?.unreadCount);
+        return sortChannelsByLatest(updatedList, chatStatesRef.current);
       });
     };
 
@@ -517,47 +663,106 @@ function Messages() {
     setChannels((prev) =>
       prev.map((c) => {
         if (c.cid === cid) {
-          if (c.state) c.state.unreadCount = 0;
-          return Object.assign(Object.create(Object.getPrototypeOf(c)), c);
+          const nowIso = new Date().toISOString();
+          if (c.state) {
+            c.state.unreadCount = 0;
+            if (!c.state.read) c.state.read = {};
+            c.state.read[String(currentUserId)] = {
+              last_read: nowIso,
+              user: { id: String(currentUserId) },
+            };
+          }
+          return Object.assign(Object.create(Object.getPrototypeOf(c)), c, {
+            state: {
+              ...c.state,
+              unreadCount: 0,
+              read: {
+                ...(c.state?.read || {}),
+                [String(currentUserId)]: {
+                  last_read: nowIso,
+                  user: { id: String(currentUserId) },
+                },
+              },
+            },
+          });
         }
         return c;
       })
     );
-  }, []);
+  }, [currentUserId]);
 
   const handleSelectChannel = useCallback((chan) => {
     if (!chan) return;
+    console.log("[CHAT DEBUG] Opening conversation:", chan.cid);
+    console.log("[CHAT DEBUG] Before markRead:", chan.cid, chan.state?.unreadCount);
+
+    const prevChanCid = activeChannelRef.current?.cid;
+    if (prevChanCid && prevChanCid !== chan.cid) {
+      console.log("[CHAT DEBUG] selectedUser changed:", prevChanCid, "->", chan.cid);
+    }
+
     setActiveChannel(chan);
     setMobileShowChat(true);
-    if (chan.state) chan.state.unreadCount = 0;
+
+    const nowIso = new Date().toISOString();
+    if (chan.state) {
+      chan.state.unreadCount = 0;
+      if (!chan.state.read) chan.state.read = {};
+      chan.state.read[String(currentUserId)] = {
+        last_read: nowIso,
+        user: { id: String(currentUserId) },
+      };
+    }
+
     if (typeof chan.markRead === "function") {
       chan
         .markRead()
         .then(() => {
-          if (chan.state) chan.state.unreadCount = 0;
+          console.log("[CHAT DEBUG] markRead completed:", chan.cid, chan.state?.unreadCount);
+          const readTime = new Date().toISOString();
+          if (chan.state) {
+            chan.state.unreadCount = 0;
+            if (!chan.state.read) chan.state.read = {};
+            chan.state.read[String(currentUserId)] = {
+              last_read: readTime,
+              user: { id: String(currentUserId) },
+            };
+          }
           setChannels((prev) =>
             prev.map((c) =>
               c.cid === chan.cid
-                ? Object.assign(Object.create(Object.getPrototypeOf(c)), c)
+                ? Object.assign(Object.create(Object.getPrototypeOf(c)), c, {
+                    state: {
+                      ...c.state,
+                      unreadCount: 0,
+                      read: {
+                        ...(c.state?.read || {}),
+                        [String(currentUserId)]: {
+                          last_read: readTime,
+                          user: { id: String(currentUserId) },
+                        },
+                      },
+                    },
+                  })
                 : c
             )
           );
         })
         .catch(() => {});
     }
-  }, []);
+  }, [currentUserId]);
 
   // -------------------------------------------------------------------------
   // Search & Filter conversations.
   // -------------------------------------------------------------------------
   const filteredChannels = useMemo(() => {
-    let list = channels;
+    let list = sortChannelsByLatest(channels, chatStates);
 
     // Filter by active tab (All, Favourites, Unread)
     if (activeFilter === "favourites") {
       list = list.filter((ch) => !!chatStates[ch.cid]?.isFavourite);
     } else if (activeFilter === "unread") {
-      list = list.filter((ch) => (ch.countUnread?.() || ch.state?.unreadCount || 0) > 0);
+      list = list.filter((ch) => getChannelUnreadCount(ch, currentUserId, activeChannel?.cid === ch.cid, chatStates[ch.cid]?.clearedAt) > 0);
     }
 
     if (!searchQuery.trim()) {

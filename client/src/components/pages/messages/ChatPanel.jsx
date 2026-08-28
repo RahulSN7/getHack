@@ -772,13 +772,39 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     async function init() {
       setLoading(true);
       try {
-        await channel.watch();
+        if (!channel.initialized || !channel.state?.messages) {
+          await channel.watch();
+        }
         if (!cancelled) {
           setMessages([...(channel.state.messages || [])]);
-          channel.markRead().then(() => {
-            if (channel.state) channel.state.unreadCount = 0;
-            if (onChannelRead) onChannelRead(channel.cid);
-          }).catch(() => { });
+          const nowIso = new Date().toISOString();
+          if (channel.state) {
+            channel.state.unreadCount = 0;
+            if (!channel.state.read) channel.state.read = {};
+            if (userId) {
+              channel.state.read[String(userId)] = {
+                last_read: nowIso,
+                user: { id: String(userId) },
+              };
+            }
+          }
+          if (typeof channel.markRead === "function") {
+            channel.markRead().then(() => {
+              console.log("[CHAT DEBUG] markRead completed inside ChatPanel:", channel.cid);
+              const readTime = new Date().toISOString();
+              if (channel.state) {
+                channel.state.unreadCount = 0;
+                if (!channel.state.read) channel.state.read = {};
+                if (userId) {
+                  channel.state.read[String(userId)] = {
+                    last_read: readTime,
+                    user: { id: String(userId) },
+                  };
+                }
+              }
+              if (onChannelRead) onChannelRead(channel.cid);
+            }).catch(() => { });
+          }
         }
       } catch (err) {
         console.error("Failed to load messages:", err);
@@ -799,17 +825,31 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
         // Populate channel.state.read explicitly on read events
         if ((event.type === "message.read" || event.type === "notification.mark_read") && event.user?.id) {
+          console.log("[CHAT DEBUG] message.read event inside ChatPanel:", channel.cid, event.user.id);
           if (!channel.state.read) channel.state.read = {};
           channel.state.read[event.user.id] = {
             last_read: event.created_at || new Date().toISOString(),
             user: event.user,
           };
+          if (String(event.user.id) === String(userId)) {
+            channel.state.unreadCount = 0;
+          }
         }
 
         setMessages((channel.state.messages || []).map((m) => ({ ...m })));
         if (typeof channel.markRead === "function") {
           channel.markRead().then(() => {
-            if (channel.state) channel.state.unreadCount = 0;
+            const readTime = new Date().toISOString();
+            if (channel.state) {
+              channel.state.unreadCount = 0;
+              if (!channel.state.read) channel.state.read = {};
+              if (userId) {
+                channel.state.read[String(userId)] = {
+                  last_read: readTime,
+                  user: { id: String(userId) },
+                };
+              }
+            }
             if (onChannelRead) onChannelRead(channel.cid);
           }).catch(() => { });
         }
