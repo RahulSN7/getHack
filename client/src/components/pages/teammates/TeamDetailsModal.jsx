@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { HACKATHONS } from "../../../data/hackathons";
 import { teamService } from "../../../services/teamService";
+import { invitationService } from "../../../services/invitationService";
 import { resolveTeamMembers, resolveTeamLeader, getTeamActionState } from "../../../utils/teamMemberResolver";
 import InviteConnectionsModal from "./InviteConnectionsModal";
 
@@ -142,12 +143,20 @@ export default function TeamDetailsModal({
 
   const handleSendInvitations = async (selectedIds) => {
     try {
-      const res = await teamService.inviteConnections(teamIdStr, selectedIds);
+      let sentCount = 0;
+      for (const targetUserId of selectedIds) {
+        await invitationService.sendInvitation({
+          teamId: teamIdStr,
+          receiverId: targetUserId,
+        });
+        sentCount++;
+      }
+      setPendingInvitations((prev) => [...prev, ...selectedIds]);
+      showToast(`${sentCount} invitation(s) sent directly to chat!`);
+      const res = await teamService.getTeamById(teamIdStr);
       if (res?.team) {
         setFetchedTeam(res.team);
       }
-      setPendingInvitations((prev) => [...prev, ...selectedIds]);
-      showToast(`${selectedIds.length} invitation(s) sent successfully!`);
     } catch (err) {
       console.error("Failed to send invitations:", err);
       showToast(err.message || "Failed to send invitations.");

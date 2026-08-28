@@ -22,6 +22,7 @@ const userRoutes = require("./routes/userRoutes");
 const networkRoutes = require("./routes/networkRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const invitationRoutes = require("./routes/invitationRoutes");
 const { initHackathonSyncJob, runSyncTask } = require("./jobs/hackathonSyncJob");
 const { syncAllUsersToStream } = require("./services/streamService");
 
@@ -50,6 +51,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/network", networkRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/invitations", invitationRoutes);
 
 // Admin sync endpoint alias
 app.post("/api/admin/hackathons/sync", (req, res) => {

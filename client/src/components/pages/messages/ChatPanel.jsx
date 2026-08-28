@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { chatService } from "../../../services/chatService";
+import TeamInvitationCard from "./TeamInvitationCard";
 
 function formatMessageTime(dateStr) {
   if (!dateStr) return "";
@@ -1029,6 +1030,31 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
             const msg = item.data;
             const isMine = String(msg.user?.id || msg.user_id) === String(currentUserId);
+
+            // Custom Renderer for Team Invitation Messages
+            const isInvitation =
+              msg.custom_type === "team_invitation" ||
+              msg.type === "team_invitation" ||
+              Boolean(msg.invitation_id || msg.invitationId);
+
+            if (isInvitation) {
+              return (
+                <div
+                  key={msg.id || `inv-${idx}`}
+                  className={`group/msg relative flex flex-col ${isMine ? "items-end" : "items-start"} mb-2.5 w-full`}
+                >
+                  <TeamInvitationCard
+                    msg={msg}
+                    currentUserId={currentUserId}
+                    onInvitationUpdated={() => {
+                      if (channel && channel.state) {
+                        setMessages([...(channel.state.messages || [])]);
+                      }
+                    }}
+                  />
+                </div>
+              );
+            }
 
             // Compute reaction entries cleanly
             const reactions = msg.reaction_counts || {};

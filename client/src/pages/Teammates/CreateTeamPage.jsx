@@ -12,6 +12,7 @@ import { TEAMS } from "../../data/teams";
 import { TEAMMATES } from "../../data/teammates";
 import { useAuth } from "../../context/useAuth";
 import { teamService } from "../../services/teamService";
+import { invitationService } from "../../services/invitationService";
 import { resolveTeamMembers } from "../../utils/teamMemberResolver";
 
 function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
@@ -219,10 +220,26 @@ export default function CreateTeamPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleSendInvitations = (selectedIds) => {
+  const handleSendInvitations = async (selectedIds) => {
     const newInvited = [...new Set([...invitedMemberIds, ...selectedIds])];
     setInvitedMemberIds(newInvited);
-    showToast(`${selectedIds.length} connection invitation(s) sent!`);
+
+    if (isEditMode && editTeamId) {
+      try {
+        for (const targetUserId of selectedIds) {
+          await invitationService.sendInvitation({
+            teamId: editTeamId,
+            receiverId: targetUserId,
+          });
+        }
+        showToast(`${selectedIds.length} invitation(s) sent directly to chat!`);
+      } catch (err) {
+        console.error("Failed to send chat invitations:", err);
+        showToast(err.message || "Failed to send chat invitations.");
+      }
+    } else {
+      showToast(`${selectedIds.length} connection invitation(s) added!`);
+    }
   };
 
   const handleRemoveInvitation = (id) => {
@@ -383,14 +400,21 @@ export default function CreateTeamPage() {
       const createdTeam = res?.team;
       const teamId = createdTeam?.id || createdTeam?._id || `team-${Date.now()}`;
 
-      // Local sync fallback
-      if (createdTeam) {
-        TEAMS.unshift(createdTeam);
-      } else {
-        TEAMS.unshift({ id: teamId, ...payload, createdBy: creatorId, memberIds: [creatorId] });
+      // Send Stream Chat team invitations for all initial invited members
+      if (Array.isArray(invitedMemberIds) && invitedMemberIds.length > 0) {
+        for (const targetUserId of invitedMemberIds) {
+          try {
+            await invitationService.sendInvitation({
+              teamId,
+              receiverId: targetUserId,
+            });
+          } catch (invErr) {
+            console.warn(`Could not send chat invitation to ${targetUserId}:`, invErr.message);
+          }
+        }
       }
 
-      showToast("Team created successfully!");
+      showToast("Team created and invitations sent to chat!");
 
       // Navigate to Team Details page, passing source state so Back button returns to Join Team (/teammates?tab=teams)
       navigate(`/team/${teamId}`, {
