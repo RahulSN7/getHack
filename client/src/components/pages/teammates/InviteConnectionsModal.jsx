@@ -54,8 +54,17 @@ export default function InviteConnectionsModal({
   const [selectedIds, setSelectedIds] = useState([]);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Available spots calculation (accounting for current members & existing invitations)
-  const availableSlots = Math.max(0, maxSize - currentSize - pendingInvitationIds.length);
+  // Available spots calculation dynamically based on actual team members
+  const effectiveCurrentSize = Math.max(1, existingMemberIds.length > 0 ? existingMemberIds.length : currentSize);
+  const availableSlots = Math.max(0, maxSize - effectiveCurrentSize);
+  const spotText = availableSlots === 1 ? "available spot" : "available spots";
+
+  // Clamp selection if capacity changes while open
+  useEffect(() => {
+    if (selectedIds.length > availableSlots) {
+      setSelectedIds((prev) => prev.slice(0, availableSlots));
+    }
+  }, [availableSlots, selectedIds.length]);
 
   // Reset internal state when modal opens
   useEffect(() => {
@@ -202,7 +211,7 @@ export default function InviteConnectionsModal({
           {/* Capacity Status Badge */}
           <div className="flex items-center justify-between text-xs font-semibold">
             <span className="text-neutral-600 dark:text-neutral-300">
-              Selected: <strong className="text-indigo-600 dark:text-indigo-400">{selectedIds.length}</strong> / {availableSlots} available spots
+              Selected: <strong className="text-indigo-600 dark:text-indigo-400">{selectedIds.length}</strong> / {availableSlots} {spotText}
             </span>
 
             {availableSlots === 0 ? (
@@ -390,7 +399,7 @@ export default function InviteConnectionsModal({
           <button
             type="button"
             onClick={handleSend}
-            disabled={selectedIds.length === 0}
+            disabled={selectedIds.length === 0 || selectedIds.length > availableSlots}
             className="
               inline-flex
               items-center

@@ -194,6 +194,19 @@ export const teamService = {
     });
     return handleResponse(response);
   },
+
+  // Invite connections to team with capacity check
+  async inviteConnections(teamId, userIds) {
+    const response = await fetch(`${API_BASE}/${teamId}/invite`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ userIds }),
+    });
+    return handleResponse(response);
+  },
 };
 
 export default teamService;

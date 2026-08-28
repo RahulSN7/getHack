@@ -39,6 +39,14 @@ const createTeam = async (req, res) => {
     const userId = req.user._id;
     const userIdStr = userId.toString();
 
+    const maxCapacity = Number(maxSize) || 4;
+    const initialInvites = Array.isArray(pendingInvitationIds) ? pendingInvitationIds : [];
+    if (initialInvites.length > maxCapacity - 1) {
+      return res.status(400).json({
+        message: `Cannot send ${initialInvites.length} invitations: Only ${maxCapacity - 1} open spot(s) available for team size of ${maxCapacity}.`,
+      });
+    }
+
     const team = await Team.create({
       teamName: teamName.trim(),
       hackathon: hackathon || `custom-hackathon-${Date.now()}`,
@@ -52,7 +60,7 @@ const createTeam = async (req, res) => {
       rolesNeeded: Array.isArray(rolesNeeded) ? rolesNeeded : [],
       techStack: Array.isArray(techStack) ? techStack : [],
       currentSize: 1,
-      maxSize: Number(maxSize) || 4,
+      maxSize: maxCapacity,
       location: location || "Online",
       accent: accent || "indigo",
       status: "Recruiting",
@@ -60,7 +68,7 @@ const createTeam = async (req, res) => {
       leader: userId,
       members: [{ user: userId, role: "Team Leader" }],
       memberIds: [userIdStr],
-      pendingInvitationIds: Array.isArray(pendingInvitationIds) ? pendingInvitationIds : [],
+      pendingInvitationIds: initialInvites,
     });
 
     const populatedTeam = await Team.findById(team._id)
@@ -442,6 +450,84 @@ const removeMember = async (req, res) => {
   }
 };
 
+// POST /api/teams/:id/invite — Invite connections to team with capacity validation
+const inviteConnections = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userIds = [] } = req.body;
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+
+    let team = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      team = await Team.findById(id);
+    }
+    if (!team) {
+      team = await Team.findOne({ id });
+    }
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found." });
+    }
+
+    // Leader / Member authorization check
+    const isLeaderOrMember =
+      team.createdBy.toString() === userIdStr ||
+      (team.leader && team.leader.toString() === userIdStr) ||
+      (team.memberIds && team.memberIds.includes(userIdStr));
+
+    if (!isLeaderOrMember) {
+      return res.status(403).json({ message: "Only team members can invite connections to this team." });
+    }
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: "No connection IDs provided for invitation." });
+    }
+
+    // Recalculate capacity based on actual database members
+    const currentMemberCount = team.members && team.members.length > 0 ? team.members.length : (team.currentSize || 1);
+    const availableSpots = Math.max(0, team.maxSize - currentMemberCount);
+
+    if (userIds.length > availableSpots) {
+      return res.status(400).json({
+        message: `Cannot send invitations: Only ${availableSpots} spot${availableSpots === 1 ? "" : "s"} available in this team.`,
+      });
+    }
+
+    // Add new user IDs to pendingInvitationIds without duplicates or adding existing members
+    const currentPending = team.pendingInvitationIds || [];
+    const currentMembers = team.memberIds || [];
+    const newPending = [...currentPending];
+
+    for (const invId of userIds) {
+      const invIdStr = invId.toString();
+      if (!currentMembers.includes(invIdStr) && !newPending.includes(invIdStr)) {
+        newPending.push(invIdStr);
+      }
+    }
+
+    team.pendingInvitationIds = newPending;
+    await team.save();
+
+    const updatedTeam = await Team.findById(team._id)
+      .populate("createdBy", "name email role profile")
+      .populate("leader", "name email role profile")
+      .populate("members.user", "name email role profile");
+
+    return res.json({
+      success: true,
+      message: `${userIds.length} invitation(s) sent successfully.`,
+      team: updatedTeam,
+    });
+  } catch (error) {
+    console.error("Invite connections error:", error);
+    return res.status(500).json({
+      message: "Server error occurred while sending invitations.",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createTeam,
   getTeams,
@@ -451,5 +537,6 @@ module.exports = {
   joinTeam,
   leaveTeam,
   removeMember,
+  inviteConnections,
 };
 

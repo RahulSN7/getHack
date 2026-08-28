@@ -1191,7 +1191,7 @@ export default function CreateTeamPage() {
           onClose={() => setIsInviteModalOpen(false)}
           maxSize={maxSize}
           currentSize={currentMemberCount}
-          existingMemberIds={[creatorId]}
+          existingMemberIds={isEditMode && resolvedMembers.length > 0 ? resolvedMembers.map((m) => m.id) : [creatorId]}
           pendingInvitationIds={invitedMemberIds}
           onSendInvitations={handleSendInvitations}
         />

@@ -99,8 +99,10 @@ export default function TeamDetailsModal({
 
   const teamIdStr = (activeTeam._id || activeTeam.id || id).toString();
 
+  const memberObjects = resolveTeamMembers(activeTeam, currentUser);
+  const realCurrentSize = memberObjects.length > 0 ? memberObjects.length : currentSize || 1;
   const allPendingIds = [...(activeTeam.pendingInvitationIds || []), ...pendingInvitations];
-  const spotsLeft = Math.max(0, maxSize - currentSize - allPendingIds.length);
+  const spotsLeft = Math.max(0, maxSize - realCurrentSize);
   const isFull = spotsLeft === 0;
 
   const actionState = getTeamActionState(activeTeam, currentUser, sentRequests);
@@ -152,7 +154,6 @@ export default function TeamDetailsModal({
     }
   };
 
-  const memberObjects = resolveTeamMembers(activeTeam, currentUser);
   const leaderObj = resolveTeamLeader(activeTeam, currentUser);
 
   const sortedMembers = [...memberObjects].sort((a, b) => {
@@ -546,7 +547,7 @@ export default function TeamDetailsModal({
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
         maxSize={maxSize}
-        currentSize={currentSize}
+        currentSize={realCurrentSize}
         existingMemberIds={memberObjects.map((m) => m.id)}
         pendingInvitationIds={allPendingIds}
         onSendInvitations={handleSendInvitations}

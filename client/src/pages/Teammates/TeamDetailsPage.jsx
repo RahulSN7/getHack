@@ -155,8 +155,10 @@ export default function TeamDetailsPage() {
   );
   const hasPendingRequest = Boolean(pendingReq);
 
+  const memberObjects = resolveTeamMembers(team, currentUser);
+  const realCurrentSize = memberObjects.length > 0 ? memberObjects.length : currentSize;
   const allPendingIds = [...(team.pendingInvitationIds || []), ...pendingInvitations];
-  const spotsLeft = Math.max(0, maxSize - currentSize - allPendingIds.length);
+  const spotsLeft = Math.max(0, maxSize - realCurrentSize);
   const isFull = spotsLeft === 0;
 
   const actionState = getTeamActionState(team, currentUser, sentRequests);
@@ -197,13 +199,21 @@ export default function TeamDetailsPage() {
     }
   };
 
-  const handleSendInvitations = (selectedIds) => {
-    setPendingInvitations([...pendingInvitations, ...selectedIds]);
-    showToast(`${selectedIds.length} invitation(s) sent successfully!`);
+  const handleSendInvitations = async (selectedIds) => {
+    try {
+      const res = await teamService.inviteConnections(teamIdStr, selectedIds);
+      if (res?.team) {
+        setFetchedTeam(res.team);
+      }
+      setPendingInvitations((prev) => [...prev, ...selectedIds]);
+      showToast(`${selectedIds.length} invitation(s) sent successfully!`);
+    } catch (err) {
+      console.error("Failed to send invitations:", err);
+      showToast(err.message || "Failed to send invitations.");
+    }
   };
 
   // Resolve team members & leader dynamically from populated Mongoose user objects
-  const memberObjects = resolveTeamMembers(team, currentUser);
   const leaderObj = resolveTeamLeader(team, currentUser);
 
   const sortedMembers = [...memberObjects].sort((a, b) => {
@@ -541,8 +551,8 @@ export default function TeamDetailsPage() {
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
         maxSize={maxSize}
-        currentSize={currentSize}
-        existingMemberIds={memberIds}
+        currentSize={realCurrentSize}
+        existingMemberIds={memberObjects.map((m) => m.id)}
         pendingInvitationIds={allPendingIds}
         onSendInvitations={handleSendInvitations}
       />
