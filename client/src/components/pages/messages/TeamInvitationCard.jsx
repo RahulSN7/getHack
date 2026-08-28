@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { invitationService } from "../../../services/invitationService";
+import MessageStatus from "./MessageStatus";
 
 function formatMessageTime(dateStr) {
   if (!dateStr) return "";
@@ -13,7 +14,11 @@ function formatMessageTime(dateStr) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function TeamInvitationCard({ msg, currentUserId, onInvitationUpdated }) {
+export default function TeamInvitationCard({ msg, channel, currentUserId, onInvitationUpdated, forceOpen, onClosePopover }) {
+  if (msg.deleted_at || msg.type === "deleted") {
+    return null;
+  }
+
   const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState(null);
 
@@ -66,9 +71,18 @@ export default function TeamInvitationCard({ msg, currentUserId, onInvitationUpd
             Hackathon Team Invitation
           </span>
         </div>
-        <span className="text-[10px] text-neutral-400">
-          {formatMessageTime(msg.created_at)}
-        </span>
+        <div className="flex items-center gap-1 text-[10px] text-neutral-400 font-medium">
+          <span>{formatMessageTime(msg.created_at)}</span>
+          {isMine && (
+            <MessageStatus
+              msg={msg}
+              channel={channel}
+              currentUserId={currentUserId}
+              forceOpen={forceOpen}
+              onClosePopover={onClosePopover}
+            />
+          )}
+        </div>
       </div>
 
       {/* ── Subtitle Description ── */}

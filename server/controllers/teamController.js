@@ -284,6 +284,7 @@ const updateTeam = async (req, res) => {
       maxSize,
       location,
       accent,
+      memberIds,
     } = req.body;
 
     if (teamName !== undefined && teamName.trim()) team.teamName = teamName.trim();
@@ -299,6 +300,27 @@ const updateTeam = async (req, res) => {
     if (maxSize !== undefined && Number(maxSize) >= team.currentSize) team.maxSize = Number(maxSize);
     if (location !== undefined) team.location = location;
     if (accent !== undefined) team.accent = accent;
+
+    if (Array.isArray(memberIds)) {
+      const leaderIdStr = (team.leader || team.createdBy).toString();
+      const submittedIds = memberIds.map((m) => m.toString());
+
+      // Ensure team leader is never removed
+      if (!submittedIds.includes(leaderIdStr)) {
+        submittedIds.unshift(leaderIdStr);
+      }
+
+      const targetMaxSize = maxSize !== undefined ? Number(maxSize) : team.maxSize;
+      if (submittedIds.length > targetMaxSize) {
+        return res.status(400).json({
+          message: `Cannot save team changes: Member count (${submittedIds.length}) exceeds maximum team size (${targetMaxSize}).`,
+        });
+      }
+
+      team.members = team.members.filter((m) => m.user && submittedIds.includes(m.user.toString()));
+      team.memberIds = submittedIds;
+      team.currentSize = submittedIds.length;
+    }
 
     if (team.currentSize >= team.maxSize) {
       team.status = "Full";

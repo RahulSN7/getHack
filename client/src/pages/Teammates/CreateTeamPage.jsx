@@ -59,6 +59,12 @@ export default function CreateTeamPage() {
   const [memberToRemove, setMemberToRemove] = useState(null);
   const [isRemovingMember, setIsRemovingMember] = useState(false);
 
+  // Draft and Original Team States for Manage Team
+  const [originalMembers, setOriginalMembers] = useState([]);
+  const [draftMembers, setDraftMembers] = useState([]);
+  const [originalTeamFields, setOriginalTeamFields] = useState(null);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+
   // Section 01: Team Information (Empty Initial State)
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
@@ -165,6 +171,23 @@ export default function CreateTeamPage() {
         setTechStack(team.techStack || []);
         setLookingForDescription(team.lookingForDescription || "");
         setMaxSize(team.maxSize || 4);
+
+        const resolved = resolveTeamMembers(team, currentUser);
+        setOriginalMembers(resolved);
+        setDraftMembers(resolved);
+        setOriginalTeamFields({
+          teamName: team.teamName || "",
+          description: team.description || "",
+          hackathonName: team.hackathonName || "",
+          hackathonLink: team.hackathonLink || "",
+          startDate: startVal,
+          endDate: endVal,
+          mode: team.location || "Online",
+          rolesNeeded: [...(team.rolesNeeded || [])],
+          techStack: [...(team.techStack || [])],
+          lookingForDescription: team.lookingForDescription || "",
+          maxSize: team.maxSize || 4,
+        });
       } else {
         setLoadError("Team not found.");
       }
@@ -186,32 +209,42 @@ export default function CreateTeamPage() {
   const creatorAvatar = currentUser?.avatar || currentUser?.profile?.avatar || "";
   const creatorId = currentUser?.id || currentUser?._id || "user-current";
 
-  // Resolve team members dynamically from MongoDB populated team object
-  const resolvedMembers = teamData ? resolveTeamMembers(teamData, currentUser) : [];
+  // Resolve team members dynamically
+  const resolvedMembers = isEditMode ? draftMembers : (teamData ? resolveTeamMembers(teamData, currentUser) : []);
   const currentMemberCount = isEditMode
     ? resolvedMembers.length > 0 ? resolvedMembers.length : 1
     : 1;
 
-  const handleConfirmRemoveMember = async () => {
-    if (!memberToRemove || !editTeamId) return;
-    try {
-      setIsRemovingMember(true);
-      console.log("Removing member:", memberToRemove.id, "from team:", editTeamId);
-      const res = await teamService.removeMember(editTeamId, memberToRemove.id);
-      console.log("Remove member response:", res);
-      if (res?.team) {
-        setTeamData(res.team);
-      } else {
-        await loadTeamForEdit();
-      }
-      showToast(`${memberToRemove.name} removed from team.`);
-      setMemberToRemove(null);
-    } catch (err) {
-      console.error("Failed to remove member:", err);
-      showToast(err.message || "Failed to remove member.");
-    } finally {
-      setIsRemovingMember(false);
-    }
+  // Unsaved changes detection
+  const currentMemberIdsStr = (draftMembers || []).map((m) => String(m.id || m._id)).sort().join(",");
+  const originalMemberIdsStr = (originalMembers || []).map((m) => String(m.id || m._id)).sort().join(",");
+  const membersChanged = currentMemberIdsStr !== originalMemberIdsStr;
+
+  const formFieldsChanged = originalTeamFields
+    ? (
+        teamName.trim() !== originalTeamFields.teamName ||
+        description.trim() !== originalTeamFields.description ||
+        hackathonName.trim() !== originalTeamFields.hackathonName ||
+        hackathonLink.trim() !== originalTeamFields.hackathonLink ||
+        startDate !== originalTeamFields.startDate ||
+        endDate !== originalTeamFields.endDate ||
+        mode !== originalTeamFields.mode ||
+        lookingForDescription.trim() !== originalTeamFields.lookingForDescription ||
+        Number(maxSize) !== Number(originalTeamFields.maxSize) ||
+        JSON.stringify(rolesNeeded) !== JSON.stringify(originalTeamFields.rolesNeeded) ||
+        JSON.stringify(techStack) !== JSON.stringify(originalTeamFields.techStack)
+      )
+    : false;
+
+  const hasUnsavedChanges = isEditMode && (membersChanged || formFieldsChanged);
+
+  // Local draft remove handler — does NOT call backend API
+  const handleConfirmRemoveMember = () => {
+    if (!memberToRemove) return;
+    const targetId = memberToRemove.id || memberToRemove._id;
+    setDraftMembers((prev) => prev.filter((m) => String(m.id || m._id) !== String(targetId)));
+    showToast(`${memberToRemove.name} marked for removal. Click Save Changes to commit.`);
+    setMemberToRemove(null);
   };
 
 
@@ -378,18 +411,24 @@ export default function CreateTeamPage() {
       location: mode,
       accent: "indigo",
       pendingInvitationIds: invitedMemberIds,
+      memberIds: draftMembers.map((m) => (m.id || m._id).toString()),
     };
 
     if (isEditMode) {
       try {
-        await teamService.updateTeam(editTeamId, payload);
-        showToast("Team updated successfully!");
+        const res = await teamService.updateTeam(editTeamId, payload);
+        if (res?.team) {
+          const updatedResolved = resolveTeamMembers(res.team, currentUser);
+          setOriginalMembers(updatedResolved);
+          setDraftMembers(updatedResolved);
+        }
+        showToast("Team changes saved successfully!");
         navigate(`/team/${editTeamId}`, {
           state: { from: "/teammates?tab=my-teams" },
         });
       } catch (err) {
         console.error("Failed to update team:", err);
-        showToast(err.message || "Failed to update team.");
+        showToast(err.message || "Unable to save team changes. Please try again.");
         setIsSubmitting(false);
       }
       return;
@@ -1229,29 +1268,62 @@ export default function CreateTeamPage() {
                   Remove Team Member?
                 </h3>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Are you sure you want to remove{" "}
+                  Remove{" "}
                   <span className="font-semibold text-neutral-800 dark:text-neutral-200">
                     {memberToRemove.name}
                   </span>{" "}
-                  from {teamName || "this team"}? They will no longer be a part of this team.
+                  from your draft team? This change will take effect when you click <strong>Save Changes</strong>.
                 </p>
               </div>
               <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setMemberToRemove(null)}
-                  disabled={isRemovingMember}
-                  className="rounded-lg border border-neutral-300 px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 disabled:opacity-50"
+                  className="rounded-lg border border-neutral-300 px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmRemoveMember}
-                  disabled={isRemovingMember}
-                  className="rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 disabled:opacity-50 dark:bg-rose-500 dark:hover:bg-rose-400"
+                  className="rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-400"
                 >
-                  {isRemovingMember ? "Removing..." : "Remove Member"}
+                  Remove Member
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Unsaved Changes Exit Confirmation Modal */}
+        {showUnsavedModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in backdrop-blur-xs">
+            <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                  Discard Unsaved Changes?
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  You have unsaved changes. Are you sure you want to leave? Your edits will be discarded.
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUnsavedModal(false)}
+                  className="rounded-lg border border-neutral-300 px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                >
+                  Stay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUnsavedModal(false);
+                    navigate(isEditMode ? `/team/${editTeamId}` : "/teammates?tab=teams");
+                  }}
+                  className="rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-400"
+                >
+                  Discard Changes
                 </button>
               </div>
             </div>

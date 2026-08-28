@@ -34,9 +34,9 @@ function Messages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileShowChat, setMobileShowChat] = useState(false);
 
-  // Favourites & Closed Chat states
+  // Favourites & Chat states
   const [chatStates, setChatStates] = useState({});
-  const [activeFilter, setActiveFilter] = useState("all"); // "all" | "favourites" | "closed"
+  const [activeFilter, setActiveFilter] = useState("all"); // "all" | "favourites" | "unread"
   const [toastText, setToastText] = useState(null);
 
   const currentUserId = user?.id || user?._id || "";
@@ -290,13 +290,23 @@ function Messages() {
   const activeChannelRef = useRef(activeChannel);
   useEffect(() => {
     activeChannelRef.current = activeChannel;
-    if (activeChannel && typeof activeChannel.markRead === "function") {
-      activeChannel
-        .markRead()
-        .then(() => {
-          setChannels((prev) => [...prev]);
-        })
-        .catch(() => {});
+    if (activeChannel) {
+      if (activeChannel.state) activeChannel.state.unreadCount = 0;
+      if (typeof activeChannel.markRead === "function") {
+        activeChannel
+          .markRead()
+          .then(() => {
+            if (activeChannel.state) activeChannel.state.unreadCount = 0;
+            setChannels((prev) =>
+              prev.map((c) =>
+                c.cid === activeChannel.cid
+                  ? Object.assign(Object.create(Object.getPrototypeOf(c)), c)
+                  : c
+              )
+            );
+          })
+          .catch(() => {});
+      }
     }
   }, [activeChannel]);
 
@@ -347,7 +357,27 @@ function Messages() {
         if (!exists && event.channel) {
           return [event.channel, ...previousChannels];
         }
-        return [...previousChannels];
+
+        if ((event.type === "message.read" || event.type === "notification.mark_read") && event.user?.id) {
+          const targetChan = previousChannels.find((c) => c.cid === cid) || event.channel;
+          if (targetChan && targetChan.state) {
+            if (!targetChan.state.read) targetChan.state.read = {};
+            targetChan.state.read[event.user.id] = {
+              last_read: event.created_at || new Date().toISOString(),
+              user: event.user,
+            };
+          }
+        }
+
+        return previousChannels.map((c) => {
+          if (c.cid === cid) {
+            if (activeChannelRef.current?.cid === cid && c.state) {
+              c.state.unreadCount = 0;
+            }
+            return Object.assign(Object.create(Object.getPrototypeOf(c)), c);
+          }
+          return c;
+        });
       });
     };
 
@@ -477,15 +507,35 @@ function Messages() {
     []
   );
 
+  const handleChannelRead = useCallback((cid) => {
+    setChannels((prev) =>
+      prev.map((c) => {
+        if (c.cid === cid) {
+          if (c.state) c.state.unreadCount = 0;
+          return Object.assign(Object.create(Object.getPrototypeOf(c)), c);
+        }
+        return c;
+      })
+    );
+  }, []);
+
   const handleSelectChannel = useCallback((chan) => {
     if (!chan) return;
     setActiveChannel(chan);
     setMobileShowChat(true);
+    if (chan.state) chan.state.unreadCount = 0;
     if (typeof chan.markRead === "function") {
       chan
         .markRead()
         .then(() => {
-          setChannels((prev) => [...prev]);
+          if (chan.state) chan.state.unreadCount = 0;
+          setChannels((prev) =>
+            prev.map((c) =>
+              c.cid === chan.cid
+                ? Object.assign(Object.create(Object.getPrototypeOf(c)), c)
+                : c
+            )
+          );
         })
         .catch(() => {});
     }
@@ -497,14 +547,11 @@ function Messages() {
   const filteredChannels = useMemo(() => {
     let list = channels;
 
-    // Filter by active tab (All, Favourites, Closed)
+    // Filter by active tab (All, Favourites, Unread)
     if (activeFilter === "favourites") {
       list = list.filter((ch) => !!chatStates[ch.cid]?.isFavourite);
-    } else if (activeFilter === "closed") {
-      list = list.filter((ch) => !!chatStates[ch.cid]?.isClosed);
-    } else {
-      // "all" tab: show active non-closed channels
-      list = list.filter((ch) => !chatStates[ch.cid]?.isClosed);
+    } else if (activeFilter === "unread") {
+      list = list.filter((ch) => (ch.countUnread?.() || ch.state?.unreadCount || 0) > 0);
     }
 
     if (!searchQuery.trim()) {
@@ -774,7 +821,7 @@ function Messages() {
             />
           </div>
 
-          {/* Filter Tabs: All | Favourites | Closed */}
+          {/* Filter Tabs: All | Favourites | Unread */}
           <div className="flex items-center gap-1.5 pt-1">
             <button
               type="button"
@@ -800,14 +847,14 @@ function Messages() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveFilter("closed")}
+              onClick={() => setActiveFilter("unread")}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                activeFilter === "closed"
+                activeFilter === "unread"
                   ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
                   : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
               }`}
             >
-              Closed
+              Unread
             </button>
           </div>
         </div>
@@ -920,13 +967,13 @@ function Messages() {
                     Click option menu (⋮) in any chat and select &quot;Add to favourites&quot;.
                   </p>
                 </>
-              ) : activeFilter === "closed" ? (
+              ) : activeFilter === "unread" ? (
                 <>
                   <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">
-                    No closed chats
+                    No unread messages
                   </p>
                   <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500 max-w-[220px]">
-                    Closed conversations will appear here.
+                    Conversations with new messages will appear here.
                   </p>
                 </>
               ) : (
@@ -1089,6 +1136,7 @@ function Messages() {
           isFavourite={!!chatStates[activeChannel?.cid]?.isFavourite}
           onToggleFavourite={handleToggleFavourite}
           onCloseChat={handleCloseChat}
+          onChannelRead={handleChannelRead}
         />
       </div>
     </div>

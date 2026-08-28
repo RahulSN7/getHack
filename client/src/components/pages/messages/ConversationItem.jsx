@@ -83,8 +83,8 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
   const lastMessageTime =
     lastMessage?.created_at || channel.state?.last_message_at || channel.data?.last_message_at || "";
 
-  // Unread count from Stream Chat SDK
-  const unreadCount = channel.countUnread?.() || 0;
+  // Unread count from Stream Chat SDK (evaluated as 0 when currently active)
+  const unreadCount = isActive ? 0 : (channel.countUnread?.() || channel.state?.unreadCount || 0);
 
   // Initials fallback
   const initials = name
@@ -150,11 +150,6 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
                 ❤️
               </span>
             )}
-            {isClosed && (
-              <span className="shrink-0 text-[10px] font-semibold text-neutral-400 bg-neutral-200/70 dark:bg-neutral-800 dark:text-neutral-400 px-1.5 py-0.5 rounded">
-                Closed
-              </span>
-            )}
           </div>
 
           <span
@@ -178,21 +173,8 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
           </p>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {isClosed && onReopen && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onReopen(channel);
-                }}
-                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:underline px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10"
-              >
-                Reopen
-              </button>
-            )}
-
-            {unreadCount > 0 && !isClosed && (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-500 px-1.5 text-[10px] font-bold text-white">
+            {unreadCount > 0 && (
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-500 px-1.5 text-[10px] font-bold text-white shadow-2xs">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}

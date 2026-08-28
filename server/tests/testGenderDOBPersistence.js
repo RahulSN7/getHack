@@ -2,7 +2,7 @@
 // testGenderDOBPersistence.js — Verify Gender and Date of Birth Persistence in User.toSafeUser()
 // ---------------------------------------------------------------------------
 
-const User = require("../models/User");
+const User = require("../models/user");
 
 console.log("==============================================");
 console.log("Testing Gender & DOB Persistence in toSafeUser()");
