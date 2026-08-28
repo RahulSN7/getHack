@@ -149,4 +149,17 @@ export const chatService = {
     });
     return response.json();
   },
+
+  /**
+   * Clear all messages in a chat conversation for both users.
+   */
+  async clearChat(cid) {
+    const response = await fetch(`${API_BASE_URL}/chat/clear`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cid }),
+    });
+    return response.json();
+  },
 };

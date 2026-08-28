@@ -5,7 +5,7 @@
 // attachments, per-user remove chat, and complete Block/Unblock system.
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { chatService } from "../../../services/chatService";
@@ -46,6 +46,28 @@ function formatDateSeparator(dateStr) {
     return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
   }
   return d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
+}
+
+// WhatsApp-style message edit time limit window (15 minutes in milliseconds)
+export const MESSAGE_EDIT_WINDOW = 15 * 60 * 1000;
+
+export function canEditMessage(msg) {
+  if (!msg) return false;
+  // Disallow deleted messages
+  if (msg.deleted_at || msg.type === "deleted") return false;
+  // Disallow team invitations
+  if (msg.custom_type === "team_invitation" || msg.type === "team_invitation" || msg.teamInvitation || msg.invitation_id) return false;
+  // Disallow file attachments
+  if (Array.isArray(msg.attachments) && msg.attachments.length > 0) return false;
+
+  const createdTime = msg.created_at || msg.created_at_time;
+  if (!createdTime) return false;
+
+  const createdTimestamp = new Date(createdTime).getTime();
+  if (isNaN(createdTimestamp)) return false;
+
+  const age = Date.now() - createdTimestamp;
+  return age >= 0 && age <= MESSAGE_EDIT_WINDOW;
 }
 
 function formatFileSize(bytes) {
@@ -174,9 +196,122 @@ function getDisplayEmoji(typeKey) {
 const EMOJI_PICKER_LIST = ["👍", "❤️", "😂", "🎉", "🔥", "😊", "🙏", "🚀", "💡", "💯", "👏", "✨", "😍", "🙌", "🤔", "😮"];
 
 // ---------------------------------------------------------------------------
-// Message Info Modal Component
-// Displays Sent, Delivered, and Read status with exact timestamps and recipient names
+// EditHistoryModal Component
+// Displays current message and persistent previous edit history versions
 // ---------------------------------------------------------------------------
+function EditHistoryModal({ msg, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  if (!msg) return null;
+
+  const historyList = Array.isArray(msg.edit_history)
+    ? msg.edit_history
+    : Array.isArray(msg.extraData?.edit_history)
+    ? msg.extraData.edit_history
+    : [];
+
+  const formatHistoryTime = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "";
+      return (
+        d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
+        ", " +
+        d.toLocaleDateString([], { day: "numeric", month: "short" })
+      );
+    } catch {
+      return "";
+    }
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-neutral-200 dark:border-neutral-700/80 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <span className="text-base">✏️</span>
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">Message Edit History</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+          {/* Current Message */}
+          <div className="rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-950/30 p-3.5 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                Current Message
+              </span>
+              <span className="text-[10px] text-neutral-400 font-medium">{formatMessageTime(msg.created_at)}</span>
+            </div>
+            <p className="text-sm font-medium text-neutral-900 dark:text-white whitespace-pre-wrap break-words leading-relaxed">
+              {msg.text}
+            </p>
+          </div>
+
+          {/* Previous History List */}
+          <div className="space-y-3 pt-1">
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+              Previous Versions
+            </span>
+            {historyList.length > 0 ? (
+              <div className="space-y-2.5">
+                {[...historyList].reverse().map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 p-3 space-y-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400">
+                        Version {historyList.length - idx}
+                      </span>
+                      {item.edited_at && (
+                        <span className="text-[10px] text-neutral-400">{formatHistoryTime(item.edited_at)}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap break-words leading-relaxed">
+                      {item.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400 italic">No previous versions stored for this message.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Floating Action Menu Component for Message Options (Reply, Copy, Edit, Message Info, Delete, Report)
 // Positioned relative to message button trigger with zero flicker (pre-calculated initialCoords + useLayoutEffect)
@@ -199,6 +334,31 @@ function FloatingMessageMenu({
 }) {
   const menuRef = useRef(null);
   const [coords, setCoords] = useState(initialCoords || { top: -9999, left: -9999 });
+  const [editExpired, setEditExpired] = useState(false);
+
+  // Lightweight real-time timer to hide Edit option automatically when 15-min window elapses while menu is open
+  useEffect(() => {
+    setEditExpired(false);
+    if (!isMine || !msg) return;
+
+    const createdTimeStr = msg.created_at || msg.created_at_time;
+    if (!createdTimeStr) return;
+
+    const createdTimestamp = new Date(createdTimeStr).getTime();
+    if (isNaN(createdTimestamp)) return;
+
+    const messageAge = Date.now() - createdTimestamp;
+    const remainingMs = MESSAGE_EDIT_WINDOW - messageAge;
+
+    if (remainingMs > 0 && remainingMs <= MESSAGE_EDIT_WINDOW) {
+      const timer = setTimeout(() => {
+        setEditExpired(true);
+      }, remainingMs + 50); // slight buffer to ensure time has strictly elapsed
+      return () => clearTimeout(timer);
+    }
+  }, [msg, isMine]);
+
+  const canEdit = isMine && canEditMessage(msg) && !editExpired;
 
   useLayoutEffect(() => {
     const rect = anchorRect || (btnRef?.current ? btnRef.current.getBoundingClientRect() : null);
@@ -307,16 +467,18 @@ function FloatingMessageMenu({
 
       {isMine ? (
         <>
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onEdit(msg);
-            }}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800/80 transition-colors"
-          >
-            <span>✏️</span> Edit
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onEdit(msg);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800/80 transition-colors"
+            >
+              <span>✏️</span> Edit
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -360,7 +522,7 @@ function FloatingMessageMenu({
   );
 }
 
-function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourite, onToggleFavourite, onCloseChat }) {
+function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourite, clearedAt, onToggleFavourite, onCloseChat, onChannelRead, onClearChatStateUpdate }) {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
@@ -396,11 +558,14 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   const [editingMessage, setEditingMessage] = useState(null); // msg object
   const [deleteConfirmMsg, setDeleteConfirmMsg] = useState(null); // msg object
   const [activeMessageInfoMsgId, setActiveMessageInfoMsgId] = useState(null); // msg.id
+  const [selectedHistoryMsg, setSelectedHistoryMsg] = useState(null); // msg object
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeReactionMsgId, setActiveReactionMsgId] = useState(null);
   const [showExpandedReactionPickerId, setShowExpandedReactionPickerId] = useState(null);
   const [pendingAttachment, setPendingAttachment] = useState(null); // { file, name, size, mimeType, isImage, uploading, cdnUrl }
   const [lightboxImage, setLightboxImage] = useState(null); // { url, title }
+  const [showClearChatModal, setShowClearChatModal] = useState(false);
+  const [clearingChat, setClearingChat] = useState(false);
 
   // Toast Notification
   const [toastText, setToastText] = useState(null);
@@ -410,6 +575,43 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   const menuBtnRefs = useRef({});
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const composerEmojiContainerRef = useRef(null);
+  const attachmentButtonRef = useRef(null);
+
+  // Close composer emoji picker on click-outside or ESC key
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        attachmentButtonRef.current &&
+        attachmentButtonRef.current.contains(e.target)
+      ) {
+        return;
+      }
+
+      if (
+        composerEmojiContainerRef.current &&
+        !composerEmojiContainerRef.current.contains(e.target)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showEmojiPicker]);
 
   // Close active message menu on window resize to ensure responsive positioning
   useEffect(() => {
@@ -628,6 +830,17 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       }
     };
 
+    const handleChannelTruncated = (event) => {
+      if (event.channel_id === channel.id || event.cid === channel.cid) {
+        setMessages([]);
+        if (channel.state) {
+          channel.state.messages = [];
+          channel.state.unreadCount = 0;
+        }
+        if (onChannelRead) onChannelRead(channel.cid);
+      }
+    };
+
     channel.on("message.new", handleNewMessage);
     channel.on("message.updated", handleNewMessage);
     channel.on("message.deleted", handleNewMessage);
@@ -636,6 +849,8 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     channel.on("user.presence.changed", handleNewMessage);
     channel.on("reaction.new", handleNewMessage);
     channel.on("reaction.deleted", handleNewMessage);
+    channel.on("channel.truncated", handleChannelTruncated);
+    channel.on("channel.updated", handleChannelTruncated);
     channel.on("typing.start", handleTypingStart);
     channel.on("typing.stop", handleTypingStop);
 
@@ -649,10 +864,37 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       channel.off("user.presence.changed", handleNewMessage);
       channel.off("reaction.new", handleNewMessage);
       channel.off("reaction.deleted", handleNewMessage);
+      channel.off("channel.truncated", handleChannelTruncated);
+      channel.off("channel.updated", handleChannelTruncated);
       channel.off("typing.start", handleTypingStart);
       channel.off("typing.stop", handleTypingStop);
     };
   }, [channel?.cid, currentUserId, isBlockedByMe, isBlockedByOther, userId]);
+
+  // Handle Per-User Clear Chat
+  const handleConfirmClearChat = async () => {
+    if (!channel?.cid || clearingChat) return;
+
+    setClearingChat(true);
+    try {
+      const res = await chatService.clearChat(channel.cid);
+      if (res?.success) {
+        if (onClearChatStateUpdate) {
+          onClearChatStateUpdate(channel.cid, res.clearedAt);
+        }
+        if (onChannelRead) onChannelRead(channel.cid);
+        showToast("Chat history cleared");
+        setShowClearChatModal(false);
+      } else {
+        showToast(res?.message || "Unable to clear chat. Please try again.");
+      }
+    } catch (err) {
+      console.error("Clear chat error:", err);
+      showToast("Unable to clear chat. Please try again.");
+    } finally {
+      setClearingChat(false);
+    }
+  };
 
   // Scroll on message changes
   useEffect(() => {
@@ -798,12 +1040,44 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
     try {
       if (editingMessage) {
-        // Edit existing message using Stream Chat SDK
-        const client = channel.getClient?.() || channel.client;
-        if (client && typeof client.updateMessage === "function") {
-          await client.updateMessage({ id: editingMessage.id, text });
-        } else {
-          await channel.sendMessage({ id: editingMessage.id, text });
+        if (!canEditMessage(editingMessage)) {
+          showToast("Edit time window has expired (15 minutes).");
+          setEditingMessage(null);
+          setInputText("");
+          return;
+        }
+
+        if (text !== editingMessage.text) {
+          const existingHistory = Array.isArray(editingMessage.edit_history)
+            ? editingMessage.edit_history
+            : Array.isArray(editingMessage.extraData?.edit_history)
+            ? editingMessage.extraData.edit_history
+            : [];
+
+          const updatedHistory = [
+            ...existingHistory,
+            {
+              text: editingMessage.text,
+              edited_at: new Date().toISOString(),
+              edited_by: currentUserId,
+            },
+          ];
+
+          const client = channel.getClient?.() || channel.client;
+          const updatePayload = {
+            id: editingMessage.id,
+            text,
+            is_edited: true,
+            edit_history: updatedHistory,
+          };
+
+          if (client && typeof client.updateMessage === "function") {
+            await client.updateMessage(updatePayload);
+          } else if (typeof channel.updateMessage === "function") {
+            await channel.updateMessage(updatePayload);
+          } else {
+            await channel.sendMessage(updatePayload);
+          }
         }
         setEditingMessage(null);
         showToast("Message updated");
@@ -872,6 +1146,10 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   // Start Edit Message
   const handleStartEdit = (msg) => {
     if (isBlockedByMe || isBlockedByOther) return;
+    if (!canEditMessage(msg)) {
+      showToast("Messages can only be edited within 15 minutes of sending.");
+      return;
+    }
     setEditingMessage(msg);
     setInputText(msg.text || "");
     setReplyingToMessage(null);
@@ -1009,10 +1287,21 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     setReportNotes("");
   };
 
+  // Per-user message filtering by clearedAt timestamp
+  const visibleMessages = useMemo(() => {
+    if (!clearedAt) return messages;
+    const clearTime = new Date(clearedAt).getTime();
+    if (isNaN(clearTime)) return messages;
+    return messages.filter((msg) => {
+      const msgTime = new Date(msg.created_at || msg.createdAt).getTime();
+      return !isNaN(msgTime) && msgTime > clearTime;
+    });
+  }, [messages, clearedAt]);
+
   // Filter messages by search query if active
   const displayedMessages = searchQuery.trim()
-    ? messages.filter((m) => m.text?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : messages;
+    ? visibleMessages.filter((m) => m.text?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : visibleMessages;
 
   // Group messages by date (strictly one separator per calendar day)
   const groupedMessages = [];
@@ -1209,6 +1498,21 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
               <span>{isFavourite ? "Remove from favourites" : "Add to favourites"}</span>
             </button>
 
+            {/* Clear Chat */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowHeaderMenu(false);
+                setShowClearChatModal(true);
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors text-left"
+            >
+              <svg className="h-4 w-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span>Clear Chat</span>
+            </button>
+
             {/* Close Chat */}
             <button
               type="button"
@@ -1355,6 +1659,12 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             const msg = item.data;
             const isMine = String(msg.user?.id || msg.user_id) === String(currentUserId);
             const isDeleted = Boolean(msg.deleted_at || msg.type === "deleted");
+            const isEdited = !isDeleted && Boolean(
+              msg.is_edited ||
+              msg.message_text_updated_at ||
+              (Array.isArray(msg.edit_history) && msg.edit_history.length > 0) ||
+              (Array.isArray(msg.extraData?.edit_history) && msg.extraData.edit_history.length > 0)
+            );
 
             // Flag for Team Invitation Messages
             const isInvitation =
@@ -1727,9 +2037,25 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                     )}
 
                     <p
-                      className={`text-[10px] mt-1 text-right font-medium flex items-center justify-end ${isMine ? "text-indigo-200" : "text-neutral-400 dark:text-neutral-500"
+                      className={`text-[10px] mt-1 text-right font-medium flex items-center justify-end gap-1 ${isMine ? "text-indigo-200" : "text-neutral-400 dark:text-neutral-500"
                         }`}
                     >
+                      {isEdited && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedHistoryMsg(msg);
+                            }}
+                            className="hover:underline font-semibold opacity-90 cursor-pointer focus:outline-none"
+                            title="Click to view edit history"
+                          >
+                            Edited
+                          </button>
+                          <span>·</span>
+                        </>
+                      )}
                       <span>{formatMessageTime(msg.created_at)}</span>
                       {isMine && !isDeleted && (
                         <MessageStatus
@@ -1848,33 +2174,6 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             </div>
           )}
 
-          {/* Emoji Picker Popover */}
-          {showEmojiPicker && (
-            <div
-              className="
-                absolute bottom-16 left-4 z-40 p-2.5 w-64 rounded-2xl
-                border border-neutral-200 bg-white shadow-2xl
-                dark:border-neutral-700 dark:bg-neutral-800
-                animate-in fade-in zoom-in-95 duration-100 grid grid-cols-6 gap-1.5
-              "
-            >
-              {EMOJI_PICKER_LIST.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    setInputText((prev) => prev + emoji);
-                    setShowEmojiPicker(false);
-                    inputRef.current?.focus();
-                  }}
-                  className="h-8 w-8 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 grid place-items-center text-base transition-colors"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Pending Attachment Composer Preview */}
           {pendingAttachment && (
             <div className="mb-2 flex items-center gap-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 p-2.5">
@@ -1900,7 +2199,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                       <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
                     </svg>
                   ) : (
-                    getFileIconEmoji(pendingAttachment.name, pendingAttachment.mimeType)
+                    "📎"
                   )}
                 </div>
               )}
@@ -1912,7 +2211,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                 <p className="text-[11px] text-neutral-400">
                   {pendingAttachment.uploading
                     ? "Uploading file..."
-                    : `${getFileTypeLabel(pendingAttachment.name, pendingAttachment.mimeType)} • ${formatFileSize(pendingAttachment.size)}`}
+                    : `${(pendingAttachment.size / 1024).toFixed(1)} KB`}
                 </p>
               </div>
 
@@ -1942,36 +2241,70 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
           />
 
           <div className="flex items-end gap-2">
-            {/* Emoji Trigger */}
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="
-                shrink-0 rounded-xl p-2.5 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-100
-                dark:text-neutral-400 dark:hover:text-indigo-400 dark:hover:bg-neutral-800 transition-all duration-150 active:scale-95 group/emoji
-              "
-              title="Add emoji"
-            >
-              <svg
-                className="h-5 w-5 transition-transform duration-150 group-hover/emoji:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {/* Emoji Trigger & Popover Wrapper */}
+            <div ref={composerEmojiContainerRef} className="relative inline-flex items-center">
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                className="
+                  shrink-0 rounded-xl p-2.5 text-neutral-500 hover:text-indigo-600 hover:bg-neutral-100
+                  dark:text-neutral-400 dark:hover:text-indigo-400 dark:hover:bg-neutral-800 transition-all duration-150 active:scale-95 group/emoji
+                "
+                title="Add emoji"
               >
-                <circle cx="12" cy="12" r="9.5" />
-                <path d="M8.5 14.25c.8 1.4 2.1 2.25 3.5 2.25s2.7-.85 3.5-2.25" />
-                <circle cx="9" cy="9.5" r="1.2" fill="currentColor" stroke="none" />
-                <circle cx="15" cy="9.5" r="1.2" fill="currentColor" stroke="none" />
-              </svg>
-            </button>
+                <svg
+                  className="h-5 w-5 transition-transform duration-150 group-hover/emoji:scale-110"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="9.5" />
+                  <path d="M8.5 14.25c.8 1.4 2.1 2.25 3.5 2.25s2.7-.85 3.5-2.25" />
+                  <circle cx="9" cy="9.5" r="1.2" fill="currentColor" stroke="none" />
+                  <circle cx="15" cy="9.5" r="1.2" fill="currentColor" stroke="none" />
+                </svg>
+              </button>
+
+              {/* Emoji Picker Popover */}
+              {showEmojiPicker && (
+                <div
+                  className="
+                    absolute bottom-12 left-0 z-40 p-2.5 w-64 rounded-2xl
+                    border border-neutral-200 bg-white shadow-2xl
+                    dark:border-neutral-700 dark:bg-neutral-800
+                    animate-in fade-in zoom-in-95 duration-100 grid grid-cols-6 gap-1.5
+                  "
+                >
+                  {EMOJI_PICKER_LIST.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        setInputText((prev) => prev + emoji);
+                        inputRef.current?.focus();
+                      }}
+                      className="h-8 w-8 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 grid place-items-center text-base transition-colors"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Attachment Trigger */}
             <button
+              ref={attachmentButtonRef}
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+                setShowEmojiPicker(false);
+              }}
               className="
                 shrink-0 rounded-xl p-2.5 text-neutral-500 hover:bg-neutral-100
                 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors
@@ -2278,6 +2611,66 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                 alt={lightboxImage.title}
                 className="max-h-[75vh] w-auto object-contain rounded-xl"
               />
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit History Modal */}
+      {selectedHistoryMsg && (
+        <EditHistoryModal
+          msg={selectedHistoryMsg}
+          onClose={() => setSelectedHistoryMsg(null)}
+        />
+      )}
+      {/* Clear Chat Confirmation Modal */}
+      {showClearChatModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+          onClick={() => !clearingChat && setShowClearChatModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-neutral-200 dark:border-neutral-800 dark:bg-neutral-900 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 text-red-500 mb-2">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 shrink-0">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                Clear Chat?
+              </h3>
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed mt-1">
+              Are you sure you want to clear this chat from your message history? Messages will remain available to the other participant.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowClearChatModal(false)}
+                disabled={clearingChat}
+                className="rounded-xl px-4 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearChat}
+                disabled={clearingChat}
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {clearingChat ? (
+                  <>
+                    <svg className="h-3.5 w-3.5 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                    </svg>
+                    <span>Clearing...</span>
+                  </>
+                ) : (
+                  <span>Clear Chat</span>
+                )}
+              </button>
             </div>
           </div>
         </div>

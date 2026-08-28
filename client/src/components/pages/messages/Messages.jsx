@@ -383,16 +383,22 @@ function Messages() {
 
     chatClient.on("message.new", handleChannelEvent);
     chatClient.on("notification.message_new", handleChannelEvent);
+    chatClient.on("message.updated", handleChannelEvent);
+    chatClient.on("message.deleted", handleChannelEvent);
     chatClient.on("message.read", handleChannelEvent);
     chatClient.on("notification.mark_read", handleChannelEvent);
     chatClient.on("channel.updated", handleChannelEvent);
+    chatClient.on("channel.truncated", handleChannelEvent);
 
     return () => {
       chatClient.off("message.new", handleChannelEvent);
       chatClient.off("notification.message_new", handleChannelEvent);
+      chatClient.off("message.updated", handleChannelEvent);
+      chatClient.off("message.deleted", handleChannelEvent);
       chatClient.off("message.read", handleChannelEvent);
       chatClient.off("notification.mark_read", handleChannelEvent);
       chatClient.off("channel.updated", handleChannelEvent);
+      chatClient.off("channel.truncated", handleChannelEvent);
     };
   }, [chatClient]);
 
@@ -1099,6 +1105,9 @@ function Messages() {
                     isClosed={
                       !!chatStates[channel.cid]?.isClosed
                     }
+                    clearedAt={
+                      chatStates[channel.cid]?.clearedAt
+                    }
                     onClick={() =>
                       handleSelectChannel(
                         channel
@@ -1134,9 +1143,19 @@ function Messages() {
           onBack={handleBack}
           onRemoveChannel={handleRemoveChannel}
           isFavourite={!!chatStates[activeChannel?.cid]?.isFavourite}
+          clearedAt={chatStates[activeChannel?.cid]?.clearedAt}
           onToggleFavourite={handleToggleFavourite}
           onCloseChat={handleCloseChat}
           onChannelRead={handleChannelRead}
+          onClearChatStateUpdate={(cid, clearedAt) => {
+            setChatStates((prev) => ({
+              ...prev,
+              [cid]: {
+                ...(prev[cid] || {}),
+                clearedAt,
+              },
+            }));
+          }}
         />
       </div>
     </div>

@@ -345,6 +345,7 @@ const getChatStates = async (req, res) => {
         isFavourite: !!s.isFavourite,
         isClosed: !!s.isClosed,
         closedAt: s.closedAt || null,
+        clearedAt: s.clearedAt || null,
       };
     });
 
@@ -530,6 +531,49 @@ const uploadChatFile = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// POST /api/chat/clear — Clear chat history for the authenticated user ONLY
+// ---------------------------------------------------------------------------
+const clearChat = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthenticated." });
+    }
+
+    const { cid, targetUserId } = req.body || {};
+    if (!cid || typeof cid !== "string") {
+      return res.status(400).json({ success: false, message: "Channel CID is required." });
+    }
+
+    const userId = req.user._id || req.user.id;
+    const now = new Date();
+
+    const state = await UserChatState.findOneAndUpdate(
+      { user: userId, channelCid: cid.trim() },
+      {
+        $set: {
+          clearedAt: now,
+          ...(targetUserId ? { targetUserId: String(targetUserId) } : {}),
+        },
+      },
+      { upsert: true, returnDocument: "after" }
+    );
+
+    return res.status(200).json({
+      success: true,
+      cid: state.channelCid,
+      clearedAt: state.clearedAt.toISOString(),
+      message: "Chat history cleared for current user.",
+    });
+  } catch (error) {
+    console.error("CLEAR CHAT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to clear chat.",
+    });
+  }
+};
+
 module.exports = {
   getStreamToken,
   ensureUser,
@@ -542,4 +586,5 @@ module.exports = {
   closeChat,
   reopenChat,
   uploadChatFile,
+  clearChat,
 };

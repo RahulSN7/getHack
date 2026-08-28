@@ -19,6 +19,7 @@ const {
     closeChat,
     reopenChat,
     uploadChatFile,
+    clearChat,
 } = require("../controllers/chatController");
 
 // GET /api/chat/token — Generate Stream Chat token for current user
@@ -50,6 +51,9 @@ router.post("/close", requireAuth, closeChat);
 
 // POST /api/chat/reopen — Reopen a closed conversation for current user
 router.post("/reopen", requireAuth, reopenChat);
+
+// POST /api/chat/clear — Clear all messages in a conversation for both participants
+router.post("/clear", requireAuth, clearChat);
 
 // POST /api/chat/upload — Server fallback file upload endpoint for chat attachments
 router.post("/upload", requireAuth, chatUpload.single("file"), uploadChatFile);

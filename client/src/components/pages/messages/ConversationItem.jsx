@@ -35,7 +35,7 @@ function formatTime(dateStr) {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClosed, onClick, onReopen }) {
+function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClosed, clearedAt, onClick, onReopen }) {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
@@ -53,13 +53,35 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
   const avatar = otherUser.image || channel.data?.targetAvatar || "";
   const userId = otherUser.id || otherMember?.user_id || "";
 
-  // Last message & attachment preview extraction
-  const messages = channel.state?.messages || [];
-  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  // Last message & attachment preview extraction taking per-user clearedAt into account
+  const clearTime = clearedAt ? new Date(clearedAt).getTime() : 0;
+  const rawMessages = channel.state?.messages || [];
+  const visibleMessages = clearTime
+    ? rawMessages.filter((m) => {
+        const t = new Date(m.created_at || m.createdAt).getTime();
+        return !isNaN(t) && t > clearTime;
+      })
+    : rawMessages;
+
+  const lastMessage = visibleMessages.length > 0 ? visibleMessages[visibleMessages.length - 1] : null;
+
+  const isLastMessageEdited = Boolean(
+    lastMessage &&
+    !lastMessage.deleted_at &&
+    lastMessage.type !== "deleted" &&
+    (lastMessage.is_edited ||
+      lastMessage.message_text_updated_at ||
+      (Array.isArray(lastMessage.edit_history) && lastMessage.edit_history.length > 0) ||
+      (Array.isArray(lastMessage.extraData?.edit_history) && lastMessage.extraData.edit_history.length > 0))
+  );
 
   let lastMessageText = "";
   if (lastMessage) {
-    if (lastMessage.text && lastMessage.text.trim()) {
+    if (lastMessage.deleted_at || lastMessage.type === "deleted") {
+      lastMessageText = "This message was deleted";
+    } else if (lastMessage.custom_type === "team_invitation" || lastMessage.type === "team_invitation") {
+      lastMessageText = "🤝 Hackathon Team Invitation";
+    } else if (lastMessage.text && lastMessage.text.trim()) {
       lastMessageText = lastMessage.text.trim();
     } else if (Array.isArray(lastMessage.attachments) && lastMessage.attachments.length > 0) {
       const att = lastMessage.attachments[0];
@@ -74,17 +96,26 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
     }
   }
 
-  if (!lastMessageText) {
-    lastMessageText =
-      channel.data?.last_message_preview ||
-      (channel.state?.last_message_at || channel.data?.last_message_at ? "Message" : "No messages yet");
+  if (isLastMessageEdited && lastMessageText && !lastMessageText.startsWith("This message was deleted") && !lastMessageText.startsWith("Edited ·")) {
+    lastMessageText = `Edited · ${lastMessageText}`;
   }
 
-  const lastMessageTime =
-    lastMessage?.created_at || channel.state?.last_message_at || channel.data?.last_message_at || "";
+  if (!lastMessageText) {
+    lastMessageText = (clearTime && visibleMessages.length === 0)
+      ? "No messages yet"
+      : (
+        channel.data?.last_message_preview ||
+        (channel.state?.last_message_at || channel.data?.last_message_at ? "Message" : "No messages yet")
+      );
+  }
 
-  // Unread count from Stream Chat SDK (evaluated as 0 when currently active)
-  const unreadCount = isActive ? 0 : (channel.countUnread?.() || channel.state?.unreadCount || 0);
+  const lastMessageTime = lastMessage?.created_at
+    ? lastMessage.created_at
+    : (clearTime && visibleMessages.length === 0 ? "" : (channel.state?.last_message_at || channel.data?.last_message_at || ""));
+
+  // Unread count from Stream Chat SDK (evaluated as 0 when currently active or when cleared with no newer messages)
+  const rawUnread = isActive ? 0 : (channel.countUnread?.() || channel.state?.unreadCount || 0);
+  const unreadCount = (clearTime && visibleMessages.length === 0) ? 0 : rawUnread;
 
   // Initials fallback
   const initials = name
