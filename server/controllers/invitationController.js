@@ -9,6 +9,7 @@ const User = require("../models/user");
 const Connection = require("../models/connection");
 const mongoose = require("mongoose");
 const { getStreamClient, upsertStreamUsers } = require("../services/streamService");
+const { createNotification } = require("../services/notificationService");
 
 // ---------------------------------------------------------------------------
 // POST /api/invitations/send — Send Team Invitation directly through Stream Chat
@@ -135,6 +136,28 @@ const sendInvitation = async (req, res) => {
       await team.save();
     }
 
+    // Create Notification for receiver
+    try {
+      const invSenderName = req.user.name || "A team member";
+      await createNotification({
+        recipient: receiverId,
+        sender: senderId,
+        type: "TEAM_INVITATION",
+        title: "New team invitation",
+        message: `${invSenderName} invited you to join team ${team.teamName || "a team"}.`,
+        entityType: "Team",
+        entityId: team._id,
+        metadata: {
+          teamId: team._id.toString(),
+          invitationId: invitation._id.toString(),
+          hackathonId: team.hackathon || "",
+          actionId: `team_inv_${invitation._id}`,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create team invitation notification:", notifErr.message);
+    }
+
     const populatedTeam = await Team.findById(team._id)
       .populate("createdBy", "name email role profile")
       .populate("leader", "name email role profile")
@@ -219,6 +242,31 @@ const respondToInvitation = async (req, res) => {
     }
 
     await invitation.save();
+
+    // Create Notification for invitation sender / team leader
+    try {
+      const responderName = req.user.name || "A participant";
+      const isAccepted = invitation.status === "accepted";
+      const targetRecipient = invitation.sender || team.createdBy || team.leader;
+      await createNotification({
+        recipient: targetRecipient,
+        sender: req.user._id,
+        type: isAccepted ? "TEAM_INVITATION_ACCEPTED" : "TEAM_INVITATION_REJECTED",
+        title: isAccepted ? "Team invitation accepted" : "Team invitation declined",
+        message: isAccepted
+          ? `${responderName} accepted your invitation to join ${team.teamName || "the team"}.`
+          : `${responderName} declined your invitation to join ${team.teamName || "the team"}.`,
+        entityType: "Team",
+        entityId: team._id,
+        metadata: {
+          teamId: team._id.toString(),
+          invitationId: invitation._id.toString(),
+          actionId: `team_inv_resp_${invitation.status}_${invitation._id}`,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create team invitation response notification:", notifErr.message);
+    }
 
     // Update Stream Chat message real-time so both users see the updated status card
     if (invitation.streamMessageId) {

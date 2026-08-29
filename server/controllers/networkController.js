@@ -6,6 +6,7 @@
 const Connection = require("../models/connection");
 const User = require("../models/user");
 const { isProfileComplete } = require("../utils/profileValidation");
+const { createNotification } = require("../services/notificationService");
 
 // ---------------------------------------------------------------------------
 // POST /api/network/requests — Send Connection Request
@@ -78,6 +79,22 @@ const sendConnectionRequest = async (req, res) => {
         existing.status = "pending";
         await existing.save();
 
+        // Create notification for receiver
+        try {
+          await createNotification({
+            recipient: receiver._id,
+            sender: sender._id,
+            type: "CONNECTION_REQUEST",
+            title: "New connection request",
+            message: `${sender.name} sent you a connection request.`,
+            entityType: "Connection",
+            entityId: existing._id,
+            metadata: { connectionId: existing._id.toString(), actionId: `conn_req_${existing._id}` },
+          });
+        } catch (notifErr) {
+          console.warn("Failed to create connection request notification:", notifErr.message);
+        }
+
         return res.status(200).json({
           message: "Connection request sent successfully.",
           connection: existing,
@@ -98,6 +115,22 @@ const sendConnectionRequest = async (req, res) => {
       note: cleanNote,
       status: "pending",
     });
+
+    // Create notification for receiver
+    try {
+      await createNotification({
+        recipient: receiver._id,
+        sender: sender._id,
+        type: "CONNECTION_REQUEST",
+        title: "New connection request",
+        message: `${sender.name} sent you a connection request.`,
+        entityType: "Connection",
+        entityId: newConnection._id,
+        metadata: { connectionId: newConnection._id.toString(), actionId: `conn_req_${newConnection._id}` },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create connection request notification:", notifErr.message);
+    }
 
     return res.status(201).json({
       message: "Connection request sent successfully.",
@@ -269,6 +302,29 @@ const respondToConnectionRequest = async (req, res) => {
 
     connection.status = action === "accept" ? "accepted" : "rejected";
     await connection.save();
+
+    // Create notification for original sender
+    try {
+      const responderName = req.user.name || "A participant";
+      const isAccepted = action === "accept";
+      await createNotification({
+        recipient: connection.sender,
+        sender: req.user._id,
+        type: isAccepted ? "CONNECTION_ACCEPTED" : "CONNECTION_REJECTED",
+        title: isAccepted ? "Connection request accepted" : "Connection request declined",
+        message: isAccepted
+          ? `${responderName} accepted your connection request.`
+          : `${responderName} declined your connection request.`,
+        entityType: "Connection",
+        entityId: connection._id,
+        metadata: {
+          connectionId: connection._id.toString(),
+          actionId: `conn_resp_${action}_${connection._id}`,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create connection response notification:", notifErr.message);
+    }
 
     return res.status(200).json({
       success: true,

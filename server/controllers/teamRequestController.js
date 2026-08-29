@@ -7,6 +7,7 @@ const TeamRequest = require("../models/teamRequest");
 const Team = require("../models/team");
 const User = require("../models/user");
 const mongoose = require("mongoose");
+const { createNotification } = require("../services/notificationService");
 
 // POST /api/teams/:teamId/requests — Send request to join a team
 const sendTeamRequest = async (req, res) => {
@@ -62,6 +63,28 @@ const sendTeamRequest = async (req, res) => {
       status: "pending",
       note: (note || "").trim(),
     });
+
+    // Create Notification for team leader
+    try {
+      const applicantName = req.user.name || "A participant";
+      const leaderId = team.createdBy || team.leader;
+      await createNotification({
+        recipient: leaderId,
+        sender: userId,
+        type: "TEAM_INVITATION",
+        title: "New team join request",
+        message: `${applicantName} requested to join ${team.teamName || "your team"}.`,
+        entityType: "Team",
+        entityId: team._id,
+        metadata: {
+          teamId: team._id.toString(),
+          requestId: newRequest._id.toString(),
+          actionId: `team_req_${newRequest._id}`,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create team join request notification:", notifErr.message);
+    }
 
     const populatedRequest = await TeamRequest.findById(newRequest._id)
       .populate("team", "teamName hackathonName location currentSize maxSize status")
@@ -190,6 +213,27 @@ const acceptRequest = async (req, res) => {
     teamRequest.status = "accepted";
     await teamRequest.save();
 
+    // Create Notification for applicant
+    try {
+      const leaderName = req.user.name || "Team leader";
+      await createNotification({
+        recipient: teamRequest.requester,
+        sender: userId,
+        type: "TEAM_MEMBER_ADDED",
+        title: "Team request accepted",
+        message: `${leaderName} approved your request to join ${team.teamName || "the team"}.`,
+        entityType: "Team",
+        entityId: team._id,
+        metadata: {
+          teamId: team._id.toString(),
+          requestId: teamRequest._id.toString(),
+          actionId: `team_req_acc_${teamRequest._id}`,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create team accept notification:", notifErr.message);
+    }
+
     const updatedRequest = await TeamRequest.findById(teamRequest._id)
       .populate("team", "teamName hackathonName location currentSize maxSize status")
       .populate("requester", "name email role profile");
@@ -242,6 +286,27 @@ const rejectRequest = async (req, res) => {
 
     teamRequest.status = "rejected";
     await teamRequest.save();
+
+    // Create Notification for applicant
+    try {
+      const leaderName = req.user.name || "Team leader";
+      await createNotification({
+        recipient: teamRequest.requester,
+        sender: userId,
+        type: "TEAM_INVITATION_REJECTED",
+        title: "Team request declined",
+        message: `${leaderName} declined your request to join ${team.teamName || "the team"}.`,
+        entityType: "Team",
+        entityId: team._id,
+        metadata: {
+          teamId: team._id.toString(),
+          requestId: teamRequest._id.toString(),
+          actionId: `team_req_rej_${teamRequest._id}`,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create team reject notification:", notifErr.message);
+    }
 
     return res.json({
       success: true,

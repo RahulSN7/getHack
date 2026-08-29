@@ -6,6 +6,7 @@
 const Team = require("../models/team");
 const User = require("../models/user");
 const mongoose = require("mongoose");
+const { createNotification } = require("../services/notificationService");
 
 // POST /api/teams — Create a new team
 const createTeam = async (req, res) => {
@@ -453,6 +454,26 @@ const removeMember = async (req, res) => {
 
     await team.save();
 
+    // Create Notification for removed member
+    try {
+      const leaderName = req.user.name || "Team leader";
+      await createNotification({
+        recipient: memberId,
+        sender: userId,
+        type: "TEAM_MEMBER_REMOVED",
+        title: "Removed from team",
+        message: `You were removed from team ${team.teamName || "a team"}.`,
+        entityType: "Team",
+        entityId: team._id,
+        metadata: {
+          teamId: team._id.toString(),
+          actionId: `team_rem_${team._id}_${memberId}`,
+        },
+      });
+    } catch (notifErr) {
+      console.warn("Failed to create team member removed notification:", notifErr.message);
+    }
+
     const updatedTeam = await Team.findById(team._id)
       .populate("createdBy", "name email role profile")
       .populate("leader", "name email role profile")
@@ -530,6 +551,29 @@ const inviteConnections = async (req, res) => {
 
     team.pendingInvitationIds = newPending;
     await team.save();
+
+    // Create notifications for each invited connection
+    const senderName = req.user.name || "A team member";
+    for (const invId of userIds) {
+      try {
+        await createNotification({
+          recipient: invId,
+          sender: userId,
+          type: "TEAM_INVITATION",
+          title: "New team invitation",
+          message: `${senderName} invited you to join ${team.teamName || "a team"}.`,
+          entityType: "Team",
+          entityId: team._id,
+          metadata: {
+            teamId: team._id.toString(),
+            hackathonId: team.hackathon || "",
+            actionId: `team_inv_bulk_${team._id}_${invId}`,
+          },
+        });
+      } catch (notifErr) {
+        console.warn("Failed to create bulk team invitation notification:", notifErr.message);
+      }
+    }
 
     const updatedTeam = await Team.findById(team._id)
       .populate("createdBy", "name email role profile")

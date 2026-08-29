@@ -17,6 +17,7 @@ import MessagesPage from "./pages/Messages/MessagesPage.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { SavedProvider } from "./context/SavedContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { NotificationProvider } from "./context/NotificationContext.jsx";
 import { ChatProvider } from "./context/ChatContext.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute.jsx";
@@ -186,13 +187,15 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
-      <ChatProvider>
-        <SavedProvider>
-          <ThemeProvider>
-            <RouterProvider router={router} />
-          </ThemeProvider>
-        </SavedProvider>
-      </ChatProvider>
+      <NotificationProvider>
+        <ChatProvider>
+          <SavedProvider>
+            <ThemeProvider>
+              <RouterProvider router={router} />
+            </ThemeProvider>
+          </SavedProvider>
+        </ChatProvider>
+      </NotificationProvider>
     </AuthProvider>
   </StrictMode>
 );
