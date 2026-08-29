@@ -16,7 +16,17 @@ const teamInvitationSchema = new mongoose.Schema(
     receiver: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
+    },
+
+    isGroupInvitation: {
+      type: Boolean,
+      default: false,
+    },
+
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
     },
 
     team: {
@@ -48,6 +58,20 @@ const teamInvitationSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "rejected"],
       default: "pending",
     },
+
+    acceptedUserIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    declinedUserIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
     streamMessageId: {
       type: String,

@@ -39,19 +39,29 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
-  // Extract the other user from channel members
+  // Extract channel members and determine if it's a group chat
   const members = Object.values(channel.state?.members || {});
   const otherMember = members.find(
     (m) => String(m.user_id || m.user?.id) !== String(currentUserId)
   );
   const otherUser = otherMember?.user || {};
 
-  let name = otherUser.name;
-  if (!name || name === otherUser.id) {
-    name = channel.data?.targetName || "Participant";
-  }
-  const avatar = otherUser.image || channel.data?.targetAvatar || "";
-  const userId = otherUser.id || otherMember?.user_id || "";
+  const isGroup = Boolean(
+    channel.data?.isGroup ||
+    channel.data?.name ||
+    members.length > 2 ||
+    channel.type === "team"
+  );
+
+  let name = isGroup
+    ? (channel.data?.name || "Group Chat")
+    : (otherUser.name || channel.data?.targetName || "Participant");
+
+  const avatar = isGroup
+    ? (channel.data?.image || channel.data?.avatar || "")
+    : (otherUser.image || channel.data?.targetAvatar || "");
+
+  const userId = isGroup ? "" : (otherUser.id || otherMember?.user_id || "");
 
   // Last message & attachment preview extraction taking per-user clearedAt into account
   const clearTime = clearedAt ? new Date(clearedAt).getTime() : 0;
@@ -107,6 +117,13 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
         channel.data?.last_message_preview ||
         (channel.state?.last_message_at || channel.data?.last_message_at ? "Message" : "No messages yet")
       );
+  }
+
+  // Override preview for groups user was removed from (WhatsApp-style)
+  const isMember = Boolean(channel.state?.members?.[String(currentUserId)]);
+  const isRemovedFromGroup = isGroup && !isMember && Boolean(channel.data?.isRemovedFromGroup);
+  if (isRemovedFromGroup) {
+    lastMessageText = "You can no longer send messages";
   }
 
   const lastMessageTime = lastMessage?.created_at
@@ -186,11 +203,20 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
       >
         {avatar && !imgError ? (
           <img
-            src={avatar.startsWith("http") ? avatar : avatar}
+            src={avatar}
             alt={name}
             onError={() => setImgError(true)}
             className="h-12 w-12 rounded-full object-cover border border-neutral-200 dark:border-neutral-700"
           />
+        ) : isGroup ? (
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm border border-neutral-200 dark:border-neutral-700">
+            <svg className="h-6 w-6 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
         ) : (
           <div className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 font-bold text-sm text-indigo-600 border border-neutral-200 dark:bg-indigo-500/20 dark:text-indigo-400 dark:border-neutral-700">
             {initials}

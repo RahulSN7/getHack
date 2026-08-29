@@ -26,11 +26,30 @@ const sendInvitation = async (req, res) => {
 
     const receiverIdStr = receiverId.toString();
 
-    if (senderIdStr === receiverIdStr) {
+    // 1. Fetch target receiver profile flexibly
+    let receiverUser = null;
+    if (mongoose.Types.ObjectId.isValid(receiverIdStr)) {
+      receiverUser = await User.findById(receiverIdStr);
+    }
+    if (!receiverUser) {
+      receiverUser = await User.findOne({
+        $or: [{ _id: receiverIdStr }, { id: receiverIdStr }],
+      });
+    }
+
+    if (!receiverUser) {
+      return res.status(404).json({ message: "Target connection user not found." });
+    }
+
+    const actualReceiverId = receiverUser._id;
+    const actualReceiverIdStr = actualReceiverId.toString();
+
+    // Self-invitation check
+    if (senderIdStr === actualReceiverIdStr) {
       return res.status(400).json({ message: "You cannot invite yourself to a team." });
     }
 
-    // 1. Fetch team
+    // 2. Fetch team
     let team = null;
     if (mongoose.Types.ObjectId.isValid(teamId)) {
       team = await Team.findById(teamId);
@@ -43,7 +62,7 @@ const sendInvitation = async (req, res) => {
       return res.status(404).json({ message: "Team not found." });
     }
 
-    // 2. Sender authorization check (Leader or Member)
+    // 3. Sender authorization check (Leader or Member)
     const isLeaderOrMember =
       team.createdBy.toString() === senderIdStr ||
       (team.leader && team.leader.toString() === senderIdStr) ||
@@ -53,7 +72,20 @@ const sendInvitation = async (req, res) => {
       return res.status(403).json({ message: "Only team members can invite connections to this team." });
     }
 
-    // 3. Capacity check
+    // 4. Connection validation: Ensure receiver is a connected network connection
+    const Connection = require("../models/connection");
+    const isConnected = await Connection.findOne({
+      $or: [
+        { sender: senderId, receiver: actualReceiverId, status: "accepted" },
+        { sender: actualReceiverId, receiver: senderId, status: "accepted" },
+      ],
+    });
+
+    if (!isConnected) {
+      return res.status(403).json({ message: "You can only invite users who are in your network connections." });
+    }
+
+    // 5. Capacity check
     const currentSize = team.members && team.members.length > 0 ? team.members.length : (team.currentSize || 1);
     const availableSpots = Math.max(0, team.maxSize - currentSize);
 
@@ -61,45 +93,36 @@ const sendInvitation = async (req, res) => {
       return res.status(400).json({ message: "This team is currently full." });
     }
 
-    // 4. Existing member check
-    if (team.memberIds.includes(receiverIdStr)) {
+    // 6. Existing member check
+    const isAlreadyMember =
+      (team.members || []).some((m) => {
+        const mId = String(m.user?._id || m.user?.id || m.user || m);
+        return mId === actualReceiverIdStr;
+      }) || (team.memberIds || []).map(String).includes(actualReceiverIdStr);
+
+    if (isAlreadyMember) {
       return res.status(400).json({ message: "User is already a member of this team." });
     }
 
-    // 5. Check duplicate pending invitation
-    const existingPending = await TeamInvitation.findOne({
-      team: team._id,
-      receiver: receiverIdStr,
-      status: "pending",
-    });
-
-    if (existingPending) {
-      return res.status(400).json({ message: "Invitation already sent to this connection." });
-    }
-
-    // 6. Fetch target receiver profile
-    const receiverUser = await User.findById(receiverIdStr);
-    if (!receiverUser) {
-      return res.status(404).json({ message: "Target connection user not found." });
-    }
-
-    // 7. Create TeamInvitation record in MongoDB
+    // 7. Create TeamInvitation record in MongoDB (each new user action creates an independent invitation)
     const invitation = await TeamInvitation.create({
       sender: senderId,
-      receiver: receiverId,
+      receiver: actualReceiverId,
       team: team._id,
       teamName: team.teamName,
       hackathonName: team.hackathonName || "Hackathon",
       hackathonId: team.hackathon || "",
       status: "pending",
+      isGroupInvitation: false,
     });
 
-    // 8. Send custom team_invitation message to Stream Chat channel (if credentials configured)
+    // 9. Synchronize Stream Chat users and deliver invitation message into 1-on-1 direct channel
     try {
       await upsertStreamUsers([req.user, receiverUser]);
       const client = getStreamClient();
+
       const channel = client.channel("messaging", {
-        members: [senderIdStr, receiverIdStr],
+        members: [senderIdStr, actualReceiverIdStr],
         created_by_id: senderIdStr,
       });
       await channel.create();
@@ -117,22 +140,36 @@ const sendInvitation = async (req, res) => {
         hackathon_name: team.hackathonName || "Hackathon",
         sender_id: senderIdStr,
         sender_name: senderName,
-        receiver_id: receiverIdStr,
+        receiver_id: actualReceiverIdStr,
         invitation_status: "pending",
+        invitation_type: "individual",
         max_size: team.maxSize,
         current_size: currentSize,
       });
 
-      invitation.streamMessageId = messageRes.message.id;
+      invitation.streamMessageId = messageRes.message?.id || "";
+      await invitation.save();
+
+      console.log("[Invite] authenticated user:", senderIdStr);
+      console.log("[Invite] recipient:", actualReceiverIdStr);
+      console.log("[Invite] team:", team._id.toString());
+      console.log("[Invite] invitation ID:", invitation._id.toString());
+      console.log("[Invite] Stream sender ID:", senderIdStr);
+      console.log("[Invite] Stream recipient ID:", actualReceiverIdStr);
+      console.log("[Invite] direct channel ID:", channel.cid);
+      console.log("[Invite] channel members:", [senderIdStr, actualReceiverIdStr]);
+      console.log("[Invite] Stream message send result:", messageRes.message?.id || "OK");
     } catch (streamErr) {
-      console.warn("[Stream Chat] Could not post chat invitation message:", streamErr.message);
+      console.error("[Stream Chat Error]: Failed to deliver invitation message:", streamErr);
+      await TeamInvitation.findByIdAndDelete(invitation._id).catch(() => {});
+      return res.status(500).json({
+        message: `Failed to deliver invitation message via Stream Chat: ${streamErr.message}`,
+      });
     }
 
-    await invitation.save();
-
-    // 9. Add receiverId to pendingInvitationIds on team
-    if (!team.pendingInvitationIds.includes(receiverIdStr)) {
-      team.pendingInvitationIds.push(receiverIdStr);
+    // 10. Add receiverId to pendingInvitationIds on team
+    if (!team.pendingInvitationIds.map(String).includes(actualReceiverIdStr)) {
+      team.pendingInvitationIds.push(actualReceiverIdStr);
       await team.save();
     }
 
@@ -196,12 +233,13 @@ const respondToInvitation = async (req, res) => {
       return res.status(404).json({ message: "Team invitation not found." });
     }
 
-    // Authorization: Only the intended recipient can accept/reject
-    if (invitation.receiver.toString() !== userIdStr) {
+    // Authorization: For 1-on-1 invitations, only intended recipient can accept/reject
+    // For group invitations, any active user in the group can respond for themselves
+    if (!invitation.isGroupInvitation && invitation.receiver && invitation.receiver.toString() !== userIdStr) {
       return res.status(403).json({ message: "Only the invitation recipient can accept or reject this invitation." });
     }
 
-    if (invitation.status !== "pending") {
+    if (!invitation.isGroupInvitation && invitation.status !== "pending") {
       return res.status(400).json({ message: `Invitation is already ${invitation.status}.` });
     }
 
@@ -209,6 +247,9 @@ const respondToInvitation = async (req, res) => {
     if (!team) {
       return res.status(404).json({ message: "Associated team not found." });
     }
+
+    if (!Array.isArray(invitation.acceptedUserIds)) invitation.acceptedUserIds = [];
+    if (!Array.isArray(invitation.declinedUserIds)) invitation.declinedUserIds = [];
 
     if (action === "accept") {
       // Re-verify capacity from actual database members
@@ -232,13 +273,27 @@ const respondToInvitation = async (req, res) => {
       team.pendingInvitationIds = (team.pendingInvitationIds || []).filter((pId) => pId !== userIdStr);
       await team.save();
 
-      invitation.status = "accepted";
+      if (!invitation.acceptedUserIds.some((id) => String(id) === userIdStr)) {
+        invitation.acceptedUserIds.push(req.user._id);
+      }
+      invitation.declinedUserIds = invitation.declinedUserIds.filter((id) => String(id) !== userIdStr);
+
+      if (!invitation.isGroupInvitation) {
+        invitation.status = "accepted";
+      }
     } else if (action === "reject") {
       // Remove from pending invitations
       team.pendingInvitationIds = (team.pendingInvitationIds || []).filter((pId) => pId !== userIdStr);
       await team.save();
 
-      invitation.status = "rejected";
+      if (!invitation.declinedUserIds.some((id) => String(id) === userIdStr)) {
+        invitation.declinedUserIds.push(req.user._id);
+      }
+      invitation.acceptedUserIds = invitation.acceptedUserIds.filter((id) => String(id) !== userIdStr);
+
+      if (!invitation.isGroupInvitation) {
+        invitation.status = "rejected";
+      }
     }
 
     await invitation.save();
@@ -325,7 +380,10 @@ const getInvitation = async (req, res) => {
     const invitation = await TeamInvitation.findById(id)
       .populate("sender", "name email role profile")
       .populate("receiver", "name email role profile")
-      .populate("team");
+      .populate({
+        path: "team",
+        populate: { path: "members.user", select: "name email role profile" },
+      });
 
     if (!invitation) {
       return res.status(404).json({ message: "Team invitation not found." });
@@ -334,6 +392,7 @@ const getInvitation = async (req, res) => {
     return res.json({
       success: true,
       invitation,
+      team: invitation.team,
     });
   } catch (error) {
     console.error("Get invitation error:", error);
@@ -344,8 +403,136 @@ const getInvitation = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// POST /api/invitations/send-group — Send Team Invitation directly to Group Chat
+// ---------------------------------------------------------------------------
+const sendGroupInvitation = async (req, res) => {
+  try {
+    const { teamId, groupId } = req.body;
+    const senderId = req.user._id;
+    const senderIdStr = senderId.toString();
+
+    if (!teamId || !groupId) {
+      return res.status(400).json({ message: "Team ID and Group ID are required." });
+    }
+
+    // 1. Fetch team
+    let team = null;
+    if (mongoose.Types.ObjectId.isValid(teamId)) {
+      team = await Team.findById(teamId);
+    }
+    if (!team) {
+      team = await Team.findOne({ id: teamId });
+    }
+    if (!team) {
+      return res.status(404).json({ message: "Team not found." });
+    }
+
+    // 2. Sender authorization check (Leader or Member)
+    const isLeaderOrMember =
+      team.createdBy.toString() === senderIdStr ||
+      (team.leader && team.leader.toString() === senderIdStr) ||
+      (team.memberIds && team.memberIds.includes(senderIdStr));
+
+    if (!isLeaderOrMember) {
+      return res.status(403).json({ message: "Only team members can invite connections to this team." });
+    }
+
+    // 3. Capacity check
+    const currentSize = team.members && team.members.length > 0 ? team.members.length : (team.currentSize || 1);
+    const availableSpots = Math.max(0, team.maxSize - currentSize);
+
+    if (availableSpots <= 0) {
+      return res.status(400).json({ message: "This team is currently full." });
+    }
+
+    // 4. Fetch target group from MongoDB
+    const Group = require("../models/group");
+    let group = null;
+    if (mongoose.Types.ObjectId.isValid(groupId)) {
+      group = await Group.findById(groupId);
+    }
+    if (!group) {
+      group = await Group.findOne({ streamChannelId: groupId });
+    }
+    if (!group) {
+      return res.status(404).json({ message: "Group chat not found." });
+    }
+
+    // Verify sender is an active member of group
+    const isGroupMember = (group.members || []).some(
+      (m) => String(m._id || m.id || m) === senderIdStr
+    );
+    if (!isGroupMember) {
+      return res.status(403).json({ message: "You must be an active member of the group to send an invitation to it." });
+    }
+
+    // 5. Create TeamInvitation record in MongoDB for Group
+    const invitation = await TeamInvitation.create({
+      sender: senderId,
+      team: team._id,
+      teamName: team.teamName,
+      hackathonName: team.hackathonName || "Hackathon",
+      hackathonId: team.hackathon || "",
+      status: "pending",
+      isGroupInvitation: true,
+      group: group._id,
+    });
+
+    // 6. Send custom team_invitation message directly into Stream Chat group channel
+    try {
+      const client = getStreamClient();
+      const channel = client.channel("messaging", group.streamChannelId);
+      await channel.watch();
+
+      const senderName = req.user.name || "A connection";
+      const messageRes = await channel.sendMessage({
+        text: `🤝 HACKATHON TEAM INVITATION: ${senderName} invited you to join Team ${team.teamName}`,
+        user_id: senderIdStr,
+        type: "regular",
+        custom_type: "team_invitation",
+        invitation_id: invitation._id.toString(),
+        team_id: team._id.toString(),
+        team_name: team.teamName,
+        hackathon_name: team.hackathonName || "Hackathon",
+        sender_id: senderIdStr,
+        sender_name: senderName,
+        invitation_status: "pending",
+        max_size: team.maxSize,
+        current_size: currentSize,
+        is_group_invitation: true,
+      });
+
+      invitation.streamMessageId = messageRes.message?.id || "";
+      invitation.streamChannelCid = channel.cid;
+      await invitation.save();
+    } catch (streamErr) {
+      console.warn("[Stream Chat] Could not post group invitation message:", streamErr.message);
+    }
+
+    const populatedTeam = await Team.findById(team._id)
+      .populate("createdBy", "name email role profile")
+      .populate("leader", "name email role profile")
+      .populate("members.user", "name email role profile");
+
+    return res.status(201).json({
+      success: true,
+      message: "Invitation sent directly into group chat.",
+      invitation,
+      team: populatedTeam,
+    });
+  } catch (error) {
+    console.error("Send group invitation error:", error);
+    return res.status(500).json({
+      message: "Server error occurred while sending group invitation.",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   sendInvitation,
+  sendGroupInvitation,
   respondToInvitation,
   getInvitation,
 };

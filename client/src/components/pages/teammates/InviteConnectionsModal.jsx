@@ -1,11 +1,14 @@
 // ---------------------------------------------------------------------------
-// InviteConnectionsModal.jsx — Modal for inviting real network connections to a team
-// Respects team capacity, multi-select, search, and real API network connections
+// InviteConnectionsModal.jsx — Unified Modal for inviting network connections & group chats to a team
+// Respects team capacity, unified selection list, search, and real API endpoints
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../context/useAuth";
 import { userService } from "../../../services/userService";
+import { chatService } from "../../../services/chatService";
+import { invitationService } from "../../../services/invitationService";
 import { TEAMMATES } from "../../../data/teammates";
 
 function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
@@ -39,17 +42,46 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
   );
 }
 
+function GroupAvatar({ avatar, name, sizeClass = "h-10 w-10 text-sm" }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (avatar && !imgError) {
+    return (
+      <img
+        src={avatar}
+        alt={`${name} group photo`}
+        onError={() => setImgError(true)}
+        className={`${sizeClass} shrink-0 rounded-xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`grid ${sizeClass} shrink-0 place-items-center rounded-xl bg-purple-500/10 text-purple-600 font-bold border border-neutral-200 dark:border-neutral-800 dark:bg-purple-500/20 dark:text-purple-400`}
+    >
+      👥
+    </div>
+  );
+}
+
 export default function InviteConnectionsModal({
   isOpen,
   onClose,
+  teamId,
+  teamName = "Team",
   maxSize = 4,
   currentSize = 1,
   existingMemberIds = [],
   pendingInvitationIds = [],
   onSendInvitations,
 }) {
-  const [loading, setLoading] = useState(true);
+  const { user: currentUser } = useAuth();
+  const currentUserId = String(currentUser?._id || currentUser?.id || "");
   const [connections, setConnections] = useState([]);
+  const [userGroups, setUserGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -66,7 +98,7 @@ export default function InviteConnectionsModal({
     }
   }, [availableSlots, selectedIds.length]);
 
-  // Reset internal state when modal opens
+  // Reset internal state when modal opens & fetch connections + accessible groups
   useEffect(() => {
     if (!isOpen) return;
 
@@ -76,9 +108,13 @@ export default function InviteConnectionsModal({
     setErrorMsg(null);
     setLoading(true);
 
-    async function fetchConnections() {
+    async function fetchData() {
       try {
-        const data = await userService.getNetworkRequests();
+        const [data, groupRes] = await Promise.all([
+          userService.getNetworkRequests().catch(() => ({})),
+          chatService.getGroups().catch(() => ({})),
+        ]);
+
         if (isMounted) {
           let loadedConns = Array.isArray(data?.connections) ? data.connections : [];
 
@@ -95,10 +131,15 @@ export default function InviteConnectionsModal({
           }
 
           setConnections(loadedConns);
+
+          if (groupRes?.success && Array.isArray(groupRes.groups)) {
+            setUserGroups(groupRes.groups);
+          } else {
+            setUserGroups([]);
+          }
         }
       } catch {
         if (isMounted) {
-          // Fallback to TEAMMATES list on API error
           const fallbackConns = TEAMMATES.map((t) => ({
             id: t.id,
             userId: t.id,
@@ -108,60 +149,100 @@ export default function InviteConnectionsModal({
             skills: t.skills || [],
           }));
           setConnections(fallbackConns);
+          setUserGroups([]);
         }
       } finally {
         if (isMounted) setLoading(false);
       }
     }
 
-    fetchConnections();
+    fetchData();
 
     return () => {
       isMounted = false;
     };
   }, [isOpen]);
 
-  // Filter connections by search query
-  const filteredConnections = useMemo(() => {
-    if (!searchQuery.trim()) return connections;
-    const q = searchQuery.toLowerCase();
-    return connections.filter((conn) => {
-      const uName = (conn.name || "").toLowerCase();
-      const uRole = (conn.role || "").toLowerCase();
-      const uSkills = (conn.skills || []).map((s) => s.toLowerCase());
-      const uId = (conn.userId || conn.id || "").toLowerCase();
+  // Create unified list of connections AND accessible group chats
+  const unifiedList = useMemo(() => {
+    const connItems = connections
+      .filter((c) => String(c.userId || c.id) !== currentUserId)
+      .map((c) => ({
+        itemType: "connection",
+        id: String(c.userId || c.id),
+        name: c.name,
+        role: c.role,
+        avatar: c.avatar,
+        skills: c.skills || [],
+        raw: c,
+      }));
 
-      return (
-        uName.includes(q) ||
-        uRole.includes(q) ||
-        uId.includes(q) ||
-        uSkills.some((s) => s.includes(q))
-      );
+    const groupItems = (userGroups || []).map((g) => {
+      const memberCount = Array.isArray(g.members) ? g.members.length : 0;
+      return {
+        itemType: "group",
+        id: String(g._id || g.id || g.streamChannelId),
+        groupId: String(g._id || g.id || g.streamChannelId),
+        name: g.name,
+        avatar: g.avatar,
+        memberCount: memberCount,
+        raw: g,
+      };
     });
-  }, [connections, searchQuery]);
+
+    return [...connItems, ...groupItems];
+  }, [connections, userGroups]);
+
+  // Filter unified list by search query (connection name/role/skills/ID OR group name)
+  const filteredList = useMemo(() => {
+    if (!searchQuery.trim()) return unifiedList;
+    const q = searchQuery.toLowerCase();
+    return unifiedList.filter((item) => {
+      const nameMatch = (item.name || "").toLowerCase().includes(q);
+      if (item.itemType === "group") {
+        return nameMatch;
+      } else {
+        const roleMatch = (item.role || "").toLowerCase().includes(q);
+        const skillMatch = (item.skills || []).some((s) => s.toLowerCase().includes(q));
+        const idMatch = (item.id || "").toLowerCase().includes(q);
+        return nameMatch || roleMatch || skillMatch || idMatch;
+      }
+    });
+  }, [unifiedList, searchQuery]);
 
   if (!isOpen) return null;
 
-  const handleToggleSelect = (userId) => {
-    if (selectedIds.includes(userId)) {
-      setSelectedIds(selectedIds.filter((id) => id !== userId));
+  const handleToggleSelect = (itemId) => {
+    if (selectedIds.includes(itemId)) {
+      setSelectedIds(selectedIds.filter((id) => id !== itemId));
       setErrorMsg(null);
     } else {
       if (selectedIds.length >= availableSlots) {
         setErrorMsg(`Maximum capacity reached. You have ${availableSlots} open spot(s).`);
         return;
       }
-      setSelectedIds([...selectedIds, userId]);
+      setSelectedIds([...selectedIds, itemId]);
       setErrorMsg(null);
     }
   };
 
-  const handleSend = () => {
-    if (selectedIds.length === 0) return;
-    if (onSendInvitations) {
-      onSendInvitations(selectedIds);
+  const handleSend = async () => {
+    if (selectedIds.length === 0 || isSending) return;
+    setIsSending(true);
+    setErrorMsg(null);
+
+    try {
+      const selectedItems = unifiedList.filter((item) => selectedIds.includes(item.id));
+      if (onSendInvitations) {
+        await onSendInvitations(selectedIds, selectedItems);
+      }
+      onClose();
+    } catch (err) {
+      console.error("Send invitations failed:", err);
+      setErrorMsg(err.message || "Failed to send invitations.");
+    } finally {
+      setIsSending(false);
     }
-    onClose();
   };
 
   return (
@@ -190,7 +271,7 @@ export default function InviteConnectionsModal({
               Invite Connections
             </h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Select connections from your network to invite to this team.
+              Select connections or groups to invite to this team.
             </p>
           </div>
 
@@ -225,13 +306,13 @@ export default function InviteConnectionsModal({
             )}
           </div>
 
-          {/* Search Input */}
+          {/* Unified Search Input */}
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search connections by name, handle, role, or skill..."
+              placeholder="Search connections or groups..."
               className="
                 w-full
                 rounded-xl
@@ -270,19 +351,19 @@ export default function InviteConnectionsModal({
           )}
         </div>
 
-        {/* ── Connections List ── */}
+        {/* ── Unified Single List (Connections & Accessible Groups) ── */}
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {loading ? (
             <div className="py-12 text-center space-y-3">
               <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Loading connections...
+                Loading connections and groups...
               </p>
             </div>
-          ) : connections.length === 0 ? (
+          ) : unifiedList.length === 0 ? (
             <div className="py-10 text-center space-y-3">
               <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
-                No connections yet. Connect with people on getHack to invite them to your team.
+                No connections or accessible group chats found. Connect with people on getHack to invite them to your team.
               </p>
               <Link
                 to="/teammates"
@@ -292,23 +373,24 @@ export default function InviteConnectionsModal({
                 Find Teammates
               </Link>
             </div>
-          ) : filteredConnections.length === 0 ? (
+          ) : filteredList.length === 0 ? (
             <div className="py-8 text-center text-xs text-neutral-500 dark:text-neutral-400">
-              No connections found matching &quot;{searchQuery}&quot;.
+              No connections or groups found matching &quot;{searchQuery}&quot;.
             </div>
           ) : (
-            filteredConnections.map((conn) => {
-              const uId = conn.userId || conn.id;
-              const isMember = existingMemberIds.includes(uId);
-              const isInvited = pendingInvitationIds.includes(uId);
-              const isSelected = selectedIds.includes(uId);
-              const isDisabled = isMember || isInvited || (!isSelected && selectedIds.length >= availableSlots);
+            filteredList.map((item) => {
+              const itemId = item.id;
+              const isGroupItem = item.itemType === "group";
+              const isMember = !isGroupItem && existingMemberIds.includes(itemId);
+              const isInvited = !isGroupItem && pendingInvitationIds.includes(itemId);
+              const isSelected = selectedIds.includes(itemId);
+              const isDisabled = isMember || (!isSelected && selectedIds.length >= availableSlots);
 
               return (
                 <div
-                  key={uId}
+                  key={`${item.itemType}_${itemId}`}
                   onClick={() => {
-                    if (!isDisabled) handleToggleSelect(uId);
+                    if (!isDisabled) handleToggleSelect(itemId);
                   }}
                   className={`
                     flex
@@ -334,33 +416,57 @@ export default function InviteConnectionsModal({
                       className="h-4 w-4 rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-900"
                     />
 
-                    <UserAvatar
-                      avatar={conn.avatar}
-                      name={conn.name}
-                      sizeClass="h-10 w-10 text-xs"
-                    />
+                    {isGroupItem ? (
+                      <GroupAvatar
+                        avatar={item.avatar}
+                        name={item.name}
+                        sizeClass="h-10 w-10 text-sm"
+                      />
+                    ) : (
+                      <UserAvatar
+                        avatar={item.avatar}
+                        name={item.name}
+                        sizeClass="h-10 w-10 text-xs"
+                      />
+                    )}
 
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <Link
-                          to={`/profile/${uId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="truncate text-xs font-bold text-neutral-900 hover:underline dark:text-white"
-                        >
-                          {conn.name}
-                        </Link>
+                        {isGroupItem ? (
+                          <span className="truncate text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1">
+                            <span>👥</span>
+                            <span>{item.name}</span>
+                          </span>
+                        ) : (
+                          <Link
+                            to={`/profile/${itemId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="truncate text-xs font-bold text-neutral-900 hover:underline dark:text-white flex items-center gap-1"
+                          >
+                            <span>👤</span>
+                            <span>{item.name}</span>
+                          </Link>
+                        )}
                       </div>
 
-                      {conn.role && (
+                      {isGroupItem ? (
                         <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
-                          {conn.role}
+                          {item.memberCount} {item.memberCount === 1 ? "member" : "members"}
                         </p>
-                      )}
+                      ) : (
+                        <>
+                          {item.role && (
+                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate">
+                              {item.role}
+                            </p>
+                          )}
 
-                      {conn.skills && conn.skills.length > 0 && (
-                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">
-                          {conn.skills.slice(0, 3).join(" · ")}
-                        </p>
+                          {item.skills && item.skills.length > 0 && (
+                            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">
+                              {item.skills.slice(0, 3).join(" · ")}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -399,7 +505,7 @@ export default function InviteConnectionsModal({
           <button
             type="button"
             onClick={handleSend}
-            disabled={selectedIds.length === 0 || selectedIds.length > availableSlots}
+            disabled={selectedIds.length === 0 || selectedIds.length > availableSlots || isSending}
             className="
               inline-flex
               items-center
@@ -419,7 +525,14 @@ export default function InviteConnectionsModal({
               dark:hover:bg-indigo-400
             "
           >
-            <span>Send Invitations ({selectedIds.length})</span>
+            {isSending ? (
+              <>
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span>Sending...</span>
+              </>
+            ) : (
+              <span>Send Invitations ({selectedIds.length})</span>
+            )}
           </button>
         </div>
       </div>

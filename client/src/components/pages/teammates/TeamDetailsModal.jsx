@@ -141,18 +141,26 @@ export default function TeamDetailsModal({
     }
   };
 
-  const handleSendInvitations = async (selectedIds) => {
+  const handleSendInvitations = async (selectedIds, selectedItems = []) => {
     try {
       let sentCount = 0;
-      for (const targetUserId of selectedIds) {
-        await invitationService.sendInvitation({
-          teamId: teamIdStr,
-          receiverId: targetUserId,
-        });
+      for (const targetId of selectedIds) {
+        const itemObj = selectedItems.find((i) => String(i.id) === String(targetId));
+        if (itemObj && itemObj.itemType === "group") {
+          await invitationService.sendGroupInvitation({
+            teamId: teamIdStr,
+            groupId: itemObj.groupId || targetId,
+          });
+        } else {
+          await invitationService.sendInvitation({
+            teamId: teamIdStr,
+            receiverId: targetId,
+          });
+        }
         sentCount++;
       }
       setPendingInvitations((prev) => [...prev, ...selectedIds]);
-      showToast(`${sentCount} invitation(s) sent directly to chat!`);
+      showToast(`${sentCount} invitation(s) sent!`);
       const res = await teamService.getTeamById(teamIdStr);
       if (res?.team) {
         setFetchedTeam(res.team);

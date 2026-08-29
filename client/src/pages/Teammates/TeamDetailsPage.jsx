@@ -47,6 +47,65 @@ function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
   );
 }
 
+function TeamDetailsSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100 animate-pulse">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        <div>
+          <div className="h-8 w-28 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+        </div>
+        <section className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-24 rounded-md bg-neutral-200 dark:bg-neutral-800" />
+                <div className="h-5 w-20 rounded-md bg-neutral-200 dark:bg-neutral-800" />
+              </div>
+              <div className="h-8 w-64 rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+              <div className="h-4 w-48 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+            </div>
+            <div className="h-10 w-36 rounded-xl bg-neutral-200 dark:bg-neutral-800 shrink-0" />
+          </div>
+        </section>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+              <div className="h-5 w-36 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+              <div className="space-y-2">
+                <div className="h-4 w-full rounded-md bg-neutral-200 dark:bg-neutral-800" />
+                <div className="h-4 w-5/6 rounded-md bg-neutral-200 dark:bg-neutral-800" />
+                <div className="h-4 w-2/3 rounded-md bg-neutral-200 dark:bg-neutral-800" />
+              </div>
+            </div>
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+              <div className="h-5 w-32 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+              <div className="flex flex-wrap gap-2">
+                <div className="h-7 w-20 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+                <div className="h-7 w-24 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+                <div className="h-7 w-16 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+              <div className="h-5 w-28 rounded-lg bg-neutral-200 dark:bg-neutral-800" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 dark:border-neutral-800">
+                  <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-800 shrink-0" />
+                  <div className="space-y-1 flex-1">
+                    <div className="h-4 w-28 rounded-md bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="h-3 w-20 rounded-md bg-neutral-200 dark:bg-neutral-800" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function TeamDetailsPage() {
   const { id } = useParams();
   const { user: currentUser, isAuthenticated } = useAuth();
@@ -57,21 +116,47 @@ export default function TeamDetailsPage() {
   const [sentRequests, setSentRequests] = useState([]);
   const [requestSending, setRequestSending] = useState(false);
 
+  const [loading, setLoading] = useState(true);
   const [fetchedTeam, setFetchedTeam] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
+    setFetchedTeam(null);
+    setFetchError(null);
+
     async function loadTeam() {
-      if (!id) return;
+      if (!id) {
+        if (isMounted) setLoading(false);
+        return;
+      }
       try {
         const res = await teamService.getTeamById(id);
-        if (isMounted && res?.team) {
-          setFetchedTeam(res.team);
+        if (isMounted) {
+          if (res?.team) {
+            setFetchedTeam(res.team);
+          } else {
+            const local = TEAMS.find((t) => (t.id || t._id) === id);
+            setFetchedTeam(local || null);
+          }
         }
-      } catch {
-        // Fallback to static or pre-populated TEAMS array
+      } catch (err) {
+        if (isMounted) {
+          const local = TEAMS.find((t) => (t.id || t._id) === id);
+          if (local) {
+            setFetchedTeam(local);
+          } else if (err?.status === 404 || err?.data?.message?.includes("not found")) {
+            setFetchedTeam(null);
+          } else {
+            setFetchError(err?.message || "Failed to load team details.");
+          }
+        }
+      } finally {
+        if (isMounted) setLoading(false);
       }
     }
+
     async function fetchSentRequests() {
       if (!isAuthenticated) return;
       try {
@@ -83,16 +168,56 @@ export default function TeamDetailsPage() {
         console.error("Failed to load sent requests:", err);
       }
     }
+
     loadTeam();
     fetchSentRequests();
+
     return () => {
       isMounted = false;
     };
   }, [id, isAuthenticated]);
 
-  const localTeam = TEAMS.find((t) => (t.id || t._id) === id);
-  const team = fetchedTeam || localTeam || TEAMS[0];
+  const team = fetchedTeam;
 
+  // 1. Loading state: Render skeleton UI
+  if (loading) {
+    return <TeamDetailsSkeleton />;
+  }
+
+  // 2. Error state: Render server/network error UI
+  if (fetchError && !team) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+        <main className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8 text-center space-y-4">
+          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-white">
+            Something went wrong
+          </h2>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+            {fetchError}
+          </p>
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <BackButton fallbackPath="/teammates?tab=teams" />
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500"
+            >
+              Retry
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // 3. Not Found state: Render ONLY when API request has completed and team is null
   if (!team) {
     return (
       <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
@@ -200,18 +325,26 @@ export default function TeamDetailsPage() {
     }
   };
 
-  const handleSendInvitations = async (selectedIds) => {
+  const handleSendInvitations = async (selectedIds, selectedItems = []) => {
     try {
       let sentCount = 0;
-      for (const targetUserId of selectedIds) {
-        await invitationService.sendInvitation({
-          teamId: teamIdStr,
-          receiverId: targetUserId,
-        });
+      for (const targetId of selectedIds) {
+        const itemObj = selectedItems.find((i) => String(i.id) === String(targetId));
+        if (itemObj && itemObj.itemType === "group") {
+          await invitationService.sendGroupInvitation({
+            teamId: teamIdStr,
+            groupId: itemObj.groupId || targetId,
+          });
+        } else {
+          await invitationService.sendInvitation({
+            teamId: teamIdStr,
+            receiverId: targetId,
+          });
+        }
         sentCount++;
       }
       setPendingInvitations((prev) => [...prev, ...selectedIds]);
-      showToast(`${sentCount} invitation(s) sent directly to chat!`);
+      showToast(`${sentCount} invitation(s) sent!`);
       const res = await teamService.getTeamById(teamIdStr);
       if (res?.team) {
         setFetchedTeam(res.team);

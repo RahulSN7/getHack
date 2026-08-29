@@ -99,7 +99,7 @@ export function ChatProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, user?.id || user?._id]);
+  }, [isAuthenticated, user?._id || user?.id]);
 
   return (
     <ChatCtx.Provider value={{ chatClient, ready, error }}>

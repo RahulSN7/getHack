@@ -37,6 +37,19 @@ export const invitationService = {
     return handleResponse(response);
   },
 
+  // Send Team Invitation directly into a Group Chat conversation
+  async sendGroupInvitation({ teamId, groupId }) {
+    const response = await fetch(`${API_BASE}/send-group`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ teamId, groupId }),
+    });
+    return handleResponse(response);
+  },
+
   // Respond to Team Invitation (Accept or Reject)
   async respondToInvitation(invitationId, action) {
     const response = await fetch(`${API_BASE}/${invitationId}/respond`, {

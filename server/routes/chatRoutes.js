@@ -20,7 +20,51 @@ const {
     reopenChat,
     uploadChatFile,
     clearChat,
+    createGroup,
+    getUserGroups,
+    getUserRemovedGroups,
+    getGroupById,
+    updateGroupDescription,
+    addGroupMembers,
+    removeGroupMember,
+    updateGroupName,
+    updateGroupAvatar,
+    exitGroup,
+    deleteGroupForMe,
 } = require("../controllers/chatController");
+
+// GET /api/chat/groups — Fetch user's persistent groups from MongoDB
+router.get("/groups", requireAuth, getUserGroups);
+
+// GET /api/chat/groups/removed — Fetch groups from which user was removed (read-only)
+router.get("/groups/removed", requireAuth, getUserRemovedGroups);
+
+// POST /api/chat/groups — Create a persistent group chat
+router.post("/groups", requireAuth, createGroup);
+
+// GET /api/chat/groups/:groupId — Fetch single group info
+router.get("/groups/:groupId", requireAuth, getGroupById);
+
+// PATCH /api/chat/groups/:groupId/name — Admin-only group name update
+router.patch("/groups/:groupId/name", requireAuth, updateGroupName);
+
+// PATCH /api/chat/groups/:groupId/description — Update group description
+router.patch("/groups/:groupId/description", requireAuth, updateGroupDescription);
+
+// POST /api/chat/groups/:groupId/members — Add members to existing group
+router.post("/groups/:groupId/members", requireAuth, addGroupMembers);
+
+// DELETE /api/chat/groups/:groupId/members/:memberId — Admin-only member removal
+router.delete("/groups/:groupId/members/:memberId", requireAuth, removeGroupMember);
+
+// PATCH /api/chat/groups/:groupId/avatar — Admin-only avatar update
+router.patch("/groups/:groupId/avatar", requireAuth, updateGroupAvatar);
+
+// POST /api/chat/groups/:groupId/exit — Exit group chat
+router.post("/groups/:groupId/exit", requireAuth, exitGroup);
+
+// POST /api/chat/groups/:groupId/delete-for-me — Delete group for current user only
+router.post("/groups/:groupId/delete-for-me", requireAuth, deleteGroupForMe);
 
 // GET /api/chat/token — Generate Stream Chat token for current user
 router.get("/token", requireAuth, getStreamToken);

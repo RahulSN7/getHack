@@ -12,6 +12,8 @@ import { userService } from "../../../services/userService";
 import { chatService } from "../../../services/chatService";
 import ConversationItem from "./ConversationItem";
 import ChatPanel from "./ChatPanel";
+import StartNewChatModal from "./StartNewChatModal";
+import CreateGroupModal from "./CreateGroupModal";
 
 function getChannelLatestTimestamp(channel, clearedAt) {
   if (!channel) return 0;
@@ -102,10 +104,18 @@ function Messages() {
 
   // Favourites & Chat states
   const [chatStates, setChatStates] = useState({});
-  const [activeFilter, setActiveFilter] = useState("all"); // "all" | "favourites" | "unread"
+  const [activeFilter, setActiveFilter] = useState("all"); // "all" | "unread" | "favourites" | "groups"
   const [toastText, setToastText] = useState(null);
 
-  const currentUserId = user?.id || user?._id || "";
+  // More menu, modals & select mode states
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [startChatModalOpen, setStartChatModalOpen] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedCids, setSelectedCids] = useState([]);
+  const moreMenuRef = useRef(null);
+
+  const currentUserId = user?._id || user?.id || "";
 
   // Helper toast
   const showToast = (text) => {
@@ -211,6 +221,102 @@ function Messages() {
         );
 
         // ===================================================================
+        // 2b. Fetch persistent groups from MongoDB backend.
+        // ===================================================================
+        let dbGroups = [];
+        try {
+          const groupRes = await chatService.getGroups();
+          if (groupRes?.success && Array.isArray(groupRes.groups)) {
+            dbGroups = groupRes.groups;
+          }
+        } catch (dbGroupErr) {
+          console.error("Failed to load MongoDB groups:", dbGroupErr);
+        }
+
+        const dbGroupChannels = [];
+        for (const g of dbGroups) {
+          if (!g.streamChannelId) continue;
+          try {
+            const memberIds = Array.isArray(g.members)
+              ? g.members.map((m) => String(m._id || m.id || m))
+              : [String(currentUserId)];
+
+            const groupChan = chatClient.channel("messaging", g.streamChannelId, {
+              name: g.name,
+              image: g.avatar || undefined,
+              avatar: g.avatar || undefined,
+              isGroup: true,
+              members: memberIds,
+              created_by_id: String(g.creator?._id || g.creator?.id || g.creator || currentUserId),
+            });
+            await groupChan.watch();
+            groupChan.data = {
+              ...(groupChan.data || {}),
+              name: g.name,
+              image: g.avatar || undefined,
+              avatar: g.avatar || undefined,
+              isGroup: true,
+              isRemovedFromGroup: false,
+              memberCount: Array.isArray(g.members) ? g.members.length : memberIds.length,
+              mongoGroupId: g._id?.toString() || g.id || g.streamChannelId,
+            };
+            dbGroupChannels.push(groupChan);
+          } catch (watchErr) {
+            console.error("Error watching persistent group channel:", g.streamChannelId, watchErr);
+          }
+        }
+
+        // ===================================================================
+        // 2c. Fetch groups from which the user was removed (read-only access).
+        // ===================================================================
+        let removedDbGroups = [];
+        try {
+          const removedRes = await chatService.getRemovedGroups();
+          if (removedRes?.success && Array.isArray(removedRes.groups)) {
+            removedDbGroups = removedRes.groups;
+          }
+        } catch (removedErr) {
+          console.error("Failed to load removed groups:", removedErr);
+        }
+
+        const removedGroupChannels = [];
+        for (const rg of removedDbGroups) {
+          if (!rg.streamChannelId) continue;
+          // Skip if already in active dbGroupChannels (should not happen, but safety)
+          if (dbGroupChannels.some((c) => c.id === rg.streamChannelId)) continue;
+
+          try {
+            const groupChan = chatClient.channel("messaging", rg.streamChannelId, {
+              name: rg.name,
+              image: rg.avatar || undefined,
+              avatar: rg.avatar || undefined,
+              isGroup: true,
+            });
+
+            // Try to watch — may fail since user is no longer a GetStream member
+            try {
+              await groupChan.watch();
+            } catch (_watchErr) {
+              // Expected: removed user can't watch. Channel reference still usable for display.
+            }
+
+            groupChan.data = {
+              ...(groupChan.data || {}),
+              name: rg.name,
+              image: rg.avatar || undefined,
+              avatar: rg.avatar || undefined,
+              isGroup: true,
+              isRemovedFromGroup: true,
+              memberCount: Array.isArray(rg.members) ? rg.members.length : 0,
+              mongoGroupId: rg._id?.toString() || rg.id || rg.streamChannelId,
+            };
+            removedGroupChannels.push(groupChan);
+          } catch (chanErr) {
+            console.error("Error creating removed group channel ref:", rg.streamChannelId, chanErr);
+          }
+        }
+
+        // ===================================================================
         // 3. Find existing channel OR create a new one.
         // ===================================================================
         if (
@@ -298,18 +404,40 @@ function Messages() {
           addedCids.add(targetChannel.cid);
         }
 
-        // Add existing conversations with messages.
+        // Add persistent MongoDB groups first.
+        dbGroupChannels.forEach((groupChan) => {
+          if (!addedCids.has(groupChan.cid)) {
+            combinedList.push(groupChan);
+            addedCids.add(groupChan.cid);
+          }
+        });
+
+        // Add existing conversations (or any group channels).
         queriedChannels.forEach((channel) => {
+          const isGroup = Boolean(
+            channel.data?.isGroup ||
+            channel.type === "team" ||
+            channel.type === "group" ||
+            channel.data?.teamId
+          );
           const hasMessages =
             channel.state?.messages?.length > 0 ||
             channel.data?.last_message_at;
 
           if (
-            hasMessages &&
+            (hasMessages || isGroup) &&
             !addedCids.has(channel.cid)
           ) {
             combinedList.push(channel);
             addedCids.add(channel.cid);
+          }
+        });
+
+        // Add removed groups (read-only, WhatsApp-style).
+        removedGroupChannels.forEach((groupChan) => {
+          if (!addedCids.has(groupChan.cid)) {
+            combinedList.push(groupChan);
+            addedCids.add(groupChan.cid);
           }
         });
 
@@ -752,17 +880,204 @@ function Messages() {
     }
   }, [currentUserId]);
 
+  // Close options menu when clicking outside
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setMoreMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [moreMenuOpen]);
+
+  // Mark all unread channels as read
+  const handleMarkAllAsRead = useCallback(() => {
+    channels.forEach((ch) => {
+      const unread = getChannelUnreadCount(ch, currentUserId, false, chatStates[ch.cid]?.clearedAt);
+      if (unread > 0 && typeof ch.markRead === "function") {
+        ch.markRead().catch(() => {});
+        if (ch.state) {
+          ch.state.unreadCount = 0;
+          if (!ch.state.read) ch.state.read = {};
+          ch.state.read[String(currentUserId)] = {
+            last_read: new Date().toISOString(),
+            user: { id: String(currentUserId) },
+          };
+        }
+      }
+    });
+
+    setChannels((prev) =>
+      prev.map((c) => {
+        if (c.state) {
+          const nowIso = new Date().toISOString();
+          c.state.unreadCount = 0;
+          if (!c.state.read) c.state.read = {};
+          c.state.read[String(currentUserId)] = {
+            last_read: nowIso,
+            user: { id: String(currentUserId) },
+          };
+        }
+        return Object.assign(Object.create(Object.getPrototypeOf(c)), c, {
+          state: {
+            ...c.state,
+            unreadCount: 0,
+          },
+        });
+      })
+    );
+
+    showToast("All chats marked as read");
+  }, [channels, currentUserId, chatStates]);
+
+  // Handle starting a 1-to-1 chat with selected connection
+  const handleSelectConnection = useCallback(
+    async (conn) => {
+      if (!conn) return;
+      const targetUserId = conn.userId || conn.id;
+      if (!targetUserId) return;
+
+      setStartChatModalOpen(false);
+
+      try {
+        // Check if direct channel already exists in local channels state
+        const existing = channels.find((channel) => {
+          const memberIds = Object.keys(channel.state?.members || {});
+          return memberIds.includes(String(targetUserId)) && memberIds.length === 2 && !channel.data?.isGroup;
+        });
+
+        if (existing) {
+          handleSelectChannel(existing);
+          return;
+        }
+
+        // Synchronize target user with Stream Chat
+        await chatService.ensureTargetUser(targetUserId);
+
+        // Create or watch direct messaging channel in Stream Chat
+        const newChannel = chatClient.channel("messaging", {
+          members: [String(currentUserId), String(targetUserId)],
+        });
+
+        await newChannel.watch();
+
+        newChannel.data = {
+          ...(newChannel.data || {}),
+          targetName: conn.name,
+          targetAvatar: conn.avatar || "",
+        };
+
+        setChannels((prev) => {
+          const exists = prev.some((c) => c.cid === newChannel.cid);
+          if (exists) return prev;
+          return sortChannelsByLatest([newChannel, ...prev], chatStatesRef.current);
+        });
+
+        setActiveChannel(newChannel);
+        setMobileShowChat(true);
+        showToast(`Chat started with ${conn.name}`);
+      } catch (err) {
+        console.error("Failed to start chat with connection:", err);
+        showToast(err.message || "Unable to start conversation.");
+      }
+    },
+    [chatClient, currentUserId, channels, handleSelectChannel]
+  );
+
+  // Handle creating a new group chat
+  const handleCreateGroup = useCallback(
+    async ({ name, memberUserIds, avatarUrl }) => {
+      if (!name || !Array.isArray(memberUserIds) || memberUserIds.length === 0) return;
+
+      try {
+        // 1. Create persistent group in MongoDB & Stream Chat backend
+        const res = await chatService.createGroup({ name, memberUserIds, avatarUrl });
+        const createdGroup = res?.group;
+        const streamChannelId = createdGroup?.streamChannelId;
+
+        if (!streamChannelId) {
+          throw new Error("Backend failed to return persistent group channel ID.");
+        }
+
+        const allMembers = Array.from(
+          new Set([String(currentUserId), ...memberUserIds.map(String)])
+        );
+
+        // 2. Initialize and watch GetStream channel client-side
+        const groupChannel = chatClient.channel("messaging", streamChannelId, {
+          name: name,
+          image: avatarUrl || undefined,
+          avatar: avatarUrl || undefined,
+          members: allMembers,
+          isGroup: true,
+          created_by_id: String(currentUserId),
+        });
+
+        await groupChannel.watch();
+
+        groupChannel.data = {
+          ...(groupChannel.data || {}),
+          name: name,
+          image: avatarUrl || undefined,
+          avatar: avatarUrl || undefined,
+          isGroup: true,
+          mongoGroupId: createdGroup?._id?.toString() || createdGroup?.id || streamChannelId,
+        };
+
+        setChannels((prev) => {
+          const exists = prev.some((c) => c.cid === groupChannel.cid);
+          if (exists) return prev;
+          return [groupChannel, ...prev];
+        });
+
+        setActiveChannel(groupChannel);
+        setMobileShowChat(true);
+        showToast(`Group "${name}" created`);
+      } catch (err) {
+        console.error("Failed to create group channel:", err);
+        throw new Error(err.message || "Failed to create group channel.");
+      }
+    },
+    [chatClient, currentUserId]
+  );
+
+  // Toggle selection of a channel in select mode
+  const handleToggleSelectChannel = useCallback((cid) => {
+    setSelectedCids((prev) =>
+      prev.includes(cid) ? prev.filter((id) => id !== cid) : [...prev, cid]
+    );
+  }, []);
+
   // -------------------------------------------------------------------------
   // Search & Filter conversations.
   // -------------------------------------------------------------------------
   const filteredChannels = useMemo(() => {
     let list = sortChannelsByLatest(channels, chatStates);
 
-    // Filter by active tab (All, Favourites, Unread)
+    // Filter by active tab (All, Unread, Favourites, Groups)
     if (activeFilter === "favourites") {
       list = list.filter((ch) => !!chatStates[ch.cid]?.isFavourite);
     } else if (activeFilter === "unread") {
       list = list.filter((ch) => getChannelUnreadCount(ch, currentUserId, activeChannel?.cid === ch.cid, chatStates[ch.cid]?.clearedAt) > 0);
+    } else if (activeFilter === "groups") {
+      list = list.filter((ch) => {
+        const members = Object.values(ch.state?.members || {});
+        return Boolean(
+          ch.data?.isGroup ||
+          ch.data?.name ||
+          members.length > 2 ||
+          ch.type === "team"
+        );
+      });
     }
 
     if (!searchQuery.trim()) {
@@ -786,6 +1101,7 @@ function Messages() {
       const otherName =
         other?.user?.name ||
         channel.data?.targetName ||
+        channel.data?.name ||
         "";
 
       return otherName
@@ -798,6 +1114,7 @@ function Messages() {
     activeFilter,
     chatStates,
     currentUserId,
+    activeChannel,
   ]);
 
 
@@ -833,6 +1150,24 @@ function Messages() {
       }
     },
     [activeChannel, navigate]
+  );
+
+  // -------------------------------------------------------------------------
+  // Handle Group Deleted (for current user only).
+  // -------------------------------------------------------------------------
+  const handleGroupDeleted = useCallback(
+    (groupId) => {
+      setChannels((prevChannels) =>
+        prevChannels.filter((c) => {
+          const cGroupId = c.data?.mongoGroupId || c.id || c.cid?.replace(/^messaging:/, "");
+          return cGroupId !== groupId && c.id !== groupId && c.cid !== `messaging:${groupId}`;
+        })
+      );
+      setActiveChannel(null);
+      setMobileShowChat(false);
+      navigate("/messages", { replace: true });
+    },
+    [navigate]
   );
 
   // -------------------------------------------------------------------------
@@ -969,7 +1304,6 @@ function Messages() {
           space-y-3
         ">
           <div className="flex items-center justify-between">
-
             <h1 className="
               text-xl font-bold
               text-neutral-900 dark:text-white
@@ -977,6 +1311,78 @@ function Messages() {
             ">
               Chats
             </h1>
+
+            <div className="flex items-center gap-1">
+              {/* More Actions Menu Dropdown (⋮) */}
+              <div ref={moreMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMoreMenuOpen((prev) => !prev)}
+                  aria-label="More options"
+                  title="More options"
+                  className="p-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                >
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="5" r="1.5" fill="currentColor" />
+                    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                    <circle cx="12" cy="19" r="1.5" fill="currentColor" />
+                  </svg>
+                </button>
+
+                {moreMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl bg-white dark:bg-neutral-900 shadow-xl border border-neutral-100 dark:border-neutral-800 py-1.5 z-40 text-xs animate-in fade-in duration-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMoreMenuOpen(false);
+                        setCreateGroupOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-neutral-700 dark:text-neutral-200 hover:bg-indigo-50/60 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm">👥</span>
+                      <span className="font-medium">New group</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMoreMenuOpen(false);
+                        setSelectMode((prev) => !prev);
+                        setSelectedCids([]);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-neutral-700 dark:text-neutral-200 hover:bg-indigo-50/60 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm">☑</span>
+                      <span className="font-medium">{selectMode ? "Exit select" : "Select chats"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMoreMenuOpen(false);
+                        handleMarkAllAsRead();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-neutral-700 dark:text-neutral-200 hover:bg-indigo-50/60 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
+                    >
+                      <span className="text-sm">✓</span>
+                      <span className="font-medium">Mark all as read</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Start New Chat Button (+) */}
+              <button
+                type="button"
+                onClick={() => setStartChatModalOpen(true)}
+                aria-label="Start a new chat"
+                title="Start a new chat"
+                className="p-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -1032,12 +1438,12 @@ function Messages() {
             />
           </div>
 
-          {/* Filter Tabs: All | Favourites | Unread */}
-          <div className="flex items-center gap-1.5 pt-1">
+          {/* Filter Tabs: All | Unread | Favourites | Groups */}
+          <div className="flex items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => setActiveFilter("all")}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
                 activeFilter === "all"
                   ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
                   : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
@@ -1047,25 +1453,36 @@ function Messages() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveFilter("favourites")}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                activeFilter === "favourites"
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                  : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              }`}
-            >
-              <span>❤️ Favourites</span>
-            </button>
-            <button
-              type="button"
               onClick={() => setActiveFilter("unread")}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
                 activeFilter === "unread"
                   ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
                   : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
               }`}
             >
               Unread
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter("favourites")}
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                activeFilter === "favourites"
+                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
+                  : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              }`}
+            >
+              Favourites
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter("groups")}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                activeFilter === "groups"
+                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
+                  : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              }`}
+            >
+              Groups
             </button>
           </div>
         </div>
@@ -1185,6 +1602,15 @@ function Messages() {
                   </p>
                   <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500 max-w-[220px]">
                     Conversations with new messages will appear here.
+                  </p>
+                </>
+              ) : activeFilter === "groups" ? (
+                <>
+                  <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">
+                    No group chats
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500 max-w-[220px]">
+                    Create a group by clicking option menu (⋮) and selecting &quot;New group&quot;.
                   </p>
                 </>
               ) : (
@@ -1343,6 +1769,7 @@ function Messages() {
         `}
       >
         <ChatPanel
+          key={activeChannel?.cid || "no-active-channel"}
           channel={activeChannel}
           currentUserId={currentUserId}
           onBack={handleBack}
@@ -1361,8 +1788,22 @@ function Messages() {
               },
             }));
           }}
+          onGroupDeleted={handleGroupDeleted}
         />
       </div>
+
+      {/* Modals */}
+      <StartNewChatModal
+        isOpen={startChatModalOpen}
+        onClose={() => setStartChatModalOpen(false)}
+        onSelectConnection={handleSelectConnection}
+      />
+
+      <CreateGroupModal
+        isOpen={createGroupOpen}
+        onClose={() => setCreateGroupOpen(false)}
+        onCreateGroup={handleCreateGroup}
+      />
     </div>
   );
 }
