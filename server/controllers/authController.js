@@ -1,10 +1,15 @@
 // ---------------------------------------------------------------------------
-// server/controllers/authController.js — Authentication Controllers
-// Handles signup, login, getMe, and logout with strict single-role validation.
+// server/controllers/authController.js — Email OTP Authentication Controller
+// Handles OTP generation, email dispatching, OTP verification, getMe, and logout.
 // ---------------------------------------------------------------------------
 
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const User = require("../models/user");
+const Otp = require("../models/otp");
+const { sendOtpEmail } = require("../services/emailService");
 const { upsertStreamUser } = require("../services/streamService");
 
 const JWT_SECRET = process.env.JWT_SECRET || "gethack_super_secret_jwt_key_2026";
@@ -20,115 +25,22 @@ const generateToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "7d" });
 };
 
-// ── 1. SIGNUP ──
-const signup = async (req, res) => {
+// Email format validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// ── 1. SEND OTP ──
+const sendOtp = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body || {};
+    const { email } = req.body || {};
 
-    // Temporary development logging (without logging plain password)
-    console.log("Signup request received:", {
-      name,
-      email,
-      role,
-    });
-
-    // Validate required fields
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: "Please provide name, email, password, and account role." });
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({ message: "Please enter your email address." });
     }
 
-    // Normalize role string (convert e.g. Participant -> participant)
-    const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "";
-
-    // Strict single role validation
-    if (normalizedRole !== "participant" && normalizedRole !== "organizer") {
-      return res.status(400).json({ message: "Please select a valid account role ('participant' or 'organizer')." });
-    }
-
-    // Validate email format
     const normalizedEmail = email.toLowerCase().trim();
-    if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
-      return res.status(400).json({ message: "Please provide a valid email address." });
-    }
 
-    // Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters long." });
-    }
-
-    // Check duplicate email explicitly
-    const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
-      return res.status(409).json({ message: "An account with this email already exists." });
-    }
-
-    // Create user
-    const newUser = await User.create({
-      name: name.trim(),
-      email: normalizedEmail,
-      password,
-      role: normalizedRole,
-      profile: {},
-    });
-
-    // Generate JWT token & set cookie
-    const token = generateToken(newUser._id);
-    res.cookie("token", token, COOKIE_OPTIONS);
-
-    // Synchronize new user with Stream Chat server-side
-    upsertStreamUser(newUser).catch((e) =>
-      console.warn("Background Stream Chat signup sync warning:", e.message)
-    );
-
-    return res.status(201).json({
-      message: "Account created successfully",
-      user: newUser.toSafeUser(),
-      token, // Also returned for client fallback
-    });
-  } catch (error) {
-    // ─────────────────────────────────────────────
-    // Detailed development error logging
-    // ─────────────────────────────────────────────
-    console.error("====================================");
-    console.error("SIGNUP ERROR");
-    console.error("====================================");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Error code:", error.code);
-    console.error("Full error:", error);
-    console.error("====================================");
-
-    // Handle MongoDB duplicate key error
-    if (error.code === 11000) {
-      return res.status(409).json({
-        message: "An account with this email already exists.",
-      });
-    }
-
-    // Handle Mongoose validation errors
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        message: error.message,
-      });
-    }
-
-    // Development response
-    return res.status(500).json({
-      message: "Unable to create your account right now.",
-      error: error.message,
-    });
-  }
-};
-
-const mongoose = require("mongoose");
-
-// ── 2. LOGIN ──
-const login = async (req, res) => {
-  try {
-    const { email, password } = req.body || {};
-
-    if (!email || !password) {
-      return res.status(400).json({ message: "Please enter both email and password." });
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({ message: "Please enter a valid email address." });
     }
 
     // Database Connection Guard
@@ -138,42 +50,168 @@ const login = async (req, res) => {
       });
     }
 
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: normalizedEmail });
+
+    // Rate Limiting Cooldown Check (30 seconds between resends)
+    const existingOtp = await Otp.findOne({ email: normalizedEmail });
+    if (existingOtp && existingOtp.lastSentAt) {
+      const elapsedSeconds = (Date.now() - new Date(existingOtp.lastSentAt).getTime()) / 1000;
+      if (elapsedSeconds < 30) {
+        const waitTime = Math.ceil(30 - elapsedSeconds);
+        return res.status(429).json({
+          message: `Please wait ${waitTime} seconds before requesting another code.`,
+          cooldownSeconds: waitTime,
+        });
+      }
+    }
+
+    // Generate secure 6-digit numeric OTP
+    const rawOtp = crypto.randomInt(100000, 999999).toString();
+
+    // Hash OTP before database storage
+    const salt = await bcrypt.genSalt(10);
+    const otpHash = await bcrypt.hash(rawOtp, salt);
+
+    // Set 10-minute expiry time
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Save/Update OTP record in database
+    await Otp.findOneAndUpdate(
+      { email: normalizedEmail },
+      {
+        email: normalizedEmail,
+        otpHash,
+        expiresAt,
+        attempts: 0,
+        lastSentAt: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+
+    // Dispatch OTP email
+    await sendOtpEmail(normalizedEmail, rawOtp);
+
+    return res.status(200).json({
+      message: "Verification code sent to your email.",
+      email: normalizedEmail,
+      isExistingUser: !!existingUser,
+    });
+  } catch (error) {
+    console.error("sendOtp error:", error);
+    return res.status(500).json({
+      message: error.message || "We couldn't send the verification code. Please try again.",
+    });
+  }
+};
+
+// ── 2. VERIFY OTP ──
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp, name, role } = req.body || {};
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Please provide both email and verification code." });
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
+    const cleanOtp = String(otp).trim();
 
-    // Find user by email
-    const user = await User.findOne({ email: normalizedEmail });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid email or password." });
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({ message: "Please enter a valid email address." });
     }
 
-    // Compare password
-    const isMatch = await user.comparePassword(password);
+    if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({ message: "Verification code must be 6 digits." });
+    }
+
+    // Retrieve active OTP record
+    const otpDoc = await Otp.findOne({ email: normalizedEmail });
+
+    if (!otpDoc || otpDoc.expiresAt < new Date()) {
+      if (otpDoc) {
+        await Otp.deleteOne({ email: normalizedEmail });
+      }
+      return res.status(400).json({
+        message: "This verification code has expired. Please request a new code.",
+      });
+    }
+
+    // Check maximum allowed attempts (5 limit)
+    if (otpDoc.attempts >= 5) {
+      await Otp.deleteOne({ email: normalizedEmail });
+      return res.status(400).json({
+        message: "Too many attempts. Please request a new verification code.",
+      });
+    }
+
+    // Compare OTP hash
+    const isMatch = await bcrypt.compare(cleanOtp, otpDoc.otpHash);
+
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password." });
+      otpDoc.attempts += 1;
+      await otpDoc.save();
+
+      if (otpDoc.attempts >= 5) {
+        await Otp.deleteOne({ email: normalizedEmail });
+        return res.status(400).json({
+          message: "Too many attempts. Please request a new verification code.",
+        });
+      }
+
+      return res.status(400).json({
+        message: "Incorrect verification code. Please try again.",
+      });
     }
 
-    // Generate JWT token & set cookie
+    // OTP Verification Successful -> Invalidate & Delete OTP record
+    await Otp.deleteOne({ email: normalizedEmail });
+
+    // Find or create user
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (user) {
+      // Update email verification status for existing user
+      if (!user.emailVerified) {
+        user.emailVerified = true;
+        await user.save();
+      }
+    } else {
+      // Normalize role string for new user signup
+      const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "participant";
+      const validRole = normalizedRole === "organizer" ? "organizer" : "participant";
+
+      const userName = name && typeof name === "string" && name.trim() ? name.trim() : "Developer";
+
+      user = await User.create({
+        name: userName,
+        email: normalizedEmail,
+        role: validRole,
+        emailVerified: true,
+        profile: {},
+      });
+    }
+
+    // Generate JWT token & set session cookie
     const token = generateToken(user._id);
     res.cookie("token", token, COOKIE_OPTIONS);
 
-    // Synchronize logged in user with Stream Chat server-side
+    // Synchronize authenticated user with Stream Chat server-side
     upsertStreamUser(user).catch((e) =>
-      console.warn("Background Stream Chat login sync warning:", e.message)
+      console.warn("Background Stream Chat sync warning:", e.message)
     );
 
     return res.status(200).json({
-      message: "Logged in successfully",
+      message: "Authenticated successfully",
       user: user.toSafeUser(),
       token,
     });
   } catch (error) {
-    console.error("Login controller error:", error);
-    if (error.name === "MongooseError" || error.message?.includes("buffering timed out")) {
-      return res.status(503).json({
-        message: "Database query timed out. Please check network connection or MongoDB cluster status.",
-      });
+    console.error("verifyOtp error:", error);
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "An account with this email already exists." });
     }
-    return res.status(500).json({ message: "An unexpected server error occurred during login." });
+    return res.status(500).json({ message: "An unexpected error occurred during OTP verification." });
   }
 };
 
@@ -205,8 +243,8 @@ const logout = async (req, res) => {
 };
 
 module.exports = {
-  signup,
-  login,
+  sendOtp,
+  verifyOtp,
   getMe,
   logout,
 };

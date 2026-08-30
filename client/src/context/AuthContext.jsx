@@ -38,24 +38,29 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!user;
 
-  // Login handler
-  const login = async ({ email, password }) => {
-    const data = await authService.login({ email, password });
-    if (data?.user) {
-      setUser(data.user);
-      return data.user;
-    }
-    throw new Error("Authentication failed");
+  // Send OTP handler
+  const sendOtp = async ({ email, role }) => {
+    return await authService.sendOtp({ email, role });
   };
 
-  // Signup handler
-  const signup = async ({ name, email, password, role }) => {
-    const data = await authService.signup({ name, email, password, role });
+  // Verify OTP handler & set authenticated user state
+  const verifyOtp = async ({ email, otp, name, role }) => {
+    const data = await authService.verifyOtp({ email, otp, name, role });
     if (data?.user) {
       setUser(data.user);
       return data.user;
     }
-    throw new Error("Registration failed");
+    throw new Error("OTP Verification failed");
+  };
+
+  // Legacy login alias using OTP verify
+  const login = async ({ email, otp }) => {
+    return await verifyOtp({ email, otp });
+  };
+
+  // Legacy signup alias using OTP verify
+  const signup = async ({ name, email, otp, role }) => {
+    return await verifyOtp({ email, otp, name, role });
   };
 
   // Logout handler
@@ -82,6 +87,8 @@ export function AuthProvider({ children }) {
         user,
         isAuthenticated,
         loading,
+        sendOtp,
+        verifyOtp,
         login,
         signup,
         logout,

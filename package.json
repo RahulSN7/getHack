@@ -26,6 +26,7 @@
     "concurrently": "^10.0.4"
   },
   "dependencies": {
+    "nodemailer": "^9.0.6",
     "react-router-dom": "^7.18.2"
   }
 }

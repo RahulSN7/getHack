@@ -539,6 +539,13 @@ function OrganizerProfilePage() {
 
           <div className="space-y-3 text-xs">
             <div>
+              <span className="block font-medium text-neutral-400 mb-0.5">Email</span>
+              <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                {profileUser?.email || profile?.email || currentUser?.email || "N/A"}
+              </span>
+            </div>
+
+            <div>
               <span className="block font-medium text-neutral-400 mb-0.5">Organization</span>
               <span className="font-semibold text-neutral-900 dark:text-white text-sm">
                 {profile.organizationName || profile.name}
@@ -681,6 +688,16 @@ function OrganizerProfilePage() {
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+              {/* Registered Email (Read-only) */}
+              <div>
+                <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Email
+                </label>
+                <div className="flex h-10 w-full items-center rounded-lg border border-neutral-200 bg-neutral-100 px-3.5 text-sm font-medium text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
+                  {profileUser?.email || profile?.email || currentUser?.email || "N/A"}
+                </div>
+              </div>
+
               {/* Basic Info */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>

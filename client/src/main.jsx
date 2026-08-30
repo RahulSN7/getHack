@@ -2,7 +2,7 @@
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider, useRouteError } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, useRouteError, Navigate } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
 import LandingPage from "./pages/Landing/LandingPage.jsx";
@@ -221,7 +221,7 @@ const router = createBrowserRouter([
       },
       {
         path: "forgot-password",
-        element: <ForgotPasswordPage />,
+        element: <Navigate to="/login" replace />,
       },
     ],
   },

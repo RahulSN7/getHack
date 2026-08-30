@@ -1,55 +1,119 @@
 // ---------------------------------------------------------------------------
-// LoginPage.jsx — Production Authentication Login Page
-// Features a bounded authentication card with local Day/Night theme toggle.
+// LoginPage.jsx — Production Email OTP Authentication Login Page
+// 2-Step OTP Verification Flow with zero password fields & local Day/Night theme.
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthInput from "../../components/auth/AuthInput";
+import OtpInput from "../../components/auth/OtpInput";
 import { useAuth } from "../../context/useAuth";
+
+// Helper function to partially mask email address (e.g. rahul@gmail.com -> r***l@gmail.com)
+function maskEmail(emailStr) {
+  if (!emailStr || !emailStr.includes("@")) return emailStr;
+  const [local, domain] = emailStr.split("@");
+  if (local.length <= 2) {
+    return `${local[0]}***@${domain}`;
+  }
+  return `${local[0]}***${local[local.length - 1]}@${domain}`;
+}
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { sendOtp, verifyOtp } = useAuth();
 
-  // Local card theme state (does NOT change global theme or page background)
+  // Local card theme state
   const [isCardDark, setIsCardDark] = useState(false);
 
+  // Authentication state
+  const [step, setStep] = useState(1); // 1 = Email Input | 2 = OTP Verification
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
 
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [socialNotice, setSocialNotice] = useState("");
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  const validate = () => {
+  // Cooldown countdown timer effect for OTP resend
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [resendCooldown]);
+
+  const validateEmailStep = () => {
     const errs = {};
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       errs.email = "Please enter your email address.";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       errs.email = "Please enter a valid email address.";
     }
-
-    if (!password) {
-      errs.password = "Please enter your password.";
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Step 1: Send OTP to Email
+  const handleSendOtpSubmit = async (e) => {
+    if (e) e.preventDefault();
     setGeneralError("");
-    setSocialNotice("");
 
-    if (!validate()) return;
+    if (!validateEmailStep()) return;
 
     setIsLoading(true);
 
     try {
-      const loggedUser = await login({ email, password });
+      await sendOtp({ email: email.trim() });
+      setIsLoading(false);
+      setStep(2);
+      setResendCooldown(30); // Start 30s resend cooldown
+    } catch (err) {
+      setIsLoading(false);
+      setGeneralError(err.message || "We couldn't send the verification code. Please try again.");
+    }
+  };
+
+  // Resend OTP handler
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || isResending) return;
+    setGeneralError("");
+    setIsResending(true);
+
+    try {
+      await sendOtp({ email: email.trim() });
+      setIsResending(false);
+      setResendCooldown(30);
+      setOtp("");
+    } catch (err) {
+      setIsResending(false);
+      setGeneralError(err.message || "We couldn't send the verification code. Please try again.");
+    }
+  };
+
+  // Step 2: Verify OTP & Authenticate User
+  const handleVerifyOtpSubmit = async (e, otpCode = otp) => {
+    if (e) e.preventDefault();
+    setGeneralError("");
+
+    const cleanOtp = (otpCode || otp).trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setGeneralError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const loggedUser = await verifyOtp({ email: email.trim(), otp: cleanOtp });
       setIsLoading(false);
 
       // Redirect based on account role or redirect query parameter
@@ -65,15 +129,8 @@ function LoginPage() {
       }
     } catch (err) {
       setIsLoading(false);
-      setGeneralError(
-        err.message || "Invalid email or password. Please check your credentials and try again."
-      );
+      setGeneralError(err.message || "Incorrect verification code. Please try again.");
     }
-  };
-
-  const handleSocialClick = (provider) => {
-    setSocialNotice(`${provider} sign in is not configured in this demo environment.`);
-    setTimeout(() => setSocialNotice(""), 3500);
   };
 
   return (
@@ -94,7 +151,7 @@ function LoginPage() {
         }
       `}
     >
-      {/* ── Local Card Day/Night Theme Toggle (Top Right inside Card) ── */}
+      {/* ── Local Card Day/Night Theme Toggle ── */}
       <button
         type="button"
         onClick={() => setIsCardDark((prev) => !prev)}
@@ -120,13 +177,11 @@ function LoginPage() {
         `}
       >
         {isCardDark ? (
-          /* SUN ICON */
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="4" />
             <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
           </svg>
         ) : (
-          /* MOON ICON */
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
           </svg>
@@ -141,18 +196,27 @@ function LoginPage() {
               isCardDark ? "text-white" : "text-neutral-900"
             }`}
           >
-            Sign in
+            {step === 1 ? "Sign in" : "Verify your email"}
           </h1>
           <p
             className={`text-xs font-medium ${
               isCardDark ? "text-neutral-400" : "text-neutral-500"
             }`}
           >
-            Welcome back to getHack
+            {step === 1 ? (
+              "Welcome back to getHack"
+            ) : (
+              <span>
+                We sent a 6-digit verification code to{" "}
+                <span className={`font-semibold ${isCardDark ? "text-neutral-200" : "text-neutral-800"}`}>
+                  {maskEmail(email)}
+                </span>
+              </span>
+            )}
           </p>
         </div>
 
-        {/* Error & Notice Banners */}
+        {/* Error Banner */}
         {generalError && (
           <div
             className={`rounded-xl border p-3.5 text-xs font-semibold ${
@@ -165,209 +229,170 @@ function LoginPage() {
           </div>
         )}
 
-        {socialNotice && (
-          <div
-            className={`rounded-xl border p-3.5 text-xs font-semibold ${
-              isCardDark
-                ? "border-amber-900/60 bg-amber-950/60 text-amber-300"
-                : "border-amber-200/80 bg-amber-50 text-amber-700"
-            }`}
-          >
-            {socialNotice}
-          </div>
-        )}
-
-        {/* Main Login Form */}
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          <AuthInput
-            id="email"
-            label="Email address"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            required
-            autoComplete="email"
-            error={errors.email}
-            isDark={isCardDark}
-          />
-
-          <div>
+        {/* STEP 1: EMAIL ENTRY FORM */}
+        {step === 1 && (
+          <form onSubmit={handleSendOtpSubmit} noValidate className="space-y-4">
             <AuthInput
-              id="password"
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              id="email"
+              label="Email address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
               required
-              autoComplete="current-password"
-              error={errors.password}
+              autoComplete="email"
+              error={errors.email}
               isDark={isCardDark}
             />
-            <div className="mt-1.5 text-right">
-              <Link
-                to="/forgot-password"
-                className={`text-xs font-medium transition-colors ${
-                  isCardDark
-                    ? "text-indigo-400 hover:text-indigo-300"
-                    : "text-indigo-600 hover:text-indigo-700"
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="
+                mt-2
+                flex
+                h-10
+                w-full
+                items-center
+                justify-center
+                gap-2
+                rounded-lg
+                bg-indigo-600
+                px-4
+                text-xs
+                font-semibold
+                text-white
+                shadow-xs
+                transition-colors
+                duration-150
+                hover:bg-indigo-500
+                disabled:cursor-not-allowed
+                disabled:opacity-60
+                dark:bg-indigo-500
+                dark:hover:bg-indigo-400
+              "
+            >
+              {isLoading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                  </svg>
+                  <span>Sending code...</span>
+                </>
+              ) : (
+                <span>Continue</span>
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* STEP 2: 6-DIGIT OTP VERIFICATION FORM */}
+        {step === 2 && (
+          <form onSubmit={handleVerifyOtpSubmit} noValidate className="space-y-5">
+            <div>
+              <label
+                className={`mb-2 block text-xs font-semibold ${
+                  isCardDark ? "text-neutral-300" : "text-neutral-700"
                 }`}
               >
-                Forgot password?
-              </Link>
+                Enter 6-digit Code
+              </label>
+              <OtpInput
+                value={otp}
+                onChange={setOtp}
+                length={6}
+                disabled={isLoading}
+                error={!!generalError}
+                onComplete={(code) => handleVerifyOtpSubmit(null, code)}
+              />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="
-              mt-2
-              flex
-              h-10
-              w-full
-              items-center
-              justify-center
-              gap-2
-              rounded-lg
-              bg-indigo-600
-              px-4
-              text-xs
-              font-semibold
-              text-white
-              shadow-xs
-              transition-colors
-              duration-150
-              hover:bg-indigo-500
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-            "
-          >
-            {isLoading ? (
-              <>
-                <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
-                </svg>
-                <span>Signing in...</span>
-              </>
-            ) : (
-              <span>Sign In</span>
-            )}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={isLoading || otp.length !== 6}
+              className="
+                flex
+                h-10
+                w-full
+                items-center
+                justify-center
+                gap-2
+                rounded-lg
+                bg-indigo-600
+                px-4
+                text-xs
+                font-semibold
+                text-white
+                shadow-xs
+                transition-colors
+                duration-150
+                hover:bg-indigo-500
+                disabled:cursor-not-allowed
+                disabled:opacity-60
+                dark:bg-indigo-500
+                dark:hover:bg-indigo-400
+              "
+            >
+              {isLoading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                  </svg>
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <span>Verify OTP</span>
+              )}
+            </button>
 
-        {/* Divider */}
-        <div className="relative flex items-center justify-center my-2">
-          <div
-            className={`w-full border-t ${
-              isCardDark ? "border-neutral-800" : "border-neutral-200"
-            }`}
-          />
-          <span
-            className={`absolute px-3 text-[11px] font-medium uppercase tracking-wider ${
-              isCardDark
-                ? "bg-neutral-900 text-neutral-500"
-                : "bg-white text-neutral-400"
-            }`}
-          >
-            or
-          </span>
-        </div>
+            {/* Resend OTP & Back to email links */}
+            <div className="space-y-2 pt-2 text-center text-xs">
+              <div className={isCardDark ? "text-neutral-400" : "text-neutral-500"}>
+                Didn&apos;t receive the code?{" "}
+                {resendCooldown > 0 ? (
+                  <span className="font-semibold text-neutral-400">
+                    Resend in {resendCooldown}s
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={isResending}
+                    className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    {isResending ? "Sending..." : "Resend OTP"}
+                  </button>
+                )}
+              </div>
 
-        {/* Social Login Secondary Buttons */}
-        <div className="space-y-2.5">
-          <button
-            type="button"
-            onClick={() => handleSocialClick("Google")}
-            className={`
-              flex
-              h-10
-              w-full
-              items-center
-              justify-center
-              gap-2.5
-              rounded-lg
-              border
-              px-4
-              text-xs
-              font-semibold
-              transition-colors
-              ${
-                isCardDark
-                  ? "border-neutral-800 bg-neutral-950 text-neutral-200 hover:bg-neutral-800 hover:text-white"
-                  : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
-              }
-            `}
-          >
-            <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>Continue with Google</span>
-          </button>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep(1);
+                    setOtp("");
+                    setGeneralError("");
+                  }}
+                  className="font-semibold text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
+                >
+                  ← Change email address
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
 
-          <button
-            type="button"
-            onClick={() => handleSocialClick("GitHub")}
-            className={`
-              flex
-              h-10
-              w-full
-              items-center
-              justify-center
-              gap-2.5
-              rounded-lg
-              border
-              px-4
-              text-xs
-              font-semibold
-              transition-colors
-              ${
-                isCardDark
-                  ? "border-neutral-800 bg-neutral-950 text-neutral-200 hover:bg-neutral-800 hover:text-white"
-                  : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
-              }
-            `}
-          >
-            <svg className="h-4 w-4 shrink-0 fill-current" viewBox="0 0 24 24">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-            </svg>
-            <span>Continue with GitHub</span>
-          </button>
-        </div>
-
-        {/* Footer Link inside Card */}
-        <div
-          className={`pt-2 text-center text-xs ${
-            isCardDark ? "text-neutral-400" : "text-neutral-500"
-          }`}
-        >
-          <span>Don&apos;t have an account? </span>
-          <Link
-            to="/signup"
-            className={`font-semibold transition-colors ${
-              isCardDark
-                ? "text-indigo-400 hover:text-indigo-300"
-                : "text-indigo-600 hover:text-indigo-700"
-            }`}
-          >
-            Create an account
-          </Link>
+        {/* Card Footer Link */}
+        <div className="border-t border-neutral-100 pt-4 text-center text-xs dark:border-neutral-800">
+          <p className={isCardDark ? "text-neutral-400" : "text-neutral-500"}>
+            Don&apos;t have an account?{" "}
+            <Link
+              to="/signup"
+              className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+            >
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -572,6 +572,15 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
               Basic Information
             </h3>
 
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                Email
+              </label>
+              <div className="mt-1 flex h-[38px] w-full items-center rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-2 text-xs font-medium text-neutral-600 dark:border-neutral-800 dark:bg-neutral-800/60 dark:text-neutral-400">
+                {currentUser?.email || currentProfile?.email || "N/A"}
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">

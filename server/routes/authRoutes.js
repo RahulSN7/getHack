@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// server/routes/authRoutes.js — Express Router for Authentication APIs
+// server/routes/authRoutes.js — Express Router for OTP Authentication APIs
 // ---------------------------------------------------------------------------
 
 const express = require("express");
@@ -7,19 +7,11 @@ const router = express.Router();
 const authController = require("../controllers/authController");
 const { requireAuth } = require("../middleware/authMiddleware");
 
-// Public auth endpoints
-router.post("/signup", (req, res, next) => {
-  console.log("🔥 SIGNUP ROUTE HIT");
+// Public OTP authentication endpoints
+router.post("/send-otp", authController.sendOtp);
+router.post("/verify-otp", authController.verifyOtp);
 
-  console.log("Signup body:", {
-    name: req.body?.name,
-    email: req.body?.email,
-    role: req.body?.role,
-  });
-
-  next();
-}, authController.signup);
-router.post("/login", authController.login);
+// Public session logout endpoint
 router.post("/logout", authController.logout);
 
 // Protected current user endpoint

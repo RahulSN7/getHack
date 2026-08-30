@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// authService.js — Centralized Authentication API Service
+// authService.js — Centralized OTP Authentication API Service
 // Communicates with Express backend via Vite /api proxy.
 // ---------------------------------------------------------------------------
 
@@ -18,6 +18,8 @@ async function handleResponse(response) {
     if (!message) {
       if (response.status === 409) {
         message = "An account with this email already exists.";
+      } else if (response.status === 429) {
+        message = "Too many requests. Please wait before trying again.";
       } else if (response.status === 504 || response.status === 502 || response.status === 503) {
         message = "Backend server is unreachable. Please ensure the Express server is running on port 5000.";
       } else if (response.status === 404) {
@@ -35,28 +37,28 @@ async function handleResponse(response) {
 }
 
 export const authService = {
-  // Login user
-  async login({ email, password }) {
-    const response = await fetch(`${API_BASE}/login`, {
+  // Send 6-digit verification OTP to email
+  async sendOtp({ email, role }) {
+    const response = await fetch(`${API_BASE}/send-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, role }),
     });
     return handleResponse(response);
   },
 
-  // Signup user with single role ('participant' or 'organizer')
-  async signup({ name, email, password, role }) {
-    const response = await fetch(`${API_BASE}/signup`, {
+  // Verify OTP & complete authentication
+  async verifyOtp({ email, otp, name, role }) {
+    const response = await fetch(`${API_BASE}/verify-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({ name, email, password, role }),
+      body: JSON.stringify({ email, otp, name, role }),
     });
     return handleResponse(response);
   },
@@ -73,7 +75,7 @@ export const authService = {
     return handleResponse(response);
   },
 
-  // Logout user & clear session
+  // Logout user & clear session cookie
   async logout() {
     const response = await fetch(`${API_BASE}/logout`, {
       method: "POST",

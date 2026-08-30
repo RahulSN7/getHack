@@ -348,6 +348,7 @@ export default function UserProfile() {
 
   const profile = profileUser.profile || {};
   const name = profileUser.name || "Participant";
+  const email = profileUser.email || profile.email || currentUser?.email || "";
   const avatar = profile.avatar || profileUser.avatar || "";
   const role = profile.role || "Participant";
   const bio = profile.bio || "";
@@ -579,6 +580,16 @@ export default function UserProfile() {
               </h2>
 
               <div className="space-y-3 text-xs">
+                {email && (
+                  <div>
+                    <span className="block font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider text-[10px]">
+                      Email
+                    </span>
+                    <span className="mt-0.5 block font-medium text-neutral-800 dark:text-neutral-200">
+                      {email}
+                    </span>
+                  </div>
+                )}
                 {isOwner && gender && (
                   <div>
                     <span className="block font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider text-[10px]">

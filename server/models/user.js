@@ -24,7 +24,12 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: false,
+    },
+
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
 
     role: {
@@ -46,9 +51,9 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Hash password before saving if modified
+// Hash password before saving if present and modified
 userSchema.pre("save", async function () {
-  if (!this.isModified("password")) {
+  if (!this.password || !this.isModified("password")) {
     return;
   }
 
@@ -77,6 +82,7 @@ userSchema.methods.toSafeUser = function () {
     name: this.name,
     email: this.email,
     role: this.role,
+    emailVerified: !!this.emailVerified,
     avatar: userAvatar,
     profile: {
       avatar: userAvatar,
