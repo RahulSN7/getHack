@@ -202,6 +202,11 @@ const hackathonSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
+    // Expiration date for 24-hour automatic retention & MongoDB TTL deletion
+    expiresAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -211,6 +216,9 @@ const hackathonSchema = new mongoose.Schema(
 // Compound index for fast deduplication lookup by platform + external ID
 hackathonSchema.index({ "source.platform": 1, "source.externalId": 1 });
 hackathonSchema.index({ title: 1, startDate: 1 });
+
+// MongoDB TTL Index: automatically delete document 24 hours after registration deadline
+hackathonSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Helper pre-save hook to ensure legacy and nested fields stay in sync
 hackathonSchema.pre("save", function () {
@@ -271,6 +279,12 @@ hackathonSchema.pre("save", function () {
   if (this.teamSize) {
     if (this.teamSize.min !== undefined) this.minTeamSize = this.teamSize.min;
     if (this.teamSize.max !== undefined) this.maxTeamSize = this.teamSize.max;
+  }
+
+  // Calculate expiresAt = registrationDeadline + 24 hours
+  const deadline = this.registrationDeadline || this.registration?.deadline;
+  if (deadline && !isNaN(new Date(deadline).getTime())) {
+    this.expiresAt = new Date(new Date(deadline).getTime() + 24 * 60 * 60 * 1000);
   }
 });
 

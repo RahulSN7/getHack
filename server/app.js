@@ -28,6 +28,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const { initHackathonSyncJob, runSyncTask } = require("./jobs/hackathonSyncJob");
 const { syncAllUsersToStream } = require("./services/streamService");
 const { initSocketService } = require("./services/socketService");
+const { backfillHackathonExpiration } = require("./services/hackathonBackfillService");
 
 const app = express();
 const server = http.createServer(app);
@@ -104,6 +105,8 @@ mongoose
     syncAllUsersToStream();
     // Initialize multi-platform hackathon synchronization background scheduler
     initHackathonSyncJob();
+    // Backfill expiration dates for existing hackathons
+    backfillHackathonExpiration();
   })
   .catch((err) => {
     console.error("MongoDB connection error:", err.message || err);

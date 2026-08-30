@@ -82,6 +82,29 @@ const getPublicHackathons = async (req, res) => {
 
     // 5. Status filter (Date-calculated)
     const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Filter out expired hackathons (expiresAt <= current time)
+    query.$and = query.$and || [];
+    query.$and.push({
+      $or: [
+        { expiresAt: { $gt: now } },
+        {
+          $and: [
+            { expiresAt: { $exists: false } },
+            {
+              $or: [
+                { registrationDeadline: { $gt: twentyFourHoursAgo } },
+                { "registration.deadline": { $gt: twentyFourHoursAgo } },
+                { registrationDeadline: { $exists: false } },
+                { registrationDeadline: null },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
     if (status && status !== "all") {
       const s = status.toLowerCase();
       if (s === "upcoming") {
@@ -199,6 +222,14 @@ const getHackathonById = async (req, res) => {
 
     if (!hackathon) {
       return res.status(404).json({ success: false, message: "Hackathon not found." });
+    }
+
+    const now = new Date();
+    const regDeadline = hackathon.registrationDeadline || hackathon.registration?.deadline;
+    const expiresAt = hackathon.expiresAt || (regDeadline ? new Date(new Date(regDeadline).getTime() + 24 * 60 * 60 * 1000) : null);
+
+    if (expiresAt && new Date(expiresAt) <= now) {
+      return res.status(404).json({ success: false, message: "Hackathon has expired and is no longer available." });
     }
 
     const json = hackathon.toJSON();
