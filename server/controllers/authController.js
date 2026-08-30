@@ -377,9 +377,205 @@ const logout = async (req, res) => {
   }
 };
 
+const { OAuth2Client } = require("google-auth-library");
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback";
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
+const oauth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL);
+
+// ── 5. GOOGLE AUTHENTICATION (POST /api/auth/google) ──
+const googleAuth = async (req, res) => {
+  try {
+    const { credential, code, role } = req.body || {};
+
+    if (!credential && !code) {
+      return res.status(400).json({ message: "Google authentication token or authorization code is required." });
+    }
+
+    let payload = null;
+
+    if (credential) {
+      if (!process.env.GOOGLE_CLIENT_ID) {
+        return res.status(400).json({
+          message: "Google OAuth is not configured on the backend. Please add GOOGLE_CLIENT_ID to server/.env",
+        });
+      }
+
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } else if (code) {
+      const { tokens } = await oauth2Client.getToken(code);
+      const ticket = await oauth2Client.verifyIdToken({
+        idToken: tokens.id_token,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    }
+
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: "Failed to verify Google account credentials." });
+    }
+
+    const email = payload.email.toLowerCase().trim();
+    const googleId = payload.sub;
+    const name = payload.name || "Google User";
+    const picture = payload.picture || "";
+
+    // Find existing user by googleId or email
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+    if (user) {
+      let modified = false;
+      if (!user.googleId) {
+        user.googleId = googleId;
+        modified = true;
+      }
+      if (!user.emailVerified) {
+        user.emailVerified = true;
+        modified = true;
+      }
+      if (picture && (!user.profile || !user.profile.avatar)) {
+        user.profile = { ...(user.profile || {}), avatar: picture };
+        modified = true;
+      }
+      if (modified) {
+        await user.save();
+      }
+    } else {
+      const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "participant";
+      const validRole = normalizedRole === "organizer" ? "organizer" : "participant";
+
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        role: validRole,
+        emailVerified: true,
+        profile: {
+          avatar: picture,
+          role: validRole === "organizer" ? "Organizer" : "Participant",
+        },
+      });
+    }
+
+    // Generate JWT token & set session cookie
+    const token = generateToken(user._id);
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    // Synchronize authenticated user with Stream Chat server-side
+    upsertStreamUser(user).catch((e) =>
+      console.warn("Background Stream Chat sync warning:", e.message)
+    );
+
+    return res.status(200).json({
+      message: "Authenticated successfully with Google",
+      user: user.toSafeUser(),
+      token,
+    });
+  } catch (error) {
+    console.error("googleAuth error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to complete Google authentication.",
+    });
+  }
+};
+
+// ── 6. GOOGLE OAUTH REDIRECT (GET /api/auth/google) ──
+const googleRedirect = (req, res) => {
+  if (!GOOGLE_CLIENT_ID) {
+    return res.redirect(`${CLIENT_URL}/login?error=Google OAuth is not configured in backend .env`);
+  }
+
+  const authorizeUrl = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["openid", "email", "profile"],
+    prompt: "select_account",
+  });
+
+  return res.redirect(authorizeUrl);
+};
+
+// ── 7. GOOGLE OAUTH CALLBACK (GET /api/auth/google/callback) ──
+const googleCallback = async (req, res) => {
+  try {
+    const { code } = req.query;
+
+    if (!code) {
+      return res.redirect(`${CLIENT_URL}/login?error=Google authentication was cancelled.`);
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    const ticket = await oauth2Client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      return res.redirect(`${CLIENT_URL}/login?error=Failed to verify Google account details.`);
+    }
+
+    const email = payload.email.toLowerCase().trim();
+    const googleId = payload.sub;
+    const name = payload.name || "Google User";
+    const picture = payload.picture || "";
+
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+    if (user) {
+      let modified = false;
+      if (!user.googleId) {
+        user.googleId = googleId;
+        modified = true;
+      }
+      if (!user.emailVerified) {
+        user.emailVerified = true;
+        modified = true;
+      }
+      if (picture && (!user.profile || !user.profile.avatar)) {
+        user.profile = { ...(user.profile || {}), avatar: picture };
+        modified = true;
+      }
+      if (modified) await user.save();
+    } else {
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        role: "participant",
+        emailVerified: true,
+        profile: { avatar: picture },
+      });
+    }
+
+    const token = generateToken(user._id);
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    upsertStreamUser(user).catch((e) =>
+      console.warn("Background Stream Chat sync warning:", e.message)
+    );
+
+    const redirectPath = user.role === "organizer" ? "/organizer" : "/hackathons";
+    return res.redirect(`${CLIENT_URL}${redirectPath}`);
+  } catch (error) {
+    console.error("googleCallback error:", error);
+    return res.redirect(`${CLIENT_URL}/login?error=Google authentication failed.`);
+  }
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   getMe,
   logout,
+  googleAuth,
+  googleRedirect,
+  googleCallback,
 };

@@ -63,6 +63,19 @@ export const authService = {
     return handleResponse(response);
   },
 
+  // Google OAuth Authentication
+  async googleAuth({ credential, code, role }) {
+    const response = await fetch(`${API_BASE}/google`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ credential, code, role }),
+    });
+    return handleResponse(response);
+  },
+
   // Get current authenticated user
   async getCurrentUser() {
     const response = await fetch(`${API_BASE}/me`, {

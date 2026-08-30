@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    googleId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+
     role: {
       type: String,
       enum: {

@@ -63,6 +63,16 @@ export function AuthProvider({ children }) {
     return await verifyOtp({ email, otp, name, role });
   };
 
+  // Google Auth handler & set authenticated user state
+  const googleAuth = async ({ credential, code, role }) => {
+    const data = await authService.googleAuth({ credential, code, role });
+    if (data?.user) {
+      setUser(data.user);
+      return data.user;
+    }
+    throw new Error("Google authentication failed");
+  };
+
   // Logout handler
   const logout = async () => {
     try {
@@ -89,6 +99,7 @@ export function AuthProvider({ children }) {
         loading,
         sendOtp,
         verifyOtp,
+        googleAuth,
         login,
         signup,
         logout,

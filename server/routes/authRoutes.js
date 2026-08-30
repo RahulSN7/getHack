@@ -11,6 +11,11 @@ const { requireAuth } = require("../middleware/authMiddleware");
 router.post("/send-otp", authController.sendOtp);
 router.post("/verify-otp", authController.verifyOtp);
 
+// Google OAuth endpoints
+router.post("/google", authController.googleAuth);
+router.get("/google", authController.googleRedirect);
+router.get("/google/callback", authController.googleCallback);
+
 // Public session logout endpoint
 router.post("/logout", authController.logout);
 
