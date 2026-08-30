@@ -73,26 +73,26 @@ function SignupPage() {
     };
   }, [resendCooldown]);
 
-function isValidEmailFormat(emailStr) {
-  if (!emailStr || typeof emailStr !== "string") return false;
-  const trimmed = emailStr.trim().toLowerCase();
-  if (trimmed.length < 6 || trimmed.length > 254) return false;
-  if (trimmed.includes("..")) return false;
-  const parts = trimmed.split("@");
-  if (parts.length !== 2) return false;
-  const [local, domain] = parts;
-  if (!local || local.startsWith(".") || local.endsWith(".")) return false;
-  if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)) return false;
-  if (!domain || domain.startsWith(".") || domain.endsWith(".")) return false;
-  if (!domain.includes(".")) return false;
-  const domainParts = domain.split(".");
-  if (domainParts.some((label) => !label || label.length === 0 || label.startsWith("-") || label.endsWith("-"))) {
-    return false;
+  function isValidEmailFormat(emailStr) {
+    if (!emailStr || typeof emailStr !== "string") return false;
+    const trimmed = emailStr.trim().toLowerCase();
+    if (trimmed.length < 6 || trimmed.length > 254) return false;
+    if (trimmed.includes("..")) return false;
+    const parts = trimmed.split("@");
+    if (parts.length !== 2) return false;
+    const [local, domain] = parts;
+    if (!local || local.startsWith(".") || local.endsWith(".")) return false;
+    if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)) return false;
+    if (!domain || domain.startsWith(".") || domain.endsWith(".")) return false;
+    if (!domain.includes(".")) return false;
+    const domainParts = domain.split(".");
+    if (domainParts.some((label) => !label || label.length === 0 || label.startsWith("-") || label.endsWith("-"))) {
+      return false;
+    }
+    const tld = domainParts[domainParts.length - 1];
+    if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+    return true;
   }
-  const tld = domainParts[domainParts.length - 1];
-  if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
-  return true;
-}
 
   const validateStep1 = () => {
     const errs = {};
@@ -195,10 +195,9 @@ function isValidEmailFormat(emailStr) {
         sm:p-8
         transition-all
         duration-200
-        ${
-          isCardDark
-            ? "border-neutral-800 bg-neutral-900 text-white shadow-xl"
-            : "border-neutral-200/90 bg-white text-neutral-900 shadow-sm"
+        ${isCardDark
+          ? "border-neutral-800 bg-neutral-900 text-white shadow-xl"
+          : "border-neutral-200/90 bg-white text-neutral-900 shadow-sm"
         }
       `}
     >
@@ -220,10 +219,9 @@ function isValidEmailFormat(emailStr) {
           border
           transition-colors
           duration-150
-          ${
-            isCardDark
-              ? "border-neutral-800 bg-neutral-950 text-amber-400 hover:bg-neutral-800"
-              : "border-neutral-200 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900"
+          ${isCardDark
+            ? "border-neutral-800 bg-neutral-950 text-amber-400 hover:bg-neutral-800"
+            : "border-neutral-200 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900"
           }
         `}
       >
@@ -243,19 +241,19 @@ function isValidEmailFormat(emailStr) {
         {/* Card Heading */}
         <div className="text-center space-y-1 pt-1">
           <h1
-            className={`text-2xl font-bold tracking-tight sm:text-3xl ${
-              isCardDark ? "text-white" : "text-neutral-900"
-            }`}
+            className={`text-2xl font-bold tracking-tight sm:text-3xl ${isCardDark ? "text-white" : "text-neutral-900"
+              }`}
           >
             {step === 1 ? "Create an account" : "Verify your email"}
           </h1>
           <p
-            className={`text-xs font-medium ${
-              isCardDark ? "text-neutral-400" : "text-neutral-500"
-            }`}
+            className={`text-xs font-medium ${isCardDark ? "text-neutral-400" : "text-neutral-500"
+              }`}
           >
             {step === 1 ? (
-              "Join getHack to discover hackathons and find teammates"
+              role === "Organizer"
+                ? "Join getHack to add and manage hackathons"
+                : "Join getHack to discover hackathons and find teammates"
             ) : (
               <span>
                 We sent a 6-digit verification code to{" "}
@@ -270,11 +268,10 @@ function isValidEmailFormat(emailStr) {
         {/* Error Banner */}
         {generalError && (
           <div
-            className={`rounded-xl border p-3.5 text-xs font-semibold ${
-              isCardDark
+            className={`rounded-xl border p-3.5 text-xs font-semibold ${isCardDark
                 ? "border-red-900/60 bg-red-950/60 text-red-300"
                 : "border-red-200/80 bg-red-50 text-red-600"
-            }`}
+              }`}
           >
             {generalError}
           </div>
@@ -302,10 +299,9 @@ function isValidEmailFormat(emailStr) {
                 shadow-2xs
                 transition-colors
                 duration-150
-                ${
-                  isCardDark
-                    ? "border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800 hover:border-neutral-700"
-                    : "border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 hover:border-neutral-400"
+                ${isCardDark
+                  ? "border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800 hover:border-neutral-700"
+                  : "border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 hover:border-neutral-400"
                 }
                 disabled:cursor-not-allowed
                 disabled:opacity-60
@@ -341,85 +337,81 @@ function isValidEmailFormat(emailStr) {
             </div>
 
             <form onSubmit={handleSendOtpSubmit} noValidate className="space-y-4">
-            {/* Role Selection Tabs */}
-            <div>
-              <label
-                className={`mb-1.5 block text-xs font-semibold ${
-                  isCardDark ? "text-neutral-300" : "text-neutral-700"
-                }`}
-              >
-                I want to join as
-              </label>
-              <div
-                className={`grid grid-cols-2 rounded-xl border p-1 ${
-                  isCardDark
-                    ? "border-neutral-800 bg-neutral-950"
-                    : "border-neutral-200 bg-neutral-100"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setRole("Participant")}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${
-                    role === "Participant"
-                      ? isCardDark
-                        ? "bg-indigo-600 text-white shadow-xs"
-                        : "bg-white text-neutral-900 shadow-xs"
-                      : isCardDark
-                      ? "text-neutral-400 hover:text-neutral-200"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
+              {/* Role Selection Tabs */}
+              <div>
+                <label
+                  className={`mb-1.5 block text-xs font-semibold ${isCardDark ? "text-neutral-300" : "text-neutral-700"
+                    }`}
                 >
-                  Participant
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("Organizer")}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${
-                    role === "Organizer"
-                      ? isCardDark
-                        ? "bg-indigo-600 text-white shadow-xs"
-                        : "bg-white text-neutral-900 shadow-xs"
-                      : isCardDark
-                      ? "text-neutral-400 hover:text-neutral-200"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
+                  I want to join as
+                </label>
+                <div
+                  className={`grid grid-cols-2 rounded-xl border p-1 ${isCardDark
+                      ? "border-neutral-800 bg-neutral-950"
+                      : "border-neutral-200 bg-neutral-100"
+                    }`}
                 >
-                  Organizer
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("Participant")}
+                    className={`rounded-lg py-2 text-xs font-semibold transition-all ${role === "Participant"
+                        ? isCardDark
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "bg-white text-neutral-900 shadow-xs"
+                        : isCardDark
+                          ? "text-neutral-400 hover:text-neutral-200"
+                          : "text-neutral-600 hover:text-neutral-900"
+                      }`}
+                  >
+                    Participant
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("Organizer")}
+                    className={`rounded-lg py-2 text-xs font-semibold transition-all ${role === "Organizer"
+                        ? isCardDark
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "bg-white text-neutral-900 shadow-xs"
+                        : isCardDark
+                          ? "text-neutral-400 hover:text-neutral-200"
+                          : "text-neutral-600 hover:text-neutral-900"
+                      }`}
+                  >
+                    Organizer
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <AuthInput
-              id="name"
-              label="Full name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your full name"
-              required
-              autoComplete="name"
-              error={errors.name}
-              isDark={isCardDark}
-            />
+              <AuthInput
+                id="name"
+                label="Full name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your full name"
+                required
+                autoComplete="name"
+                error={errors.name}
+                isDark={isCardDark}
+              />
 
-            <AuthInput
-              id="email"
-              label="Email address"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
-              required
-              autoComplete="email"
-              error={errors.email}
-              isDark={isCardDark}
-            />
+              <AuthInput
+                id="email"
+                label="Email address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                required
+                autoComplete="email"
+                error={errors.email}
+                isDark={isCardDark}
+              />
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="
                 mt-2
                 flex
                 h-10
@@ -442,30 +434,29 @@ function isValidEmailFormat(emailStr) {
                 dark:bg-indigo-500
                 dark:hover:bg-indigo-400
               "
-            >
-              {isLoading ? (
-                <>
-                  <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
-                  </svg>
-                  <span>Sending code...</span>
-                </>
-              ) : (
-                <span>Continue</span>
-              )}
-            </button>
-          </form>
-        </div>
-      )}
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                    </svg>
+                    <span>Sending code...</span>
+                  </>
+                ) : (
+                  <span>Continue</span>
+                )}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* STEP 2: 6-DIGIT OTP VERIFICATION FORM */}
         {step === 2 && (
           <form onSubmit={handleVerifyOtpSubmit} noValidate className="space-y-5">
             <div>
               <label
-                className={`mb-2 block text-xs font-semibold ${
-                  isCardDark ? "text-neutral-300" : "text-neutral-700"
-                }`}
+                className={`mb-2 block text-xs font-semibold ${isCardDark ? "text-neutral-300" : "text-neutral-700"
+                  }`}
               >
                 Enter 6-digit Code
               </label>

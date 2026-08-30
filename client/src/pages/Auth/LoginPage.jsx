@@ -71,26 +71,26 @@ function LoginPage() {
     };
   }, [resendCooldown]);
 
-function isValidEmailFormat(emailStr) {
-  if (!emailStr || typeof emailStr !== "string") return false;
-  const trimmed = emailStr.trim().toLowerCase();
-  if (trimmed.length < 6 || trimmed.length > 254) return false;
-  if (trimmed.includes("..")) return false;
-  const parts = trimmed.split("@");
-  if (parts.length !== 2) return false;
-  const [local, domain] = parts;
-  if (!local || local.startsWith(".") || local.endsWith(".")) return false;
-  if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)) return false;
-  if (!domain || domain.startsWith(".") || domain.endsWith(".")) return false;
-  if (!domain.includes(".")) return false;
-  const domainParts = domain.split(".");
-  if (domainParts.some((label) => !label || label.length === 0 || label.startsWith("-") || label.endsWith("-"))) {
-    return false;
+  function isValidEmailFormat(emailStr) {
+    if (!emailStr || typeof emailStr !== "string") return false;
+    const trimmed = emailStr.trim().toLowerCase();
+    if (trimmed.length < 6 || trimmed.length > 254) return false;
+    if (trimmed.includes("..")) return false;
+    const parts = trimmed.split("@");
+    if (parts.length !== 2) return false;
+    const [local, domain] = parts;
+    if (!local || local.startsWith(".") || local.endsWith(".")) return false;
+    if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)) return false;
+    if (!domain || domain.startsWith(".") || domain.endsWith(".")) return false;
+    if (!domain.includes(".")) return false;
+    const domainParts = domain.split(".");
+    if (domainParts.some((label) => !label || label.length === 0 || label.startsWith("-") || label.endsWith("-"))) {
+      return false;
+    }
+    const tld = domainParts[domainParts.length - 1];
+    if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+    return true;
   }
-  const tld = domainParts[domainParts.length - 1];
-  if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
-  return true;
-}
 
   const validateEmailStep = () => {
     const errs = {};
@@ -186,10 +186,9 @@ function isValidEmailFormat(emailStr) {
         sm:p-8
         transition-all
         duration-200
-        ${
-          isCardDark
-            ? "border-neutral-800 bg-neutral-900 text-white shadow-xl"
-            : "border-neutral-200/90 bg-white text-neutral-900 shadow-sm"
+        ${isCardDark
+          ? "border-neutral-800 bg-neutral-900 text-white shadow-xl"
+          : "border-neutral-200/90 bg-white text-neutral-900 shadow-sm"
         }
       `}
     >
@@ -211,10 +210,9 @@ function isValidEmailFormat(emailStr) {
           border
           transition-colors
           duration-150
-          ${
-            isCardDark
-              ? "border-neutral-800 bg-neutral-950 text-amber-400 hover:bg-neutral-800"
-              : "border-neutral-200 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900"
+          ${isCardDark
+            ? "border-neutral-800 bg-neutral-950 text-amber-400 hover:bg-neutral-800"
+            : "border-neutral-200 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900"
           }
         `}
       >
@@ -234,16 +232,14 @@ function isValidEmailFormat(emailStr) {
         {/* Card Heading */}
         <div className="text-center space-y-1 pt-1">
           <h1
-            className={`text-2xl font-bold tracking-tight sm:text-3xl ${
-              isCardDark ? "text-white" : "text-neutral-900"
-            }`}
+            className={`text-2xl font-bold tracking-tight sm:text-3xl ${isCardDark ? "text-white" : "text-neutral-900"
+              }`}
           >
             {step === 1 ? "Sign in" : "Verify your email"}
           </h1>
           <p
-            className={`text-xs font-medium ${
-              isCardDark ? "text-neutral-400" : "text-neutral-500"
-            }`}
+            className={`text-xs font-medium ${isCardDark ? "text-neutral-400" : "text-neutral-500"
+              }`}
           >
             {step === 1 ? (
               "Welcome back to getHack"
@@ -261,11 +257,10 @@ function isValidEmailFormat(emailStr) {
         {/* Error Banner */}
         {generalError && (
           <div
-            className={`rounded-xl border p-3.5 text-xs font-semibold ${
-              isCardDark
+            className={`rounded-xl border p-3.5 text-xs font-semibold ${isCardDark
                 ? "border-red-900/60 bg-red-950/60 text-red-300"
                 : "border-red-200/80 bg-red-50 text-red-600"
-            }`}
+              }`}
           >
             {generalError}
           </div>
@@ -293,10 +288,9 @@ function isValidEmailFormat(emailStr) {
                 shadow-2xs
                 transition-colors
                 duration-150
-                ${
-                  isCardDark
-                    ? "border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800 hover:border-neutral-700"
-                    : "border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 hover:border-neutral-400"
+                ${isCardDark
+                  ? "border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800 hover:border-neutral-700"
+                  : "border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 hover:border-neutral-400"
                 }
                 disabled:cursor-not-allowed
                 disabled:opacity-60
@@ -392,9 +386,8 @@ function isValidEmailFormat(emailStr) {
           <form onSubmit={handleVerifyOtpSubmit} noValidate className="space-y-5">
             <div>
               <label
-                className={`mb-2 block text-xs font-semibold ${
-                  isCardDark ? "text-neutral-300" : "text-neutral-700"
-                }`}
+                className={`mb-2 block text-xs font-semibold ${isCardDark ? "text-neutral-300" : "text-neutral-700"
+                  }`}
               >
                 Enter 6-digit Code
               </label>

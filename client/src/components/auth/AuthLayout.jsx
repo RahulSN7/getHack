@@ -18,13 +18,26 @@ function AuthLayout() {
               inline-flex
               items-center
               gap-1.5
+              rounded-lg
+              border
+              border-neutral-200
+              bg-white
+              px-3
+              py-1.5
               text-xs
               font-semibold
-              text-neutral-500
+              text-neutral-700
+              shadow-2xs
               transition-colors
               duration-150
-              hover:text-neutral-900
-              dark:text-neutral-400
+              hover:border-neutral-300
+              hover:bg-neutral-50
+              hover:text-neutral-950
+              dark:border-neutral-800
+              dark:bg-neutral-900
+              dark:text-neutral-300
+              dark:hover:border-neutral-700
+              dark:hover:bg-neutral-800/80
               dark:hover:text-white
             "
           >
