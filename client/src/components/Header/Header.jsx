@@ -191,10 +191,20 @@ function Header() {
   const darkMode = theme === "dark";
 
   // --------------------------------------------------
-  // SCROLL STATE
+  // SCROLL STATE & DETECTION FOR GLASSMORPHISM NAVBAR
   // --------------------------------------------------
 
   const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // --------------------------------------------------
   // NOTIFICATION & OTHER STATES (from global context)
@@ -323,7 +333,7 @@ function Header() {
           z-50
           w-full
 
-          transition-[background-color,backdrop-filter,box-shadow]
+          transition-all
           duration-300
           ease-out
 
@@ -331,14 +341,21 @@ function Header() {
             scrolled
               ? `
                 bg-white/80
-                backdrop-blur-lg
-                shadow-[0_1px_3px_rgba(0,0,0,0.04)]
+                backdrop-blur-md
+                border-b
+                border-neutral-200/60
+                shadow-xs
 
-                dark:bg-neutral-950/75
-                dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)]
+                dark:bg-neutral-950/80
+                dark:border-neutral-800/60
+                dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
               `
               : `
                 bg-transparent
+                border-b
+                border-transparent
+                shadow-none
+                backdrop-blur-none
               `
           }
         `}
