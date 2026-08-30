@@ -271,6 +271,7 @@ const createHackathon = async (req, res) => {
       rules,
       contact,
       fee,
+      hostedOn,
     } = req.body;
 
     const hackathonTitle = title || name;
@@ -319,7 +320,7 @@ const createHackathon = async (req, res) => {
       location: format === "Online" ? { venue: "Online", city: "", country: "" } : (location || {}),
       registrationUrl,
       skills: Array.isArray(skills) ? skills : typeof skills === "string" ? skills.split(",").map((s) => s.trim()).filter(Boolean) : [],
-      themes: Array.isArray(themes) ? themes : typeof themes === "string" ? themes.split(",").map((t) => t.trim()).filter(Boolean) : [],
+      themes: Array.isArray(themes) ? themes : [],
       eligibility: eligibility || "Open to all",
       minTeamSize: minTeamSize ? Number(minTeamSize) : 1,
       maxTeamSize: maxTeamSize ? Number(maxTeamSize) : 4,
@@ -327,6 +328,7 @@ const createHackathon = async (req, res) => {
       rules: rules || "",
       contact: contact || "",
       fee: fee || "Free",
+      hostedOn: hostedOn ? hostedOn.trim() : "",
     });
 
     const savedHackathon = await newHackathon.save();
@@ -350,12 +352,84 @@ const createHackathon = async (req, res) => {
 // ---------------------------------------------------------------------------
 const getMyHackathons = async (req, res) => {
   try {
-    const hackathons = await Hackathon.find({ "organizer.ref": req.user._id }).sort({ createdAt: -1 });
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const query = {
+      "organizer.ref": req.user._id,
+      $or: [
+        { expiresAt: { $gt: now } },
+        {
+          $and: [
+            { expiresAt: { $exists: false } },
+            {
+              $or: [
+                { registrationDeadline: { $gt: twentyFourHoursAgo } },
+                { "registration.deadline": { $gt: twentyFourHoursAgo } },
+                { registrationDeadline: { $exists: false } },
+                { registrationDeadline: null },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const rawHackathons = await Hackathon.find(query).sort({ createdAt: -1 });
+
+    // Deduplicate by string ID
+    const seenIds = new Set();
+    const uniqueHackathons = [];
+    for (const h of rawHackathons) {
+      const idStr = h._id ? h._id.toString() : h.id;
+      if (idStr && !seenIds.has(idStr)) {
+        seenIds.add(idStr);
+        uniqueHackathons.push(h);
+      }
+    }
+
+    let upcomingCount = 0;
+    let openCount = 0;
+    let closedCount = 0;
+
+    for (const h of uniqueHackathons) {
+      const regOpensRaw = h.registrationOpens || h.registration?.startDate;
+      const regDeadlineRaw = h.registrationDeadline || h.registration?.deadline;
+
+      let isUpcoming = false;
+      if (regOpensRaw) {
+        const regOpensDate = new Date(regOpensRaw);
+        if (!isNaN(regOpensDate.getTime()) && regOpensDate > now) {
+          isUpcoming = true;
+        }
+      }
+
+      if (isUpcoming) {
+        upcomingCount++;
+      } else if (regDeadlineRaw) {
+        const regDeadlineDate = new Date(regDeadlineRaw);
+        if (!isNaN(regDeadlineDate.getTime()) && regDeadlineDate < now) {
+          closedCount++;
+        } else {
+          openCount++;
+        }
+      } else {
+        openCount++;
+      }
+    }
+
+    const formattedData = uniqueHackathons.map((h) => h.toJSON());
 
     return res.json({
       success: true,
-      data: hackathons.map((h) => h.toJSON()),
-      hackathons: hackathons.map((h) => h.toJSON()),
+      data: formattedData,
+      hackathons: formattedData,
+      stats: {
+        total: formattedData.length,
+        upcoming: upcomingCount,
+        open: openCount,
+        closed: closedCount,
+      },
     });
   } catch (error) {
     console.error("Error fetching organizer hackathons:", error);

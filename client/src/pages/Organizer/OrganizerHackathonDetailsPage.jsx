@@ -10,6 +10,8 @@ import { Link, useParams } from "react-router-dom";
 import { ACCENT_BG_SOFT, ACCENT_TEXT } from "../../constants/themeTokens";
 import DeadlineDisplay from "../../components/pages/hackathons/DeadlineDisplay";
 import { hackathonService } from "../../services/hackathonService";
+import { getHackathonRegistrationStatus, formatLocation } from "../../utils/hackathonFormatters";
+import BackButton from "../../components/common/BackButton";
 
 function formatTeamSize(min, max, customText) {
   if (customText) return customText;
@@ -61,7 +63,7 @@ function OrganizerHackathonDetailsPage() {
             name: h.title || h.name,
             organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer.name : h.organizer) || "Organizer",
             mode: h.format || h.mode || "Online",
-            location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : h.location || null,
+            location: formatLocation(h.location, h.event),
             hackathonDate: h.startDate || h.hackathonDate,
             eventEndDate: h.endDate || h.eventEndDate,
             url: h.registrationUrl || h.url || "#",
@@ -121,12 +123,7 @@ function OrganizerHackathonDetailsPage() {
               : "The hackathon you are looking for does not exist or may have been deleted."}
           </p>
           <div className="pt-2">
-            <Link
-              to="/organizer/hackathons"
-              className="inline-flex items-center gap-2 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-            >
-              ← Back to My Hackathons
-            </Link>
+            <BackButton fallbackPath="/organizer/hackathons" />
           </div>
         </div>
       </div>
@@ -163,10 +160,8 @@ function OrganizerHackathonDetailsPage() {
     mapUrl,
   } = hackathon;
 
-  const isOpen =
-    Boolean(registrationOpen) &&
-    Boolean(registrationDeadline) &&
-    new Date(registrationDeadline) > new Date();
+  const status = getHackathonRegistrationStatus(hackathon);
+  const isOpen = status === "OPEN";
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
@@ -175,12 +170,13 @@ function OrganizerHackathonDetailsPage() {
   const formattedEventDate = formatDate(hackathonDate);
   const formattedEndDate = formatDate(eventEndDate);
 
-  const themeList = Array.isArray(themes) && themes.length > 0 ? themes : tags;
+
   const eligibilityText =
     eligibility ||
     "Students, developers, designers, and technology enthusiasts are welcome to participate.";
 
-  const hasOnlineSpecs = Boolean(platform || duration || timezone || submission);
+  const displayPlatform = hackathon.hostedOn || platform;
+  const hasOnlineSpecs = Boolean(displayPlatform || duration || timezone || submission);
   const hasOfflineSpecs = Boolean(venue || address || checkIn || mapUrl);
   const hasEventDetails = hasOnlineSpecs || hasOfflineSpecs;
 
@@ -189,36 +185,7 @@ function OrganizerHackathonDetailsPage() {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         {/* ── 1. Top Navigation Action ── */}
         <div className="mb-6 flex items-center justify-between">
-          <Link
-            to="/organizer/hackathons"
-            className="
-              group
-              inline-flex
-              items-center
-              gap-1.5
-              text-xs
-              font-semibold
-              text-neutral-500
-              transition-colors
-              hover:text-neutral-900
-              dark:text-neutral-400
-              dark:hover:text-white
-            "
-          >
-            <svg
-              className="h-3.5 w-3.5 transition-transform duration-150 group-hover:-translate-x-0.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 12H5" />
-              <path d="m12 19-7-7 7-7" />
-            </svg>
-            <span>Back to My Hackathons</span>
-          </Link>
+          <BackButton fallbackPath="/organizer/hackathons" />
 
           {/* Subtle Organizer View Badge */}
           <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50/80 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/80 dark:text-indigo-300">
@@ -267,7 +234,12 @@ function OrganizerHackathonDetailsPage() {
 
                 {/* Status & Location badge */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  {isOpen ? (
+                  {status === "UPCOMING" ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      Upcoming
+                    </span>
+                  ) : status === "OPEN" ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Registration Open
@@ -362,42 +334,7 @@ function OrganizerHackathonDetailsPage() {
               </p>
             </section>
 
-            {/* Themes Section */}
-            {themeList.length > 0 && (
-              <section className="space-y-3 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                    THEMES
-                  </h2>
-                  <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                    · Focus & Topics
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {themeList.map((t) => (
-                    <span
-                      key={t}
-                      className={`
-                        inline-flex
-                        items-center
-                        rounded-md
-                        border
-                        px-3
-                        py-1
-                        text-xs
-                        font-medium
-                        transition-colors
-                        ${accentBgSoft}
-                        ${accentText}
-                        border-transparent
-                      `}
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </section>
-            )}
+
 
             {/* Event Timeline Section */}
             <section className="space-y-4 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
@@ -479,10 +416,10 @@ function OrganizerHackathonDetailsPage() {
 
                     {hasOnlineSpecs && (
                       <div className="space-y-2 text-xs">
-                        {platform && (
+                        {displayPlatform && (
                           <div className="flex items-center justify-between py-1">
-                            <span className="text-neutral-500 dark:text-neutral-400">Platform</span>
-                            <span className="font-semibold text-neutral-900 dark:text-white">{platform}</span>
+                            <span className="text-neutral-500 dark:text-neutral-400">Hosted On / Platform</span>
+                            <span className="font-semibold text-neutral-900 dark:text-white">{displayPlatform}</span>
                           </div>
                         )}
                         {duration && (
@@ -508,15 +445,15 @@ function OrganizerHackathonDetailsPage() {
                 </>
               )}
 
-              {/* Registration Link Preview */}
+              {/* Registration & Participation Section */}
               <div className="my-5 border-t border-neutral-200/80 dark:border-neutral-800" />
 
               <div>
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-                  External Registration
-                </h3>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                  Registration is handled on the organizer&apos;s platform.
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                  REGISTRATION & PARTICIPATION
+                </h2>
+                <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+                  For the latest theme, eligibility, team size, registration fee, rules, and participation requirements, visit the official registration page.
                 </p>
 
                 <div className="mt-4">
@@ -525,34 +462,29 @@ function OrganizerHackathonDetailsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="
-                      inline-flex
+                      flex
                       w-full
                       items-center
                       justify-center
                       gap-2
-                      rounded-lg
-                      border
-                      border-neutral-200
-                      bg-white
+                      rounded-xl
+                      bg-indigo-600
                       px-4
-                      py-2.5
+                      py-3
                       text-xs
                       font-semibold
-                      text-neutral-700
-                      transition-colors
-                      hover:bg-neutral-50
-                      dark:border-neutral-800
-                      dark:bg-neutral-900
-                      dark:text-neutral-300
-                      dark:hover:bg-neutral-800
+                      text-white
+                      shadow-xs
+                      transition-all
+                      hover:bg-indigo-500
+                      focus-visible:outline
+                      focus-visible:outline-2
+                      focus-visible:outline-indigo-500
+                      dark:bg-indigo-500
+                      dark:hover:bg-indigo-400
                     "
                   >
-                    <span>Registration Page</span>
-                    <svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                      <polyline points="15 3 21 3 21 9" />
-                      <line x1="10" y1="14" x2="21" y2="3" />
-                    </svg>
+                    <span>View Official Registration ↗</span>
                   </a>
                 </div>
               </div>

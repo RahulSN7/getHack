@@ -3,9 +3,10 @@
 // ---------------------------------------------------------------------------
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { hackathonService } from "../../services/hackathonService";
+import BackButton from "../../components/common/BackButton";
 
 function CreateHackathonPage() {
   const navigate = useNavigate();
@@ -14,7 +15,8 @@ function CreateHackathonPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    organizerName: user?.name || "",
+    organizerName: "",
+    hostedOn: "",
     registrationOpens: "",
     registrationDeadline: "",
     startDate: "",
@@ -24,15 +26,7 @@ function CreateHackathonPage() {
     city: "",
     country: "",
     registrationUrl: "",
-    skills: "",
-    themes: "",
-    eligibility: "",
-    minTeamSize: 1,
-    maxTeamSize: 4,
     prizes: "",
-    rules: "",
-    contact: "",
-    fee: "Free",
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -95,7 +89,7 @@ function CreateHackathonPage() {
     }
 
     if (!formData.organizerName.trim()) {
-      newErrors.organizerName = "Organizer Name is required.";
+      newErrors.organizerName = "Please enter organizer / organization name.";
     }
 
     if (!formData.description.trim()) {
@@ -149,42 +143,8 @@ function CreateHackathonPage() {
     }
 
     // Section 5: Additional Information
-    if (!formData.skills.trim()) {
-      newErrors.skills = "Please enter at least one technology or skill.";
-    }
-
-    if (!formData.themes.trim()) {
-      newErrors.themes = "Please enter at least one theme.";
-    }
-
-    if (!formData.eligibility.trim()) {
-      newErrors.eligibility = "Please specify the eligibility criteria.";
-    }
-
-    if (formData.minTeamSize === "" || formData.minTeamSize === null || Number(formData.minTeamSize) < 1) {
-      newErrors.minTeamSize = "Please enter a valid minimum team size.";
-    }
-
-    if (formData.maxTeamSize === "" || formData.maxTeamSize === null || Number(formData.maxTeamSize) < 1) {
-      newErrors.maxTeamSize = "Please enter a valid maximum team size.";
-    } else if (Number(formData.maxTeamSize) < Number(formData.minTeamSize)) {
-      newErrors.maxTeamSize = "Max team size cannot be less than min team size.";
-    }
-
     if (!formData.prizes.trim()) {
       newErrors.prizes = "Please enter prize information.";
-    }
-
-    if (!formData.fee.trim()) {
-      newErrors.fee = "Please enter registration fee information.";
-    }
-
-    if (!formData.rules.trim()) {
-      newErrors.rules = "Please enter rules & guidelines.";
-    }
-
-    if (!formData.contact.trim()) {
-      newErrors.contact = "Please enter a contact number.";
     }
 
     if (Object.keys(newErrors).length > 0 || dateErr) {
@@ -201,7 +161,8 @@ function CreateHackathonPage() {
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        organizerName: formData.organizerName.trim() || user?.name || "Organizer",
+        organizerName: formData.organizerName.trim(),
+        hostedOn: formData.hostedOn.trim() || undefined,
         registrationOpens: formData.registrationOpens || undefined,
         registrationDeadline: formData.registrationDeadline,
         startDate: formData.startDate,
@@ -211,20 +172,12 @@ function CreateHackathonPage() {
           formData.format === "Online"
             ? { venue: "", city: "", country: "" }
             : {
-                venue: formData.venue.trim(),
-                city: formData.city.trim(),
-                country: formData.country.trim(),
-              },
+              venue: formData.venue.trim(),
+              city: formData.city.trim(),
+              country: formData.country.trim(),
+            },
         registrationUrl: formData.registrationUrl.trim(),
-        skills: formData.skills.split(",").map((s) => s.trim()).filter(Boolean),
-        themes: formData.themes.split(",").map((t) => t.trim()).filter(Boolean),
-        eligibility: formData.eligibility.trim(),
-        minTeamSize: Number(formData.minTeamSize) || 1,
-        maxTeamSize: Number(formData.maxTeamSize) || 4,
         prizes: formData.prizes.trim(),
-        rules: formData.rules.trim(),
-        contact: formData.contact.trim(),
-        fee: formData.fee.trim() || "Free",
       };
 
       await hackathonService.createHackathon(payload);
@@ -264,22 +217,21 @@ function CreateHackathonPage() {
   return (
     <main className="mx-auto max-w-4xl px-5 py-8 sm:px-6 lg:px-8 space-y-8">
       {/* ── Page Header ── */}
-      <div>
-        <Link
-          to="/organizer"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white mb-2"
-        >
-          <span>← Back</span>
-        </Link>
-        <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-          ORGANIZER PORTAL
-        </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
-          Add Hackathon
-        </h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Publish your event to help developers discover and register on your platform.
-        </p>
+      <div className="space-y-4">
+        <div>
+          <BackButton fallbackPath="/organizer/hackathons" />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+            ORGANIZER PORTAL
+          </p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
+            Add Hackathon
+          </h1>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            Publish your event to help developers discover and register on your platform.
+          </p>
+        </div>
       </div>
 
       {/* Error Feedback */}
@@ -318,7 +270,7 @@ function CreateHackathonPage() {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="e.g. India AI Innovation Challenge 2026"
+                placeholder="Enter hackathon name (e.g. India AI Innovation Challenge 2026)"
                 className={`${inputClass} ${errors.title ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
               {errors.title && (
@@ -338,7 +290,7 @@ function CreateHackathonPage() {
                 name="organizerName"
                 value={formData.organizerName}
                 onChange={handleChange}
-                placeholder="e.g. TechCommunity India"
+                placeholder="Enter organizer or organization name (e.g. Google Developer Student Club)"
                 className={`${inputClass} ${errors.organizerName ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               />
               {errors.organizerName && (
@@ -346,6 +298,24 @@ function CreateHackathonPage() {
                   {errors.organizerName}
                 </p>
               )}
+            </div>
+
+            <div>
+              <label htmlFor="hostedOn" className={labelClass}>
+                Hosted On
+              </label>
+              <input
+                id="hostedOn"
+                type="text"
+                name="hostedOn"
+                value={formData.hostedOn}
+                onChange={handleChange}
+                placeholder="e.g. Unstop, Devfolio, Devpost"
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                Optional: Platform where your hackathon is hosted or listed.
+              </p>
             </div>
 
             <div>
@@ -358,12 +328,11 @@ function CreateHackathonPage() {
                 rows={5}
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Comprehensive details about the hackathon goals, problem statements, guidelines, and target participants."
-                className={`w-full rounded-lg border bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors dark:bg-neutral-950 dark:text-white ${
-                  errors.description
+                placeholder="Describe your hackathon, problem statements, guidelines, and target participants"
+                className={`w-full rounded-lg border bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors dark:bg-neutral-950 dark:text-white ${errors.description
                     ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
                     : "border-neutral-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
-                }`}
+                  }`}
               />
               {errors.description && (
                 <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
@@ -603,92 +572,11 @@ function CreateHackathonPage() {
               5. Additional Information
             </h2>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-              Specify themes, skills, eligibility, team size, and prizes.
+              Specify prizes for your event.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="skills" className={labelClass}>
-                Technologies / Skills <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="skills"
-                type="text"
-                name="skills"
-                value={formData.skills}
-                onChange={handleChange}
-                placeholder="React, Python, Node.js, AI/ML"
-                className={`${inputClass} ${errors.skills ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
-              />
-              {errors.skills && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.skills}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="themes" className={labelClass}>
-                Themes <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="themes"
-                type="text"
-                name="themes"
-                value={formData.themes}
-                onChange={handleChange}
-                placeholder="Generative AI, Social Impact, FinTech"
-                className={`${inputClass} ${errors.themes ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
-              />
-              {errors.themes && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.themes}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="minTeamSize" className={labelClass}>
-                Min Team Size <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="minTeamSize"
-                type="number"
-                min="1"
-                max="10"
-                name="minTeamSize"
-                value={formData.minTeamSize}
-                onChange={handleChange}
-                className={`${inputClass} ${errors.minTeamSize ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
-              />
-              {errors.minTeamSize && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.minTeamSize}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="maxTeamSize" className={labelClass}>
-                Max Team Size <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="maxTeamSize"
-                type="number"
-                min="1"
-                max="10"
-                name="maxTeamSize"
-                value={formData.maxTeamSize}
-                onChange={handleChange}
-                className={`${inputClass} ${errors.maxTeamSize ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
-              />
-              {errors.maxTeamSize && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.maxTeamSize}
-                </p>
-              )}
-            </div>
+          <div className="space-y-4">
 
             <div>
               <label htmlFor="prizes" className={labelClass}>
@@ -706,90 +594,6 @@ function CreateHackathonPage() {
               {errors.prizes && (
                 <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
                   {errors.prizes}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="fee" className={labelClass}>
-                Registration Fee <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="fee"
-                type="text"
-                name="fee"
-                value={formData.fee}
-                onChange={handleChange}
-                placeholder="e.g. Free or ₹499"
-                className={`${inputClass} ${errors.fee ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
-              />
-              {errors.fee && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.fee}
-                </p>
-              )}
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="eligibility" className={labelClass}>
-                Eligibility <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="eligibility"
-                type="text"
-                name="eligibility"
-                value={formData.eligibility}
-                onChange={handleChange}
-                placeholder="Open to developers, students, and working professionals worldwide."
-                className={`${inputClass} ${errors.eligibility ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
-              />
-              {errors.eligibility && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.eligibility}
-                </p>
-              )}
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="rules" className={labelClass}>
-                Rules <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                id="rules"
-                name="rules"
-                rows={3}
-                value={formData.rules}
-                onChange={handleChange}
-                placeholder="Submission guidelines, code of conduct, and evaluation criteria."
-                className={`w-full rounded-lg border bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors dark:bg-neutral-950 dark:text-white ${
-                  errors.rules
-                    ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
-                    : "border-neutral-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:focus:border-indigo-400"
-                }`}
-              />
-              {errors.rules && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.rules}
-                </p>
-              )}
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="contact" className={labelClass}>
-                Contact <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="contact"
-                type="text"
-                name="contact"
-                value={formData.contact}
-                onChange={handleChange}
-                placeholder="e.g. +91 9876543210 or hackathon@example.com"
-                className={`${inputClass} ${errors.contact ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
-              />
-              {errors.contact && (
-                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
-                  {errors.contact}
                 </p>
               )}
             </div>

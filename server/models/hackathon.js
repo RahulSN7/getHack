@@ -198,6 +198,12 @@ const hackathonSchema = new mongoose.Schema(
       default: "",
     },
 
+    hostedOn: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     lastSyncedAt: {
       type: Date,
       default: Date.now,

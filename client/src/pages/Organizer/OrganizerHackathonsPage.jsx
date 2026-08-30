@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import DeleteConfirmationModal from "../../components/organizer/DeleteConfirmationModal";
 import { hackathonService } from "../../services/hackathonService";
+import { getHackathonRegistrationStatus } from "../../utils/hackathonFormatters";
+import BackButton from "../../components/common/BackButton";
 
 function formatDate(dateStr) {
   if (!dateStr) return "N/A";
@@ -25,33 +27,31 @@ function formatDate(dateStr) {
 
 function getStatusBadge(status) {
   switch (status) {
+    case "OPEN":
     case "Registration Open":
     case "Active":
     case "Ongoing":
       return {
-        label: status,
+        label: "OPEN",
         className: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20",
       };
+    case "UPCOMING":
     case "Upcoming":
       return {
-        label: "Upcoming",
-        className: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-500/20",
+        label: "UPCOMING",
+        className: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-500/20",
       };
-    case "Draft":
-      return {
-        label: "Draft",
-        className: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20",
-      };
+    case "CLOSED":
     case "Registration Closed":
     case "Completed":
       return {
-        label: status,
+        label: "CLOSED",
         className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700",
       };
     default:
       return {
-        label: status || "Published",
-        className: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
+        label: status || "OPEN",
+        className: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20",
       };
   }
 }
@@ -94,12 +94,14 @@ function OrganizerHackathonsPage() {
     };
   }, []);
 
+  const getStatus = (h) => getHackathonRegistrationStatus(h);
+
   // Filter hackathons
   const filteredHackathons = hackathons.filter((h) => {
-    if (activeFilter === "open") return h.status === "Registration Open" || h.status === "Ongoing" || h.status === "Active";
-    if (activeFilter === "upcoming") return h.status === "Upcoming";
-    if (activeFilter === "drafts") return h.status === "Draft";
-    if (activeFilter === "closed") return h.status === "Registration Closed" || h.status === "Completed";
+    const status = getStatus(h);
+    if (activeFilter === "open") return status === "OPEN";
+    if (activeFilter === "upcoming") return status === "UPCOMING";
+    if (activeFilter === "closed") return status === "CLOSED";
     return true;
   });
 
@@ -181,22 +183,17 @@ function OrganizerHackathonsPage() {
           {
             key: "open",
             label: "Registration Open",
-            count: hackathons.filter((h) => h.status === "Registration Open" || h.status === "Ongoing" || h.status === "Active").length,
+            count: hackathons.filter((h) => getStatus(h) === "OPEN").length,
           },
           {
             key: "upcoming",
             label: "Upcoming",
-            count: hackathons.filter((h) => h.status === "Upcoming").length,
-          },
-          {
-            key: "drafts",
-            label: "Drafts",
-            count: hackathons.filter((h) => h.status === "Draft").length,
+            count: hackathons.filter((h) => getStatus(h) === "UPCOMING").length,
           },
           {
             key: "closed",
             label: "Completed",
-            count: hackathons.filter((h) => h.status === "Registration Closed" || h.status === "Completed").length,
+            count: hackathons.filter((h) => getStatus(h) === "CLOSED").length,
           },
         ].map((tab) => (
           <button
@@ -240,7 +237,8 @@ function OrganizerHackathonsPage() {
         /* ── Hackathons Card List ── */
         <div className="grid grid-cols-1 gap-4">
           {filteredHackathons.map((h) => {
-            const badge = getStatusBadge(h.status);
+            const statusLabel = getStatus(h);
+            const badge = getStatusBadge(statusLabel);
 
             return (
               <div
@@ -310,12 +308,6 @@ function OrganizerHackathonsPage() {
                       <strong className="font-semibold text-neutral-700 dark:text-neutral-300">End:</strong>{" "}
                       {formatDate(h.endDate || h.eventEndDate)}
                     </span>
-                    {h.createdAt && (
-                      <span>
-                        <strong className="font-semibold text-neutral-700 dark:text-neutral-300">Created:</strong>{" "}
-                        {formatDate(h.createdAt)}
-                      </span>
-                    )}
                   </div>
                 </div>
 
@@ -329,19 +321,22 @@ function OrganizerHackathonsPage() {
                       gap-1
                       rounded-lg
                       border
-                      border-neutral-200
-                      bg-white
+                      border-indigo-600
+                      bg-indigo-600
                       px-3.5
                       py-2
                       text-xs
                       font-semibold
-                      text-neutral-700
+                      text-white
+                      shadow-xs
                       transition-colors
-                      hover:bg-neutral-50
-                      dark:border-neutral-800
-                      dark:bg-neutral-900
-                      dark:text-neutral-300
-                      dark:hover:bg-neutral-800
+                      hover:bg-indigo-500
+                      hover:border-indigo-500
+                      dark:border-indigo-500
+                      dark:bg-indigo-500
+                      dark:text-white
+                      dark:hover:bg-indigo-400
+                      dark:hover:border-indigo-400
                     "
                   >
                     <span>View</span>

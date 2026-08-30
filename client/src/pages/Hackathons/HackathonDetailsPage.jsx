@@ -20,6 +20,7 @@ import {
   formatLocation,
   formatFee,
   formatMode,
+  getHackathonRegistrationStatus,
 } from "../../utils/hackathonFormatters";
 
 // Helper to format date string cleanly
@@ -108,7 +109,7 @@ function HackathonDetailsPage() {
             prize: prizeStr,
             registrationOpen: h.registration?.deadline ? new Date(h.registration.deadline) > new Date() : (h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true),
             source: typeof h.source === "object" ? h.source : { platform: h.platform || "gethack", externalUrl: extUrl },
-            platform: typeof h.source === "object" ? h.source?.platform : typeof h.platform === "string" ? h.platform : null,
+            platform: h.hostedOn || (typeof h.source === "object" ? h.source?.platform : typeof h.platform === "string" ? h.platform : null),
           });
           return;
         }
@@ -219,10 +220,8 @@ function HackathonDetailsPage() {
   } = hackathon;
 
   const saved = isSaved(id);
-  const isOpen =
-    Boolean(registrationOpen) &&
-    Boolean(registrationDeadline) &&
-    new Date(registrationDeadline) > new Date();
+  const status = getHackathonRegistrationStatus(hackathon);
+  const isOpen = status === "OPEN";
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
@@ -231,8 +230,7 @@ function HackathonDetailsPage() {
   const formattedEventDate = formatDate(hackathonDate);
   const formattedEndDate = formatDate(eventEndDate);
 
-  // Resolution for Themes (prefer explicit themes array, fallback to tags)
-  const themeList = Array.isArray(themes) && themes.length > 0 ? themes : tags;
+
 
   // Resolution for Eligibility text
   const eligibilityText =
@@ -307,7 +305,12 @@ function HackathonDetailsPage() {
 
                 {/* Status & Location badge */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  {isOpen ? (
+                  {status === "UPCOMING" ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      Upcoming
+                    </span>
+                  ) : status === "OPEN" ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Registration Open
@@ -410,42 +413,7 @@ function HackathonDetailsPage() {
               </p>
             </section>
 
-            {/* Themes Section */}
-            {themeList.length > 0 && (
-              <section className="space-y-3 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                    THEMES
-                  </h2>
-                  <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                    · Focus & Topics
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {themeList.map((theme) => (
-                    <span
-                      key={theme}
-                      className={`
-                        inline-flex
-                        items-center
-                        rounded-md
-                        border
-                        px-3
-                        py-1
-                        text-xs
-                        font-medium
-                        transition-colors
-                        ${accentBgSoft}
-                        ${accentText}
-                        border-transparent
-                      `}
-                    >
-                      {theme}
-                    </span>
-                  ))}
-                </div>
-              </section>
-            )}
+
 
             {/* Event Timeline Section */}
             <section className="space-y-4 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
@@ -500,51 +468,6 @@ function HackathonDetailsPage() {
                     {formattedEndDate || formattedEventDate || "TBA"}
                   </p>
                 </div>
-              </div>
-            </section>
-
-            {/* Registration & Participation Section */}
-            <section className="space-y-3 border-t border-neutral-200/80 pt-6 dark:border-neutral-800">
-              <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-                Registration & Participation
-              </h2>
-              <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
-                For the latest eligibility, team size, registration fee, rules, and participation requirements, visit the official registration page.
-              </p>
-              <div className="pt-2">
-                {hasValidRegistrationUrl ? (
-                  <a
-                    href={registrationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="
-                      inline-flex
-                      items-center
-                      gap-2
-                      rounded-lg
-                      bg-indigo-600
-                      px-5
-                      py-2.5
-                      text-xs
-                      font-semibold
-                      text-white
-                      shadow-xs
-                      transition-colors
-                      hover:bg-indigo-500
-                      focus-visible:outline
-                      focus-visible:outline-2
-                      focus-visible:outline-indigo-500
-                      dark:bg-indigo-500
-                      dark:hover:bg-indigo-400
-                    "
-                  >
-                    <span>View Official Registration ↗</span>
-                  </a>
-                ) : (
-                  <div className="inline-flex items-center gap-2 rounded-lg bg-neutral-100 px-4 py-2.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                    <span>Official registration link unavailable</span>
-                  </div>
-                )}
               </div>
             </section>
           </div>
@@ -645,6 +568,55 @@ function HackathonDetailsPage() {
                   </div>
                 </>
               )}
+
+              {/* 3. Registration & Participation Section */}
+              <div className="my-5 border-t border-neutral-200/80 dark:border-neutral-800" />
+
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                  REGISTRATION & PARTICIPATION
+                </h2>
+                <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+                  For the latest theme, eligibility, team size, registration fee, rules, and participation requirements, visit the official registration page.
+                </p>
+                <div className="mt-4">
+                  {hasValidRegistrationUrl ? (
+                    <a
+                      href={registrationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="
+                        flex
+                        w-full
+                        items-center
+                        justify-center
+                        gap-2
+                        rounded-xl
+                        bg-indigo-600
+                        px-4
+                        py-3
+                        text-xs
+                        font-semibold
+                        text-white
+                        shadow-xs
+                        transition-all
+                        hover:bg-indigo-500
+                        focus-visible:outline
+                        focus-visible:outline-2
+                        focus-visible:outline-indigo-500
+                        dark:bg-indigo-500
+                        dark:hover:bg-indigo-400
+                      "
+                    >
+                      <span>View Official Registration ↗</span>
+                    </a>
+                  ) : (
+                    <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-100 px-4 py-3 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                      <span>Official registration link unavailable</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </aside>
         </div>

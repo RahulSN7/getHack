@@ -3,9 +3,10 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { hackathonService } from "../../services/hackathonService";
 import { ORGANIZER_HACKATHONS } from "../../data/organizerData";
+import BackButton from "../../components/common/BackButton";
 
 function formatDateForInput(dateVal) {
   if (!dateVal) return "";
@@ -39,9 +40,9 @@ function EditHackathonPage() {
 
   const [formData, setFormData] = useState({
     title: "",
-    shortDescription: "",
     description: "",
     organizerName: "",
+    hostedOn: "",
     registrationOpens: "",
     registrationDeadline: "",
     startDate: "",
@@ -51,15 +52,7 @@ function EditHackathonPage() {
     city: "",
     country: "",
     registrationUrl: "",
-    skills: "",
-    themes: "",
-    eligibility: "",
-    minTeamSize: 1,
-    maxTeamSize: 4,
     prizes: "",
-    rules: "",
-    contact: "",
-    fee: "Free",
   });
 
   const [loading, setLoading] = useState(true);
@@ -106,12 +99,12 @@ function EditHackathonPage() {
 
           setFormData({
             title: h.title || h.name || "",
-            shortDescription: h.shortDescription || "",
             description: h.description || "",
             organizerName:
               h.organizerName ||
               (typeof h.organizer === "object" ? h.organizer?.name : h.organizer) ||
               "",
+            hostedOn: h.hostedOn || h.platform || (typeof h.source === "object" ? h.source?.platform : "") || "",
             registrationOpens: formatDateForInput(regOpensRaw),
             registrationDeadline: formatDateForInput(regDeadlineRaw),
             startDate: formattedStartDate,
@@ -121,18 +114,10 @@ function EditHackathonPage() {
             city: h.location?.city || h.city || "",
             country: h.location?.country || h.country || "",
             registrationUrl: h.registrationUrl || h.url || h.source?.externalUrl || "",
-            skills: Array.isArray(h.skills) ? h.skills.join(", ") : h.skills || "",
-            themes: Array.isArray(h.themes) ? h.themes.join(", ") : h.themes || "",
-            eligibility: h.eligibility || "",
-            minTeamSize: h.minTeamSize || h.teamSize?.min || 1,
-            maxTeamSize: h.maxTeamSize || h.teamSize?.max || 4,
             prizes:
               typeof h.prizes === "string"
                 ? h.prizes
                 : h.prizePool?.description || h.prizes || "",
-            rules: h.rules || "",
-            contact: h.contact || "",
-            fee: typeof h.fee === "string" ? h.fee : "Free",
           });
         }
       } catch (err) {
@@ -202,11 +187,6 @@ function EditHackathonPage() {
       return;
     }
 
-    if (!formData.shortDescription.trim()) {
-      setErrorMessage("Short Description is required.");
-      return;
-    }
-
     if (!formData.description.trim()) {
       setErrorMessage("Detailed Description is required.");
       return;
@@ -233,9 +213,9 @@ function EditHackathonPage() {
 
       const payload = {
         title: formData.title.trim(),
-        shortDescription: formData.shortDescription.trim(),
         description: formData.description.trim(),
         organizerName: formData.organizerName.trim(),
+        hostedOn: formData.hostedOn.trim() || undefined,
         registrationOpens: formData.registrationOpens || undefined,
         registrationDeadline: formData.registrationDeadline,
         startDate: formData.startDate,
@@ -245,20 +225,12 @@ function EditHackathonPage() {
           formData.format === "Online"
             ? { venue: "", city: "", country: "" }
             : {
-                venue: formData.venue.trim(),
-                city: formData.city.trim(),
-                country: formData.country.trim(),
-              },
+              venue: formData.venue.trim(),
+              city: formData.city.trim(),
+              country: formData.country.trim(),
+            },
         registrationUrl: formData.registrationUrl.trim(),
-        skills: formData.skills.split(",").map((s) => s.trim()).filter(Boolean),
-        themes: formData.themes.split(",").map((t) => t.trim()).filter(Boolean),
-        eligibility: formData.eligibility.trim(),
-        minTeamSize: Number(formData.minTeamSize) || 1,
-        maxTeamSize: Number(formData.maxTeamSize) || 4,
         prizes: formData.prizes.trim(),
-        rules: formData.rules.trim(),
-        contact: formData.contact.trim(),
-        fee: formData.fee.trim() || "Free",
       };
 
       await hackathonService.updateHackathon(id, payload);
@@ -311,22 +283,21 @@ function EditHackathonPage() {
   return (
     <main className="mx-auto max-w-4xl px-5 py-8 sm:px-6 lg:px-8 space-y-8">
       {/* ── Page Header ── */}
-      <div>
-        <Link
-          to="/organizer"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white mb-2"
-        >
-          <span>← Back</span>
-        </Link>
-        <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-          ORGANIZER PORTAL
-        </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
-          Edit Hackathon
-        </h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Update the hackathon details, schedule, or external registration link.
-        </p>
+      <div className="space-y-4">
+        <div>
+          <BackButton fallbackPath="/organizer/hackathons" />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+            ORGANIZER PORTAL
+          </p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
+            Edit Hackathon
+          </h1>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            Update the hackathon details, schedule, or external registration link.
+          </p>
+        </div>
       </div>
 
       {/* Error Feedback */}
@@ -366,6 +337,7 @@ function EditHackathonPage() {
                 required
                 value={formData.title}
                 onChange={handleChange}
+                placeholder="Enter hackathon name (e.g. India AI Innovation Challenge 2026)"
                 className={inputClass}
               />
             </div>
@@ -381,23 +353,27 @@ function EditHackathonPage() {
                 required
                 value={formData.organizerName}
                 onChange={handleChange}
+                placeholder="Enter organizer or organization name (e.g. Google Developer Student Club)"
                 className={inputClass}
               />
             </div>
 
             <div>
-              <label htmlFor="shortDescription" className={labelClass}>
-                Short Description <span className="text-red-500">*</span>
+              <label htmlFor="hostedOn" className={labelClass}>
+                Hosted On
               </label>
               <input
-                id="shortDescription"
+                id="hostedOn"
                 type="text"
-                name="shortDescription"
-                required
-                value={formData.shortDescription}
+                name="hostedOn"
+                value={formData.hostedOn}
                 onChange={handleChange}
+                placeholder="e.g. Unstop, Devfolio, Devpost"
                 className={inputClass}
               />
+              <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                Optional: Platform where your hackathon is hosted or listed.
+              </p>
             </div>
 
             <div>
@@ -411,6 +387,7 @@ function EditHackathonPage() {
                 rows={5}
                 value={formData.description}
                 onChange={handleChange}
+                placeholder="Describe your hackathon, problem statements, guidelines, and target participants"
                 className="w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
               />
             </div>
@@ -599,66 +576,7 @@ function EditHackathonPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="skills" className={labelClass}>
-                Technologies / Skills (comma separated)
-              </label>
-              <input
-                id="skills"
-                type="text"
-                name="skills"
-                value={formData.skills}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="themes" className={labelClass}>
-                Themes (comma separated)
-              </label>
-              <input
-                id="themes"
-                type="text"
-                name="themes"
-                value={formData.themes}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="minTeamSize" className={labelClass}>
-                Min Team Size
-              </label>
-              <input
-                id="minTeamSize"
-                type="number"
-                min="1"
-                max="10"
-                name="minTeamSize"
-                value={formData.minTeamSize}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="maxTeamSize" className={labelClass}>
-                Max Team Size
-              </label>
-              <input
-                id="maxTeamSize"
-                type="number"
-                min="1"
-                max="10"
-                name="maxTeamSize"
-                value={formData.maxTeamSize}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
+          <div className="space-y-4">
 
             <div>
               <label htmlFor="prizes" className={labelClass}>
@@ -669,62 +587,6 @@ function EditHackathonPage() {
                 type="text"
                 name="prizes"
                 value={formData.prizes}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="fee" className={labelClass}>
-                Registration Fee
-              </label>
-              <input
-                id="fee"
-                type="text"
-                name="fee"
-                value={formData.fee}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="eligibility" className={labelClass}>
-                Eligibility Criteria
-              </label>
-              <input
-                id="eligibility"
-                type="text"
-                name="eligibility"
-                value={formData.eligibility}
-                onChange={handleChange}
-                className={inputClass}
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="rules" className={labelClass}>
-                Rules & Guidelines
-              </label>
-              <textarea
-                id="rules"
-                name="rules"
-                rows={3}
-                value={formData.rules}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="contact" className={labelClass}>
-                Contact Information
-              </label>
-              <input
-                id="contact"
-                type="text"
-                name="contact"
-                value={formData.contact}
                 onChange={handleChange}
                 className={inputClass}
               />

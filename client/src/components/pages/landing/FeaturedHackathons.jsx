@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import HackathonCard from "../hackathons/HackathonCard";
 import { hackathonService } from "../../../services/hackathonService";
+import { formatLocation } from "../../../utils/hackathonFormatters";
 
 function normalizeHackathon(h) {
   const sourcePlatform = h.source?.platform || h.platform || "gethack";
@@ -12,7 +13,7 @@ function normalizeHackathon(h) {
     id: h.id || h._id,
     name: h.title || h.name,
     organizer: h.organizerName || (typeof h.organizer === "object" ? h.organizer?.name : h.organizer) || "Organizer",
-    location: h.location?.city ? `${h.location.city}${h.location.country ? ", " + h.location.country : ""}` : (h.event?.venue || h.location || null),
+    location: formatLocation(h.location, h.event),
     registrationDeadline: h.registration?.deadline || h.registrationDeadline,
     hackathonDate: h.event?.startDate || h.startDate || h.hackathonDate,
     eventEndDate: h.event?.endDate || h.endDate || h.eventEndDate,

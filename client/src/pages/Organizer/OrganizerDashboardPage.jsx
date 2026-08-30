@@ -6,7 +6,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
+import DeleteConfirmationModal from "../../components/organizer/DeleteConfirmationModal";
 import { hackathonService } from "../../services/hackathonService";
+import { getHackathonRegistrationStatus } from "../../utils/hackathonFormatters";
 
 // Helper to format date string
 function formatDate(dateStr) {
@@ -27,33 +29,31 @@ function formatDate(dateStr) {
 // Helper to compute status badge styles
 function getStatusBadge(status) {
   switch (status) {
+    case "OPEN":
     case "Registration Open":
     case "Active":
     case "Ongoing":
       return {
-        label: status,
+        label: "OPEN",
         className: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20",
       };
+    case "UPCOMING":
     case "Upcoming":
       return {
-        label: "Upcoming",
-        className: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-500/20",
+        label: "UPCOMING",
+        className: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-500/20",
       };
-    case "Draft":
-      return {
-        label: "Draft",
-        className: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/20",
-      };
+    case "CLOSED":
     case "Registration Closed":
     case "Completed":
       return {
-        label: status,
+        label: "CLOSED",
         className: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700",
       };
     default:
       return {
-        label: status || "Published",
-        className: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
+        label: status || "OPEN",
+        className: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-500/20",
       };
   }
 }
@@ -64,6 +64,11 @@ function OrganizerDashboardPage() {
   const [hackathons, setHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Deletion modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [targetHackathon, setTargetHackathon] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -90,16 +95,38 @@ function OrganizerDashboardPage() {
     };
   }, []);
 
+  const promptDelete = (hackathon) => {
+    setTargetHackathon(hackathon);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!targetHackathon) return;
+    try {
+      setDeleting(true);
+      await hackathonService.deleteHackathon(targetHackathon.id);
+      setHackathons((prev) => prev.filter((h) => h.id !== targetHackathon.id));
+      setDeleteModalOpen(false);
+      setTargetHackathon(null);
+    } catch (err) {
+      alert(err.message || "Failed to delete hackathon.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const totalCount = hackathons.length;
-  const activeCount = hackathons.filter(
-    (h) => h.status === "Registration Open" || h.status === "Ongoing" || h.status === "Active"
+  const upcomingCount = hackathons.filter(
+    (h) => getHackathonRegistrationStatus(h) === "UPCOMING"
   ).length;
-  const upcomingCount = hackathons.filter((h) => h.status === "Upcoming").length;
+  const activeCount = hackathons.filter(
+    (h) => getHackathonRegistrationStatus(h) === "OPEN"
+  ).length;
   const completedCount = hackathons.filter(
-    (h) => h.status === "Completed" || h.status === "Registration Closed"
+    (h) => getHackathonRegistrationStatus(h) === "CLOSED"
   ).length;
 
-  const recentHackathons = hackathons.slice(0, 5);
+  const recentHackathons = hackathons.slice(0, 3);
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -207,30 +234,20 @@ function OrganizerDashboardPage() {
 
           {/* Recent Hackathons Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-                  Recent Hackathons
-                </h2>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Your most recently published hackathons.
-                </p>
-              </div>
-
-              {totalCount > 0 && (
-                <Link
-                  to="/organizer/hackathons"
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-                >
-                  View All ({totalCount}) →
-                </Link>
-              )}
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+                Recent Hackathons
+              </h2>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Your most recently published hackathons.
+              </p>
             </div>
 
             {recentHackathons.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {recentHackathons.map((h) => {
-                  const badge = getStatusBadge(h.status);
+                  const statusLabel = getHackathonRegistrationStatus(h);
+                  const badge = getStatusBadge(statusLabel);
 
                   return (
                     <div
@@ -290,7 +307,6 @@ function OrganizerDashboardPage() {
                           <span>Deadline: {formatDate(h.registrationDeadline)}</span>
                           <span>Start: {formatDate(h.startDate || h.hackathonDate)}</span>
                           <span>End: {formatDate(h.endDate || h.eventEndDate)}</span>
-                          {h.createdAt && <span>Created: {formatDate(h.createdAt)}</span>}
                         </div>
                       </div>
 
@@ -304,19 +320,22 @@ function OrganizerDashboardPage() {
                             gap-1
                             rounded-lg
                             border
-                            border-neutral-200
-                            bg-white
+                            border-indigo-600
+                            bg-indigo-600
                             px-3.5
                             py-2
                             text-xs
                             font-semibold
-                            text-neutral-700
+                            text-white
+                            shadow-xs
                             transition-colors
-                            hover:bg-neutral-50
-                            dark:border-neutral-800
-                            dark:bg-neutral-900
-                            dark:text-neutral-300
-                            dark:hover:bg-neutral-800
+                            hover:bg-indigo-500
+                            hover:border-indigo-500
+                            dark:border-indigo-500
+                            dark:bg-indigo-500
+                            dark:text-white
+                            dark:hover:bg-indigo-400
+                            dark:hover:border-indigo-400
                           "
                         >
                           <span>View</span>
@@ -348,6 +367,38 @@ function OrganizerDashboardPage() {
                           </svg>
                           <span>Edit</span>
                         </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => promptDelete(h)}
+                          className="
+                            inline-flex
+                            items-center
+                            gap-1
+                            rounded-lg
+                            border
+                            border-red-200
+                            bg-red-50/50
+                            px-3
+                            py-2
+                            text-xs
+                            font-semibold
+                            text-red-600
+                            transition-colors
+                            hover:bg-red-100
+                            dark:border-red-900/50
+                            dark:bg-red-950/40
+                            dark:text-red-400
+                            dark:hover:bg-red-900/60
+                          "
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          </svg>
+                          <span>Delete</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -404,6 +455,20 @@ function OrganizerDashboardPage() {
           </div>
         </>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteModalOpen(false);
+            setTargetHackathon(null);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+        hackathonTitle={targetHackathon?.title || targetHackathon?.name}
+        loading={deleting}
+      />
     </main>
   );
 }

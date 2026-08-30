@@ -3,10 +3,10 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { userService } from "../../services/userService";
-import { ORGANIZER_PROFILE, ORGANIZER_HACKATHONS } from "../../data/organizerData";
+import { ORGANIZER_PROFILE } from "../../data/organizerData";
 import BackButton from "../../components/common/BackButton";
 
 // Helper for initials fallback
@@ -17,24 +17,6 @@ function getInitials(name) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
   return name.slice(0, 2).toUpperCase();
-}
-
-// Helper to format date ranges
-function formatDateRange(startDateStr, endDateStr) {
-  if (!startDateStr) return "TBA";
-  try {
-    const start = new Date(startDateStr);
-    const end = endDateStr ? new Date(endDateStr) : null;
-    const options = { month: "short", day: "numeric", year: "numeric" };
-    if (!end || isNaN(end.getTime())) {
-      return new Intl.DateTimeFormat("en-US", options).format(start);
-    }
-    const startFormatted = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(start);
-    const endFormatted = new Intl.DateTimeFormat("en-US", options).format(end);
-    return `${startFormatted} – ${endFormatted}`;
-  } catch {
-    return startDateStr;
-  }
 }
 
 function OrganizerProfilePage() {
@@ -48,16 +30,11 @@ function OrganizerProfilePage() {
   const [error, setError] = useState("");
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({
-    totalHackathons: 0,
-    completedCount: 0,
-    upcomingCount: 0,
     joinedDate: "Mar 2026",
   });
-  const [hackathons, setHackathons] = useState([]);
   const [isOwner, setIsOwner] = useState(false);
 
   // Modals & Active Tab State
-  const [activeTab, setActiveTab] = useState("upcoming");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -107,12 +84,8 @@ function OrganizerProfilePage() {
         if (isMounted && res?.profile) {
           setProfile(res.profile);
           setStats(res.stats || {
-            totalHackathons: res.hackathons?.length || 0,
-            completedCount: res.hackathons?.filter((h) => new Date(h.endDate) < new Date()).length || 0,
-            upcomingCount: res.hackathons?.filter((h) => new Date(h.endDate) >= new Date()).length || 0,
             joinedDate: "Mar 2026",
           });
-          setHackathons(res.hackathons || []);
           setIsOwner(Boolean(res.isOwner || (currentUser && currentUser.id === res.profile.id)));
 
           setEditForm({
@@ -159,29 +132,10 @@ function OrganizerProfilePage() {
             joinedDate: "Mar 2026",
           };
 
-          const fallbackHackathons = ORGANIZER_HACKATHONS.map((h) => ({
-            id: h.id,
-            _id: h.id,
-            title: h.title,
-            name: h.title,
-            description: h.description,
-            startDate: h.startDate,
-            endDate: h.endDate,
-            format: h.format || "Online",
-            mode: h.format || "Online",
-            prizes: h.prizePool || "₹1,00,000",
-            status: h.status,
-            registrationDeadline: h.registrationDeadline,
-          }));
-
           setProfile(fallbackProfile);
           setStats({
-            totalHackathons: fallbackHackathons.length,
-            completedCount: fallbackHackathons.filter((h) => h.status === "Completed").length,
-            upcomingCount: fallbackHackathons.filter((h) => h.status !== "Completed").length,
             joinedDate: "Mar 2026",
           });
-          setHackathons(fallbackHackathons);
           setIsOwner(!id || id === currentUser?.id || currentUser?.role === "organizer");
 
           setEditForm({
@@ -257,22 +211,6 @@ function OrganizerProfilePage() {
       setSavingProfile(false);
     }
   };
-
-  // Filter hackathons by status tab
-  const now = new Date();
-  const upcomingHackathons = hackathons.filter((h) => {
-    if (h.status === "Completed") return false;
-    if (h.endDate) return new Date(h.endDate) >= now;
-    return true;
-  });
-
-  const pastHackathons = hackathons.filter((h) => {
-    if (h.status === "Completed") return true;
-    if (h.endDate) return new Date(h.endDate) < now;
-    return false;
-  });
-
-  const activeHackathonsList = activeTab === "upcoming" ? upcomingHackathons : pastHackathons;
 
   // Render Social Link Helper
   const hasSocials =
@@ -397,19 +335,9 @@ function OrganizerProfilePage() {
                 <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl dark:text-white">
                   {profile.organizationName || profile.name}
                 </h1>
-                {profile.isVerified ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                      <polyline points="22 4 12 14.01 9 11.01" />
-                    </svg>
-                    <span>Verified Organizer</span>
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                    Organizer
-                  </span>
-                )}
+                <span className="rounded-md bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  Organizer
+                </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
@@ -430,11 +358,7 @@ function OrganizerProfilePage() {
                 )}
               </div>
 
-              {profile.bio && (
-                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed max-w-2xl">
-                  {profile.bio}
-                </p>
-              )}
+
             </div>
           </div>
 
@@ -504,44 +428,7 @@ function OrganizerProfilePage() {
         </div>
       </div>
 
-      {/* ── 2. Organizer Statistics Section ── */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-neutral-200/80 bg-white p-4 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-          <p className="text-2xl font-black text-neutral-900 dark:text-white">
-            {stats.totalHackathons}
-          </p>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1">
-            Hackathons Listed
-          </p>
-        </div>
 
-        <div className="rounded-xl border border-neutral-200/80 bg-white p-4 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-          <p className="text-2xl font-black text-neutral-900 dark:text-white">
-            {stats.completedCount}
-          </p>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1">
-            Completed
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-neutral-200/80 bg-white p-4 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-          <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-            {stats.upcomingCount}
-          </p>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1">
-            Upcoming
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-neutral-200/80 bg-white p-4 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-          <p className="text-2xl font-black text-neutral-900 dark:text-white">
-            {stats.joinedDate}
-          </p>
-          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1">
-            Joined getHack
-          </p>
-        </div>
-      </div>
 
       {/* ── 3. About & Organization Section ── */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -691,140 +578,7 @@ function OrganizerProfilePage() {
         </div>
       </div>
 
-      {/* ── 4. Hackathons History Section ── */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between border-b border-neutral-200/80 pb-3 dark:border-neutral-800">
-          <h2 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
-            Hackathons
-          </h2>
 
-          <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
-            <button
-              type="button"
-              onClick={() => setActiveTab("upcoming")}
-              className={`
-                rounded-md px-3 py-1 text-xs font-semibold transition-colors
-                ${activeTab === "upcoming"
-                  ? "bg-white text-neutral-900 shadow-2xs dark:bg-neutral-800 dark:text-white"
-                  : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }
-              `}
-            >
-              Upcoming ({upcomingHackathons.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("past")}
-              className={`
-                rounded-md px-3 py-1 text-xs font-semibold transition-colors
-                ${activeTab === "past"
-                  ? "bg-white text-neutral-900 shadow-2xs dark:bg-neutral-800 dark:text-white"
-                  : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                }
-              `}
-            >
-              Past ({pastHackathons.length})
-            </button>
-          </div>
-        </div>
-
-        {/* Hackathon Cards Grid */}
-        {activeHackathonsList.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {activeHackathonsList.map((h) => {
-              const isPast = activeTab === "past" || h.status === "Completed";
-              const targetRoute = isOrganizerPortal ? `/organizer/hackathons/${h.id || h._id}` : `/hackathons/${h.id || h._id}`;
-
-              return (
-                <div
-                  key={h.id || h._id}
-                  className="flex flex-col justify-between space-y-4 rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-xs transition-shadow hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-bold text-neutral-900 dark:text-white line-clamp-1">
-                        {h.title || h.name}
-                      </h3>
-
-                      {!isPast ? (
-                        <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-                          Registration Open
-                        </span>
-                      ) : (
-                        <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                          Completed
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 text-xs text-neutral-500 dark:text-neutral-400">
-                      <p className="flex items-center gap-1.5">
-                        <svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        <span>{formatDateRange(h.startDate, h.endDate)}</span>
-                      </p>
-                    </div>
-
-                    {(h.prizes || h.prizePool) && (
-                      <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 text-xs">
-                        <span className="font-medium text-neutral-400">Prize Pool: </span>
-                        <span className="font-bold text-neutral-900 dark:text-white">
-                          {h.prizes || h.prizePool}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-2">
-                    <Link
-                      to={targetRoute}
-                      className="
-                        inline-flex
-                        w-full
-                        items-center
-                        justify-center
-                        gap-1.5
-                        rounded-lg
-                        border
-                        border-neutral-200
-                        bg-neutral-50
-                        py-2
-                        text-xs
-                        font-semibold
-                        text-neutral-700
-                        transition-colors
-                        hover:bg-neutral-100
-                        dark:border-neutral-800
-                        dark:bg-neutral-950
-                        dark:text-neutral-300
-                        dark:hover:bg-neutral-800
-                      "
-                    >
-                      <span>View Hackathon</span>
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M5 12h14" />
-                        <path d="m12 5 7 7-7 7" />
-                      </svg>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-neutral-200/80 bg-white p-8 text-center shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
-            <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
-              {activeTab === "upcoming"
-                ? "This organizer doesn't have any upcoming hackathons listed yet."
-                : "No completed hackathons yet."}
-            </p>
-          </div>
-        )}
-      </div>
 
       {/* ── 5. Contact Organizer Modal ── */}
       {isContactModalOpen && (
@@ -960,20 +714,7 @@ function OrganizerProfilePage() {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="edit-avatar" className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                  Logo / Avatar Image URL
-                </label>
-                <input
-                  id="edit-avatar"
-                  type="url"
-                  name="avatar"
-                  value={editForm.avatar}
-                  onChange={handleEditChange}
-                  placeholder="https://example.com/logo.png"
-                  className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3.5 text-sm text-neutral-900 outline-none focus:border-indigo-500 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white"
-                />
-              </div>
+
 
               <div>
                 <label htmlFor="edit-bio" className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
@@ -1177,15 +918,7 @@ function OrganizerProfilePage() {
                 </div>
               </div>
 
-              {/* Read-Only System Properties Notice */}
-              <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-950 border border-neutral-100 dark:border-neutral-800">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-neutral-600 dark:text-neutral-400">Verification Status</span>
-                  <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] font-bold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                    {profile.isVerified ? "✓ Verified Organizer" : "Managed by getHack system"}
-                  </span>
-                </div>
-              </div>
+
 
               {/* Form Actions */}
               <div className="pt-4 flex items-center justify-end gap-3 border-t border-neutral-100 dark:border-neutral-800">

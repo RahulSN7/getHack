@@ -11,6 +11,7 @@ import DeadlineDisplay from "./DeadlineDisplay";
 import {
   formatPrize,
   formatOrganizer,
+  getHackathonRegistrationStatus,
 } from "../../../utils/hackathonFormatters";
 
 // Platform normalization helper
@@ -79,41 +80,6 @@ function formatPlatformName(platformInput, sourceObj, urlInput) {
   return null;
 }
 
-// Clean & deduplicated themes extractor
-function getCleanThemes(hackathon) {
-  const raw = Array.isArray(hackathon.themes) && hackathon.themes.length > 0
-    ? hackathon.themes
-    : Array.isArray(hackathon.tags) && hackathon.tags.length > 0
-      ? hackathon.tags
-      : Array.isArray(hackathon.skills) && hackathon.skills.length > 0
-        ? hackathon.skills
-        : [];
-
-  if (!Array.isArray(raw) || raw.length === 0) return [];
-
-  const seen = new Set();
-  const unique = [];
-
-  for (const item of raw) {
-    if (typeof item === "string" && item.trim().length > 0) {
-      const clean = item.trim();
-      const key = clean.toLowerCase();
-      if (
-        key !== "online" &&
-        key !== "offline" &&
-        key !== "hybrid" &&
-        key !== "hackathon" &&
-        !seen.has(key)
-      ) {
-        seen.add(key);
-        unique.push(clean);
-      }
-    }
-  }
-
-  return unique;
-}
-
 function HackathonCard({ hackathon }) {
   const currentLocation = useLocation();
   const navigate = useNavigate();
@@ -129,23 +95,17 @@ function HackathonCard({ hackathon }) {
   const prize = formatPrize(hackathon.prizePool, hackathon.prizes, hackathon.prize);
 
   const source = hackathon.source || {};
-  const rawPlatform = typeof source === "object" ? source.platform : hackathon.platform;
+  const rawPlatform = hackathon.hostedOn || (typeof source === "object" ? source.platform : hackathon.platform);
   const externalUrl = typeof source === "object" ? source.externalUrl : hackathon.url || hackathon.registrationUrl;
   const formattedPlatform = formatPlatformName(rawPlatform, source, externalUrl);
-
-  const allThemes = getCleanThemes(hackathon);
-  const displayThemes = allThemes.slice(0, 3);
-  const remainingThemesCount = allThemes.length - 3;
 
   const accent = hackathon.accent || "indigo";
 
   const { isSaved, toggleSave } = useSaved();
   const saved = id ? isSaved(id) : false;
 
-  const isOpen =
-    Boolean(registrationOpen) &&
-    Boolean(registrationDeadline) &&
-    new Date(registrationDeadline) > new Date();
+  const status = getHackathonRegistrationStatus(hackathon);
+  const isOpen = status === "OPEN";
 
   const mode = hackathon.format || hackathon.event?.mode || hackathon.mode || null;
   const minTeam = hackathon.minTeamSize || hackathon.teamSize?.min || 1;
@@ -247,7 +207,12 @@ function HackathonCard({ hackathon }) {
 
           <div className="flex shrink-0 items-center gap-1.5">
             {/* Registration Status Badge */}
-            {isOpen ? (
+            {status === "UPCOMING" ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                UPCOMING
+              </span>
+            ) : status === "OPEN" ? (
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 OPEN
@@ -305,25 +270,7 @@ function HackathonCard({ hackathon }) {
           </p>
         )}
 
-        {/* ── 3. Themes ── */}
-        {displayThemes.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            {displayThemes.map((theme, idx) => (
-              <span
-                key={idx}
-                className="max-w-[130px] truncate rounded-md bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
-                title={theme}
-              >
-                {theme}
-              </span>
-            ))}
-            {remainingThemesCount > 0 && (
-              <span className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                +{remainingThemesCount}
-              </span>
-            )}
-          </div>
-        )}
+
 
         {/* ── 4. Stats: Prize ── */}
         <div className="mt-4 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">

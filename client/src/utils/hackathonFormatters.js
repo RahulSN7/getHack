@@ -198,3 +198,48 @@ export function formatFee(fee, registrationFee) {
 export function formatMode(mode, format, event) {
   return "";
 }
+
+/**
+ * Calculate registration status: UPCOMING, OPEN, or CLOSED
+ * 1. Registration has not started yet (registrationOpens > now) -> UPCOMING
+ * 2. Registration is active (registrationOpens <= now && registrationDeadline >= now) -> OPEN
+ * 3. Registration deadline has passed (registrationDeadline < now) -> CLOSED
+ * @param {Object} hackathon
+ * @returns {"UPCOMING" | "OPEN" | "CLOSED"}
+ */
+export function getHackathonRegistrationStatus(hackathon) {
+  if (!hackathon || typeof hackathon !== "object") return "OPEN";
+
+  const now = new Date();
+
+  const regOpensRaw =
+    hackathon.registrationOpens ||
+    hackathon.registration?.startDate ||
+    hackathon.registrationStart;
+
+  const regDeadlineRaw =
+    hackathon.registrationDeadline ||
+    hackathon.registration?.deadline ||
+    hackathon.deadline;
+
+  if (regOpensRaw) {
+    const regOpensDate = new Date(regOpensRaw);
+    if (!isNaN(regOpensDate.getTime()) && regOpensDate > now) {
+      return "UPCOMING";
+    }
+  }
+
+  if (regDeadlineRaw) {
+    const regDeadlineDate = new Date(regDeadlineRaw);
+    if (!isNaN(regDeadlineDate.getTime())) {
+      if (regDeadlineDate >= now) {
+        return "OPEN";
+      } else {
+        return "CLOSED";
+      }
+    }
+  }
+
+  return "OPEN";
+}
+
