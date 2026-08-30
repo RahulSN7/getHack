@@ -52,6 +52,27 @@ function SignupPage() {
     };
   }, [resendCooldown]);
 
+function isValidEmailFormat(emailStr) {
+  if (!emailStr || typeof emailStr !== "string") return false;
+  const trimmed = emailStr.trim().toLowerCase();
+  if (trimmed.length < 6 || trimmed.length > 254) return false;
+  if (trimmed.includes("..")) return false;
+  const parts = trimmed.split("@");
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  if (!local || local.startsWith(".") || local.endsWith(".")) return false;
+  if (!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)) return false;
+  if (!domain || domain.startsWith(".") || domain.endsWith(".")) return false;
+  if (!domain.includes(".")) return false;
+  const domainParts = domain.split(".");
+  if (domainParts.some((label) => !label || label.length === 0 || label.startsWith("-") || label.endsWith("-"))) {
+    return false;
+  }
+  const tld = domainParts[domainParts.length - 1];
+  if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+  return true;
+}
+
   const validateStep1 = () => {
     const errs = {};
 
@@ -61,7 +82,7 @@ function SignupPage() {
 
     if (!email.trim()) {
       errs.email = "Please enter your email address.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    } else if (!isValidEmailFormat(email.trim())) {
       errs.email = "Please enter a valid email address.";
     }
 

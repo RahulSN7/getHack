@@ -3,6 +3,7 @@
 // Handles OTP generation, email dispatching, OTP verification, getMe, and logout.
 // ---------------------------------------------------------------------------
 
+const dns = require("dns").promises;
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -11,6 +12,13 @@ const User = require("../models/user");
 const Otp = require("../models/otp");
 const { sendOtpEmail } = require("../services/emailService");
 const { upsertStreamUser } = require("../services/streamService");
+
+// Configure public DNS resolvers for consistent MX domain resolution
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+} catch (dnsErr) {
+  console.warn("Unable to set custom DNS servers:", dnsErr.message);
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || "gethack_super_secret_jwt_key_2026";
 const COOKIE_OPTIONS = {
@@ -25,8 +33,118 @@ const generateToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "7d" });
 };
 
-// Email format validation regex
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * Robust Email Format Validator
+ * Enforces strict structure: local-part@domain.tld
+ * Rejects consecutive dots, missing TLD, empty local/domain, multiple @ symbols.
+ */
+function isValidEmailFormat(emailStr) {
+  if (!emailStr || typeof emailStr !== "string") return false;
+  const trimmed = emailStr.trim().toLowerCase();
+
+  // Basic length constraints
+  if (trimmed.length < 6 || trimmed.length > 254) return false;
+
+  // Disallow consecutive dots
+  if (trimmed.includes("..")) return false;
+
+  // Must contain exactly one @ symbol
+  const parts = trimmed.split("@");
+  if (parts.length !== 2) return false;
+
+  const [local, domain] = parts;
+
+  // Check local part
+  if (!local || local.startsWith(".") || local.endsWith(".")) return false;
+  const localRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/;
+  if (!localRegex.test(local)) return false;
+
+  // Check domain part
+  if (!domain || domain.startsWith(".") || domain.endsWith(".")) return false;
+  if (!domain.includes(".")) return false;
+
+  const domainParts = domain.split(".");
+  if (domainParts.some((label) => !label || label.length === 0 || label.startsWith("-") || label.endsWith("-"))) {
+    return false;
+  }
+
+  // TLD must be at least 2 alpha characters long (e.g. com, org, in)
+  const tld = domainParts[domainParts.length - 1];
+  if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+
+  return true;
+}
+
+/**
+ * Backend Email Domain DNS Validator
+ * Resolves MX / A records for the domain to verify mail delivery capabilities.
+ * Filters out parked domains, squatter hosts, and unresolvable domains generically.
+ */
+async function validateEmailDomain(domainName) {
+  if (!domainName || typeof domainName !== "string") return false;
+  const d = domainName.trim().toLowerCase();
+
+  if (!d || d.length < 4 || !d.includes(".")) return false;
+
+  try {
+    // 3.5s timeout wrapper for MX lookup
+    const mxPromise = dns.resolveMx(d);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("DNS_TIMEOUT")), 3500)
+    );
+
+    const mxRecords = await Promise.race([mxPromise, timeoutPromise]);
+
+    if (Array.isArray(mxRecords) && mxRecords.length > 0) {
+      // Filter out empty, Null MX (RFC 7505), loopback, or invalid exchange hosts
+      const validExchanges = mxRecords
+        .map((m) => (m && m.exchange ? m.exchange.toLowerCase().trim() : ""))
+        .filter((ex) => ex && ex !== "." && ex !== "0.0.0.0" && ex !== "localhost");
+
+      if (validExchanges.length === 0) {
+        return false;
+      }
+
+      // Detect known domain parking / squatter MX hosts that do not deliver email
+      const isParked = validExchanges.some(
+        (ex) =>
+          ex.includes("yaxmail") ||
+          ex.includes("parkingcrew") ||
+          ex.includes("sedoparking") ||
+          ex.includes("bodis") ||
+          ex.includes("hugedomains") ||
+          ex.includes("above.com")
+      );
+
+      if (isParked) {
+        return false;
+      }
+
+      return true;
+    }
+  } catch (err) {
+    if (err.message === "DNS_TIMEOUT") {
+      // Fail-open on timeout to avoid blocking legitimate users during network slowdowns
+      return true;
+    }
+
+    // Fallback: Check A or AAAA records if MX lookup was empty or failed
+    try {
+      const aPromise = dns.resolve4(d);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("DNS_TIMEOUT")), 2000)
+      );
+      const aRecords = await Promise.race([aPromise, timeoutPromise]);
+      if (Array.isArray(aRecords) && aRecords.length > 0) {
+        return true;
+      }
+    } catch {
+      return false; // Domain has neither MX nor A DNS records
+    }
+  }
+
+  return false;
+}
 
 // ── 1. SEND OTP ──
 const sendOtp = async (req, res) => {
@@ -39,8 +157,18 @@ const sendOtp = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    if (!EMAIL_REGEX.test(normalizedEmail)) {
+    // 1. Format Validation
+    if (!isValidEmailFormat(normalizedEmail)) {
       return res.status(400).json({ message: "Please enter a valid email address." });
+    }
+
+    // 2. Domain DNS/MX Validation
+    const domain = normalizedEmail.split("@")[1];
+    const isDomainValid = await validateEmailDomain(domain);
+    if (!isDomainValid) {
+      return res.status(400).json({
+        message: "We couldn't verify this email address. Please check your email and try again.",
+      });
     }
 
     // Database Connection Guard
@@ -90,7 +218,14 @@ const sendOtp = async (req, res) => {
     );
 
     // Dispatch OTP email
-    await sendOtpEmail(normalizedEmail, rawOtp);
+    try {
+      await sendOtpEmail(normalizedEmail, rawOtp);
+    } catch (emailErr) {
+      console.error("sendOtpEmail failure:", emailErr.message);
+      return res.status(400).json({
+        message: "We couldn't send a verification code to this email. Please check the email address and try again.",
+      });
+    }
 
     return res.status(200).json({
       message: "Verification code sent to your email.",
@@ -100,7 +235,7 @@ const sendOtp = async (req, res) => {
   } catch (error) {
     console.error("sendOtp error:", error);
     return res.status(500).json({
-      message: error.message || "We couldn't send the verification code. Please try again.",
+      message: "We couldn't send a verification code to this email. Please check the email address and try again.",
     });
   }
 };
