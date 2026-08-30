@@ -111,8 +111,6 @@ function Messages() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [startChatModalOpen, setStartChatModalOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedCids, setSelectedCids] = useState([]);
   const moreMenuRef = useRef(null);
 
   const currentUserId = user?._id || user?.id || "";
@@ -162,6 +160,20 @@ function Messages() {
       try {
         let targetChannel = null;
 
+        // Fetch accepted connections from getHack database to enforce connection authorization
+        let acceptedConnIdsSet = new Set();
+        try {
+          const netRes = await userService.getNetworkRequests();
+          if (netRes && Array.isArray(netRes.connections)) {
+            netRes.connections.forEach((conn) => {
+              const partnerId = conn.userId || conn.id || conn._id;
+              if (partnerId) acceptedConnIdsSet.add(String(partnerId));
+            });
+          }
+        } catch (netErr) {
+          console.warn("Failed to fetch accepted connections for chat filtering:", netErr);
+        }
+
         // ===================================================================
         // 1. Synchronize target user with Stream BEFORE channel creation.
         // ===================================================================
@@ -171,27 +183,39 @@ function Messages() {
         ) {
           const targetId = String(targetUserIdParam);
 
-          console.log("----------------------------------------------");
-          console.log("PREPARING DIRECT MESSAGE");
-          console.log("CURRENT USER ID:", String(currentUserId));
-          console.log("TARGET USER ID:", targetId);
-          console.log("----------------------------------------------");
-
-          try {
-            const syncResult =
-              await chatService.ensureTargetUser(targetId);
-
+          // Verify target user is in accepted connections for 1-to-1 chats
+          if (acceptedConnIdsSet.size > 0 && !acceptedConnIdsSet.has(targetId)) {
+            console.warn("Target user is not connected. Aborting 1-to-1 channel creation.");
+            showToast("You are no longer connected with this user.");
+            if (isMounted) {
+              setActiveChannel(null);
+              setMobileShowChat(false);
+              navigate("/messages", { replace: true });
+            }
+          } else {
             console.log("----------------------------------------------");
-            console.log("STREAM USER SYNC SUCCESS");
-            console.log(syncResult);
+            console.log("PREPARING DIRECT MESSAGE");
+            console.log("CURRENT USER ID:", String(currentUserId));
+            console.log("TARGET USER ID:", targetId);
             console.log("----------------------------------------------");
-          } catch (error) {
-            console.error("STREAM USER SYNC FAILED", error);
 
-            throw new Error(
-              `Unable to synchronize the selected user with Stream Chat: ${error.message || "Unknown synchronization error"
-              }`
-            );
+            try {
+              const syncResult =
+                await chatService.ensureTargetUser(targetId);
+
+              console.log("----------------------------------------------");
+              console.log("STREAM USER SYNC SUCCESS");
+              console.log(syncResult);
+              console.log("----------------------------------------------");
+            } catch (error) {
+              console.error("STREAM USER SYNC FAILED", error);
+              showToast(error.message || "You are no longer connected with this user.");
+              if (isMounted) {
+                setActiveChannel(null);
+                setMobileShowChat(false);
+                navigate("/messages", { replace: true });
+              }
+            }
           }
         }
 
@@ -282,7 +306,6 @@ function Messages() {
         const removedGroupChannels = [];
         for (const rg of removedDbGroups) {
           if (!rg.streamChannelId) continue;
-          // Skip if already in active dbGroupChannels (should not happen, but safety)
           if (dbGroupChannels.some((c) => c.id === rg.streamChannelId)) continue;
 
           try {
@@ -293,11 +316,10 @@ function Messages() {
               isGroup: true,
             });
 
-            // Try to watch — may fail since user is no longer a GetStream member
             try {
               await groupChan.watch();
             } catch (_watchErr) {
-              // Expected: removed user can't watch. Channel reference still usable for display.
+              // Expected
             }
 
             groupChan.data = {
@@ -324,67 +346,65 @@ function Messages() {
           String(targetUserIdParam) !== String(currentUserId)
         ) {
           const targetId = String(targetUserIdParam);
-
-          const existing = queriedChannels.find((channel) => {
-            const memberIds = Object.keys(
-              channel.state?.members || {}
-            );
-
-            return memberIds.includes(targetId);
-          });
-
-          if (existing) {
-            console.log("EXISTING CHAT FOUND:", existing.cid);
-            targetChannel = existing;
-            await targetChannel.watch();
-          } else {
-            console.log("CREATING NEW DIRECT CHAT");
-
-            targetChannel = chatClient.channel("messaging", {
-              members: [
-                String(currentUserId),
-                targetId,
-              ],
+          if (acceptedConnIdsSet.size === 0 || acceptedConnIdsSet.has(targetId)) {
+            const existing = queriedChannels.find((channel) => {
+              const memberIds = Object.keys(channel.state?.members || {});
+              return memberIds.includes(targetId) && !channel.data?.isGroup;
             });
 
-            await targetChannel.watch();
-          }
+            if (existing) {
+              console.log("EXISTING CHAT FOUND:", existing.cid);
+              targetChannel = existing;
+              await targetChannel.watch();
+            } else {
+              console.log("CREATING NEW DIRECT CHAT");
 
-          try {
-            const members = Object.values(
-              targetChannel.state?.members || {}
-            );
+              targetChannel = chatClient.channel("messaging", {
+                members: [
+                  String(currentUserId),
+                  targetId,
+                ],
+              });
 
-            const otherMember = members.find(
-              (member) =>
-                String(member.user_id || member.user?.id) !==
-                String(currentUserId)
-            );
-
-            const otherUser = otherMember?.user || {};
-
-            if (!otherUser.name || otherUser.name === targetId) {
-              const profileRes =
-                await userService.getParticipantProfile(targetId);
-
-              if (profileRes?.user) {
-                const u = profileRes.user;
-
-                targetChannel.data = {
-                  ...(targetChannel.data || {}),
-                  targetName: u.name,
-                  targetAvatar:
-                    u.avatar ||
-                    u.profile?.avatar ||
-                    "",
-                };
-              }
+              await targetChannel.watch();
             }
-          } catch (profileError) {
-            console.warn(
-              "Could not load target getHack profile:",
-              profileError
-            );
+
+            try {
+              const members = Object.values(
+                targetChannel.state?.members || {}
+              );
+
+              const otherMember = members.find(
+                (member) =>
+                  String(member.user_id || member.user?.id) !==
+                  String(currentUserId)
+              );
+
+              const otherUser = otherMember?.user || {};
+
+              if (!otherUser.name || otherUser.name === targetId) {
+                const profileRes =
+                  await userService.getParticipantProfile(targetId);
+
+                if (profileRes?.user) {
+                  const u = profileRes.user;
+
+                  targetChannel.data = {
+                    ...(targetChannel.data || {}),
+                    targetName: u.name,
+                    targetAvatar:
+                      u.avatar ||
+                      u.profile?.avatar ||
+                      "",
+                  };
+                }
+              }
+            } catch (profileError) {
+              console.warn(
+                "Could not load target getHack profile:",
+                profileError
+              );
+            }
           }
         }
 
@@ -393,18 +413,18 @@ function Messages() {
         }
 
         // ===================================================================
-        // 5. Build final left-side chat list.
+        // 5. Build final left-side chat list with Connection Enforcement.
         // ===================================================================
         const combinedList = [];
         const addedCids = new Set();
 
-        // Selected conversation always appears first.
+        // Selected conversation always appears first if valid.
         if (targetChannel) {
           combinedList.push(targetChannel);
           addedCids.add(targetChannel.cid);
         }
 
-        // Add persistent MongoDB groups first.
+        // Add persistent MongoDB groups first (always preserved).
         dbGroupChannels.forEach((groupChan) => {
           if (!addedCids.has(groupChan.cid)) {
             combinedList.push(groupChan);
@@ -412,28 +432,38 @@ function Messages() {
           }
         });
 
-        // Add existing conversations (or any group channels).
+        // Add queried channels (Group chats ALWAYS preserved, 1-to-1 direct chats filtered by accepted connections).
         queriedChannels.forEach((channel) => {
+          const memberIds = Object.keys(channel.state?.members || {});
           const isGroup = Boolean(
             channel.data?.isGroup ||
+            channel.data?.name ||
             channel.type === "team" ||
             channel.type === "group" ||
-            channel.data?.teamId
+            channel.data?.teamId ||
+            memberIds.length > 2
           );
           const hasMessages =
             channel.state?.messages?.length > 0 ||
             channel.data?.last_message_at;
 
-          if (
-            (hasMessages || isGroup) &&
-            !addedCids.has(channel.cid)
-          ) {
-            combinedList.push(channel);
-            addedCids.add(channel.cid);
+          if ((hasMessages || isGroup) && !addedCids.has(channel.cid)) {
+            if (isGroup) {
+              // Group/team chats are ALWAYS kept
+              combinedList.push(channel);
+              addedCids.add(channel.cid);
+            } else {
+              // 1-to-1 direct chats: keep ONLY if recipient is in accepted connections
+              const otherId = memberIds.find((id) => String(id) !== String(currentUserId));
+              if (otherId && acceptedConnIdsSet.has(String(otherId))) {
+                combinedList.push(channel);
+                addedCids.add(channel.cid);
+              }
+            }
           }
         });
 
-        // Add removed groups (read-only, WhatsApp-style).
+        // Add removed groups (read-only).
         removedGroupChannels.forEach((groupChan) => {
           if (!addedCids.has(groupChan.cid)) {
             combinedList.push(groupChan);
@@ -444,7 +474,7 @@ function Messages() {
         setChannels(sortChannelsByLatest(combinedList, chatStatesRef.current));
 
         // ===================================================================
-        // 6. Automatically open selected conversation on the right.
+        // 6. Automatically open selected conversation on the right if authorized.
         // ===================================================================
         if (targetChannel) {
           setActiveChannel(targetChannel);
@@ -655,6 +685,20 @@ function Messages() {
       });
     };
 
+    const handleChannelDeletedEvent = (event) => {
+      const cid = event.cid || event.channel?.cid;
+      if (!cid) return;
+
+      console.log("[Stream Chat] Channel deleted event received:", cid);
+
+      setChannels((prev) => prev.filter((ch) => ch.cid !== cid));
+
+      if (activeChannelRef.current?.cid === cid) {
+        setActiveChannel(null);
+        setMobileShowChat(false);
+      }
+    };
+
     chatClient.on("message.new", handleChannelEvent);
     chatClient.on("notification.message_new", handleChannelEvent);
     chatClient.on("message.updated", handleChannelEvent);
@@ -663,6 +707,8 @@ function Messages() {
     chatClient.on("notification.mark_read", handleChannelEvent);
     chatClient.on("channel.updated", handleChannelEvent);
     chatClient.on("channel.truncated", handleChannelEvent);
+    chatClient.on("channel.deleted", handleChannelDeletedEvent);
+    chatClient.on("notification.channel_deleted", handleChannelDeletedEvent);
 
     return () => {
       chatClient.off("message.new", handleChannelEvent);
@@ -673,6 +719,8 @@ function Messages() {
       chatClient.off("notification.mark_read", handleChannelEvent);
       chatClient.off("channel.updated", handleChannelEvent);
       chatClient.off("channel.truncated", handleChannelEvent);
+      chatClient.off("channel.deleted", handleChannelDeletedEvent);
+      chatClient.off("notification.channel_deleted", handleChannelDeletedEvent);
     };
   }, [chatClient]);
 
@@ -1050,12 +1098,7 @@ function Messages() {
     [chatClient, currentUserId]
   );
 
-  // Toggle selection of a channel in select mode
-  const handleToggleSelectChannel = useCallback((cid) => {
-    setSelectedCids((prev) =>
-      prev.includes(cid) ? prev.filter((id) => id !== cid) : [...prev, cid]
-    );
-  }, []);
+
 
   // -------------------------------------------------------------------------
   // Search & Filter conversations.
@@ -1322,10 +1365,10 @@ function Messages() {
                   title="More options"
                   className="p-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="5" r="1.5" fill="currentColor" />
-                    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-                    <circle cx="12" cy="19" r="1.5" fill="currentColor" />
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="1.75" />
+                    <circle cx="12" cy="12" r="1.75" />
+                    <circle cx="12" cy="19" r="1.75" />
                   </svg>
                 </button>
 
@@ -1341,18 +1384,6 @@ function Messages() {
                     >
                       <span className="text-sm">👥</span>
                       <span className="font-medium">New group</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMoreMenuOpen(false);
-                        setSelectMode((prev) => !prev);
-                        setSelectedCids([]);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-neutral-700 dark:text-neutral-200 hover:bg-indigo-50/60 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
-                    >
-                      <span className="text-sm">☑</span>
-                      <span className="font-medium">{selectMode ? "Exit select" : "Select chats"}</span>
                     </button>
                     <button
                       type="button"

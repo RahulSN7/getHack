@@ -5,8 +5,10 @@
 
 const Connection = require("../models/connection");
 const User = require("../models/user");
+const UserChatState = require("../models/userChatState");
 const { isProfileComplete } = require("../utils/profileValidation");
 const { createNotification } = require("../services/notificationService");
+const { getStreamClient } = require("../services/streamService");
 
 // ---------------------------------------------------------------------------
 // POST /api/network/requests — Send Connection Request
@@ -444,6 +446,61 @@ const removeConnection = async (req, res) => {
 
     // Delete connection record
     await Connection.findByIdAndDelete(connection._id);
+
+    // --- STREAM CHAT & 1-TO-1 CHAT CLEANUP ---
+    try {
+      const u1 = String(currentUserId);
+      const u2 = String(targetUserId);
+      const client = getStreamClient();
+
+      // Query messaging channels containing both users
+      const channels = await client.queryChannels({
+        type: "messaging",
+        members: { $all: [u1, u2] },
+      });
+
+      if (Array.isArray(channels)) {
+        for (const ch of channels) {
+          // Strictly check if it is a 1-to-1 direct channel (NOT a group or team chat)
+          const memberIds = Object.keys(ch.state?.members || ch.data?.members || {});
+          const isGroup = Boolean(
+            ch.data?.isGroup ||
+            ch.data?.name ||
+            ch.data?.isTeam ||
+            ch.type === "team" ||
+            memberIds.length > 2
+          );
+
+          if (!isGroup) {
+            const cid = ch.cid;
+            try {
+              await ch.truncate({ hard_delete: true });
+            } catch (tErr) {
+              console.warn("[Stream Chat] Truncate notice:", tErr.message);
+            }
+            try {
+              await ch.delete({ hard_delete: true });
+            } catch (dErr) {
+              console.warn("[Stream Chat] Delete channel notice:", dErr.message);
+            }
+
+            if (cid) {
+              await UserChatState.deleteMany({ channelCid: cid });
+            }
+          }
+        }
+      }
+
+      // Clean up any remaining UserChatState entries between these two users
+      await UserChatState.deleteMany({
+        $or: [
+          { user: u1, targetUserId: u2 },
+          { user: u2, targetUserId: u1 },
+        ],
+      });
+    } catch (chatCleanupErr) {
+      console.error("[Stream Chat] 1-to-1 cleanup error on connection removal:", chatCleanupErr.message);
+    }
 
     return res.status(200).json({
       success: true,

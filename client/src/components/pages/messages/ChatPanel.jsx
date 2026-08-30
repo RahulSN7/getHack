@@ -547,7 +547,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   const [reportReason, setReportReason] = useState("Spam");
   const [reportNotes, setReportNotes] = useState("");
 
-  // Block User States
+  // Block & Connection User States
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showUnblockModal, setShowUnblockModal] = useState(false);
   const [showExitGroupModal, setShowExitGroupModal] = useState(false);
@@ -556,6 +556,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   const [deletingGroup, setDeletingGroup] = useState(false);
   const [isBlockedByMe, setIsBlockedByMe] = useState(false);
   const [isBlockedByOther, setIsBlockedByOther] = useState(false);
+  const [isNotConnected, setIsNotConnected] = useState(false);
 
   // Typing & Presence
   const [isTyping, setIsTyping] = useState(false);
@@ -589,6 +590,38 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   const fileInputRef = useRef(null);
   const composerEmojiContainerRef = useRef(null);
   const attachmentButtonRef = useRef(null);
+  const headerMenuRef = useRef(null);
+  const headerMenuBtnRef = useRef(null);
+
+  // Close header options menu on click-outside or ESC key
+  useEffect(() => {
+    if (!showHeaderMenu) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        headerMenuRef.current &&
+        !headerMenuRef.current.contains(e.target) &&
+        headerMenuBtnRef.current &&
+        !headerMenuBtnRef.current.contains(e.target)
+      ) {
+        setShowHeaderMenu(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowHeaderMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showHeaderMenu]);
 
   // Close composer emoji picker on click-outside or ESC key
   useEffect(() => {
@@ -816,12 +849,28 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Fetch block status for current user & target user
+  // Fetch connection authorization & block status for 1-to-1 chats
   useEffect(() => {
-    if (!channel || !userId) return;
+    if (!channel || !userId || isGroup) {
+      setIsNotConnected(false);
+      return;
+    }
     let cancelled = false;
 
-    async function checkBlock() {
+    async function checkAccessAndBlock() {
+      try {
+        const accessRes = await chatService.checkChatAccess(userId);
+        if (!cancelled) {
+          if (accessRes && accessRes.allowed === false) {
+            setIsNotConnected(true);
+          } else {
+            setIsNotConnected(false);
+          }
+        }
+      } catch (accessErr) {
+        console.warn("Failed to verify 1-to-1 chat access:", accessErr);
+      }
+
       try {
         const res = await chatService.getBlockStatus(userId);
         if (!cancelled && res.success) {
@@ -833,11 +882,11 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       }
     }
 
-    checkBlock();
+    checkAccessAndBlock();
     return () => {
       cancelled = true;
     };
-  }, [channel?.cid, userId]);
+  }, [channel?.cid, userId, isGroup]);
 
   // Retry callback bound strictly to current channel & generation counter
   const handleRetry = useCallback(() => {
@@ -1257,13 +1306,17 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   // Send or Save Message
   const handleSend = async (e) => {
     if (e) e.preventDefault();
+    if (isNotConnected) {
+      showToast("You are no longer connected with this user.");
+      return;
+    }
     if (isBlockedByMe || isBlockedByOther) {
       showToast("Cannot send messages while user is blocked");
       return;
     }
 
     const text = inputText.trim();
-    if ((!text && !pendingAttachment) || sending || !channel || isBlocked || isRemovedFromGroup) return;
+    if ((!text && !pendingAttachment) || sending || !channel || isBlocked || isRemovedFromGroup || isNotConnected) return;
 
     if (pendingAttachment?.uploading) {
       showToast("Please wait for file upload to complete.");
@@ -1824,6 +1877,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
           </button>
 
           <button
+            ref={headerMenuBtnRef}
             type="button"
             onClick={() => setShowHeaderMenu((prev) => !prev)}
             className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors"
@@ -1840,6 +1894,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
         {/* ── Header Dropdown Menu ── */}
         {showHeaderMenu && (
           <div
+            ref={headerMenuRef}
             className="
               absolute right-4 top-14 z-50 w-56 rounded-xl
               border border-neutral-200 bg-white py-1 shadow-xl
@@ -1850,6 +1905,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
           >
             {isGroup ? (
               <>
+                {/* 1. Group Info */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1859,15 +1915,61 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                   }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
                 >
-                  <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
-                  <span>Group info</span>
+                  <span>Group Info</span>
                 </button>
-                {/* Exit Group Option for Active Group Members / Delete Group for Exited Users */}
+
+                {/* 2. Add to Favourites */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    if (onToggleFavourite) onToggleFavourite(channel);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
+                >
+                  <svg className={`h-4 w-4 shrink-0 ${isFavourite ? "text-red-500 fill-red-500" : "text-neutral-400"}`} viewBox="0 0 24 24" fill={isFavourite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                  <span>{isFavourite ? "Remove from favourites" : "Add to favourites"}</span>
+                </button>
+
+                {/* 3. Clear Chat */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    setShowClearChatModal(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
+                >
+                  <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span>Clear Chat</span>
+                </button>
+
+                {/* 4. Close Chat */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    setShowRemoveModal(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
+                >
+                  <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                  <span>Close Chat</span>
+                </button>
+
+                {/* 5. Exit Group */}
                 {isGroupMember && !isRemovedFromGroup ? (
                   <button
                     type="button"
@@ -1875,14 +1977,14 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                       setShowHeaderMenu(false);
                       setShowExitGroupModal(true);
                     }}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors text-left"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
                   >
-                    <svg className="h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />
                     </svg>
-                    <span>Exit group</span>
+                    <span>Exit Group</span>
                   </button>
                 ) : (
                   <button
@@ -1891,122 +1993,163 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                       setShowHeaderMenu(false);
                       setShowDeleteGroupModal(true);
                     }}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors text-left"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
                   >
-                    <svg className="h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
-                    <span>Delete group</span>
+                    <span>Delete Group</span>
+                  </button>
+                )}
+
+                {/* 6. Divider */}
+                <div className="my-1 h-px bg-neutral-200 dark:bg-neutral-700/60" />
+
+                {/* 7. Report Group */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    setShowReportModal(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10 transition-colors text-left"
+                >
+                  <svg className="h-4 w-4 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7" />
+                  </svg>
+                  <span>Report Group</span>
+                </button>
+              </>
+            ) : (
+              <>
+                {/* 1. View Profile */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    if (userId) navigate(`/profile/${userId}`);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
+                >
+                  <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span>View Profile</span>
+                </button>
+
+                {/* 2. Add to Favourites */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    if (onToggleFavourite) onToggleFavourite(channel);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
+                >
+                  <svg className={`h-4 w-4 shrink-0 ${isFavourite ? "text-red-500 fill-red-500" : "text-neutral-400"}`} viewBox="0 0 24 24" fill={isFavourite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                  <span>{isFavourite ? "Remove from favourites" : "Add to favourites"}</span>
+                </button>
+
+                {/* 3. Clear Chat */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    setShowClearChatModal(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
+                >
+                  <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span>Clear Chat</span>
+                </button>
+
+                {/* 4. Close Chat */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    setShowRemoveModal(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
+                >
+                  <svg className="h-4 w-4 text-neutral-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                  <span>Close Chat</span>
+                </button>
+
+                {/* 5. Divider */}
+                <div className="my-1 h-px bg-neutral-200 dark:bg-neutral-700/60" />
+
+                {/* 6. Report User */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    setShowReportModal(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10 transition-colors text-left"
+                >
+                  <svg className="h-4 w-4 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7" />
+                  </svg>
+                  <span>Report User</span>
+                </button>
+
+                {/* 7. Block / Unblock User */}
+                {isBlockedByMe ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHeaderMenu(false);
+                      setShowUnblockModal(true);
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 transition-colors text-left"
+                  >
+                    <svg className="h-4 w-4 text-emerald-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v8M8 12h8" />
+                    </svg>
+                    <span>Unblock User</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHeaderMenu(false);
+                      setShowBlockModal(true);
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors text-left"
+                  >
+                    <svg className="h-4 w-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M4.93 4.93l14.14 14.14" />
+                    </svg>
+                    <span>Block User</span>
                   </button>
                 )}
               </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowHeaderMenu(false);
-                  if (userId) navigate(`/profile/${userId}`);
-                }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
-              >
-                <svg className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span>View Profile</span>
-              </button>
-            )}
-
-            {/* Add/Remove Favourite */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowHeaderMenu(false);
-                if (onToggleFavourite) onToggleFavourite(channel);
-              }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
-            >
-              <span className="text-sm leading-none">❤️</span>
-              <span>{isFavourite ? "Remove from favourites" : "Add to favourites"}</span>
-            </button>
-
-            {/* Clear Chat */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowHeaderMenu(false);
-                setShowClearChatModal(true);
-              }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors text-left"
-            >
-              <svg className="h-4 w-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              <span>Clear Chat</span>
-            </button>
-
-            {/* Close Chat */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowHeaderMenu(false);
-                setShowRemoveModal(true);
-              }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/60 transition-colors text-left"
-            >
-              <span className="text-sm leading-none font-bold text-neutral-400">✕</span>
-              <span>Close chat</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowHeaderMenu(false);
-                setShowReportModal(true);
-              }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10 transition-colors text-left"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7" />
-              </svg>
-              <span>Report User</span>
-            </button>
-
-            {/* Block / Unblock Option */}
-            {isBlockedByMe ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowHeaderMenu(false);
-                  setShowUnblockModal(true);
-                }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 transition-colors text-left"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v8M8 12h8" />
-                </svg>
-                <span>Unblock</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowHeaderMenu(false);
-                  setShowBlockModal(true);
-                }}
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors text-left"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M4.93 4.93l14.14 14.14" />
-                </svg>
-                <span>Block</span>
-              </button>
             )}
           </div>
         )}
       </div>
+
+      {/* Non-connected user warning banner */}
+      {!isGroup && isNotConnected && (
+        <div className="shrink-0 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/50 px-4 py-2.5 text-center text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center justify-center gap-2">
+          <svg className="h-4 w-4 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>You are no longer connected with this user.</span>
+        </div>
+      )}
 
       {/* ── Search Bar (Conditional Header) ── */}
       {searchOpen && (
@@ -2834,7 +2977,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
               </button>
 
               {/* Emoji Picker Popover */}
-              {showEmojiPicker && (
+              {showEmojiPicker && !isNotConnected && (
                 <div
                   className="
                     absolute bottom-12 left-0 z-40 p-2.5 w-64 rounded-2xl
@@ -2867,12 +3010,16 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (isNotConnected) {
+                  return;
+                }
                 fileInputRef.current?.click();
                 setShowEmojiPicker(false);
               }}
+              disabled={isNotConnected}
               className="
                 shrink-0 rounded-xl p-2.5 text-neutral-500 hover:bg-neutral-100
-                dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors
+                dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed
               "
               title="Attach file"
             >
@@ -2887,7 +3034,8 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
               value={inputText}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={editingMessage ? "Edit message..." : "Type a message..."}
+              disabled={isNotConnected}
+              placeholder={isNotConnected ? "Messaging disabled (not connected)" : editingMessage ? "Edit message..." : "Type a message..."}
               rows={1}
               className="
                 flex-1 resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5
@@ -2895,7 +3043,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400
                 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500
                 dark:focus:border-indigo-500 dark:focus:ring-indigo-500
-                max-h-32 overflow-y-auto
+                max-h-32 overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed
               "
               style={{ minHeight: "42px" }}
             />
@@ -2904,7 +3052,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             <button
               type="button"
               onClick={handleSend}
-              disabled={(!inputText.trim() && !pendingAttachment) || sending || pendingAttachment?.uploading}
+              disabled={(!inputText.trim() && !pendingAttachment) || sending || pendingAttachment?.uploading || isNotConnected}
               className="
                 shrink-0 rounded-xl bg-indigo-500 p-2.5 text-white
                 transition-all duration-150
@@ -3084,7 +3232,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-              Report User
+              Report {isGroup ? "Group" : "User"}
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
               Report {name} for violating community guidelines.

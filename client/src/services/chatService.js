@@ -100,6 +100,18 @@ export const chatService = {
   },
 
   /**
+   * Check chat access & connection authorization for a target user.
+   */
+  async checkChatAccess(targetUserId) {
+    const response = await fetch(`${API_BASE_URL}/chat/access/${targetUserId}`, {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    return response.json();
+  },
+
+  /**
    * Get all chat states (favourites & closed) for current user.
    */
   async getChatStates() {
