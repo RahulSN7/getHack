@@ -259,7 +259,7 @@ function SignupPage() {
                   isCardDark ? "text-neutral-400" : "text-neutral-500"
                 }`}
               >
-                Host & manage events
+                Host & manage hackathons
               </span>
             </button>
           </div>

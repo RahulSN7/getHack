@@ -6,6 +6,8 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 import { useSaved } from "../../../context/SavedContext";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import HackathonSearch from "./HackathonSearch";
@@ -138,6 +140,21 @@ function applySort(hackathons, sortId) {
 }
 
 function Hackathons() {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isParticipant = isAuthenticated && user?.role?.toLowerCase() === "participant";
+  const showCreateHackathonButton = !isParticipant;
+
+  const handleCreateHackathonClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login?redirect=/organizer/create", { state: { from: location } });
+    } else {
+      navigate("/organizer/create");
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
@@ -205,18 +222,33 @@ function Hackathons() {
       {/* ── Page header ── */}
       <div className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto max-w-7xl px-5 pb-6 pt-5 sm:px-6 lg:px-8">
-          {/* Breadcrumb / label */}
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-indigo-500">
-            Discover
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              {/* Breadcrumb / label */}
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-indigo-500">
+                Discover
+              </p>
 
-          {/* Heading */}
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
-            Hackathons
-          </h1>
-          <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
-            Discover hackathons worth building for — aggregated across MLH, Devpost, Devfolio, Unstop, DoraHacks, Kaggle, & Hack2Skill.
-          </p>
+              {/* Heading */}
+              <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl dark:text-white">
+                Hackathons
+              </h1>
+              <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
+                Discover hackathons worth building for — aggregated across MLH, Devpost, Devfolio, Unstop, DoraHacks, Kaggle, & Hack2Skill.
+              </p>
+            </div>
+
+            {/* Create Hackathon Button for non-participants (logged out or organizers) */}
+            {showCreateHackathonButton && (
+              <button
+                type="button"
+                onClick={handleCreateHackathonClick}
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#6366f1] px-4 py-2 text-sm font-semibold text-white shadow-xs transition-all duration-150 cursor-pointer hover:bg-[#5254e0] active:bg-[#4345cc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1] focus-visible:ring-offset-2 dark:bg-[#6366f1] dark:hover:bg-[#5254e0]"
+              >
+                <span>+ Create Hackathon</span>
+              </button>
+            )}
+          </div>
 
           {/* Search bar */}
           <div className="mt-6 max-w-2xl">
@@ -279,7 +311,7 @@ function Hackathons() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                   </svg>
                   <span>Saved</span>
                   <span

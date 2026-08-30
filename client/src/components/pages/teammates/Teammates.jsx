@@ -1087,21 +1087,28 @@ function Teammates() {
               to="/create-team"
               className="
                 inline-flex
+                shrink-0
                 items-center
+                justify-center
                 gap-1.5
                 rounded-lg
-                bg-indigo-600
+                bg-[#6366f1]
                 px-4
-                py-2.5
-                text-xs
+                py-2
+                text-sm
                 font-semibold
                 text-white
-                shadow-2xs
-                transition-colors
+                shadow-xs
+                transition-all
                 duration-150
-                hover:bg-indigo-500
-                dark:bg-indigo-500
-                dark:hover:bg-indigo-400
+                hover:bg-[#5254e0]
+                active:bg-[#4345cc]
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-[#6366f1]
+                focus-visible:ring-offset-2
+                dark:bg-[#6366f1]
+                dark:hover:bg-[#5254e0]
               "
             >
               <span>+ Create Team</span>

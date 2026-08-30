@@ -84,10 +84,10 @@ function getCleanThemes(hackathon) {
   const raw = Array.isArray(hackathon.themes) && hackathon.themes.length > 0
     ? hackathon.themes
     : Array.isArray(hackathon.tags) && hackathon.tags.length > 0
-    ? hackathon.tags
-    : Array.isArray(hackathon.skills) && hackathon.skills.length > 0
-    ? hackathon.skills
-    : [];
+      ? hackathon.tags
+      : Array.isArray(hackathon.skills) && hackathon.skills.length > 0
+        ? hackathon.skills
+        : [];
 
   if (!Array.isArray(raw) || raw.length === 0) return [];
 
@@ -259,13 +259,6 @@ function HackathonCard({ hackathon }) {
               </span>
             )}
 
-            {/* Mode Badge */}
-            {mode && (
-              <span className="inline-flex shrink-0 items-center rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                {mode}
-              </span>
-            )}
-
             {/* Save / Bookmark Button */}
             <button
               type="button"
@@ -284,10 +277,9 @@ function HackathonCard({ hackathon }) {
                 focus-visible:outline
                 focus-visible:outline-2
                 focus-visible:outline-indigo-500
-                ${
-                  saved
-                    ? `${accentBgSoft} ${accentText} border-transparent`
-                    : "border-neutral-200 bg-neutral-50/50 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-500 dark:hover:border-neutral-700 dark:hover:text-neutral-300"
+                ${saved
+                  ? `${accentBgSoft} ${accentText} border-transparent`
+                  : "border-neutral-200 bg-neutral-50/50 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-500 dark:hover:border-neutral-700 dark:hover:text-neutral-300"
                 }
               `}
             >
@@ -300,7 +292,7 @@ function HackathonCard({ hackathon }) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
               </svg>
             </button>
           </div>
@@ -333,16 +325,8 @@ function HackathonCard({ hackathon }) {
           </div>
         )}
 
-        {/* ── 4. Stats Row: Team Size & Prize ── */}
-        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              TEAM SIZE
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-              {teamSizeStr}
-            </p>
-          </div>
+        {/* ── 4. Stats: Prize ── */}
+        <div className="mt-4 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
               PRIZE
@@ -361,38 +345,37 @@ function HackathonCard({ hackathon }) {
           registrationOpen={registrationOpen}
         />
 
-        <Link
-          to={id ? `/hackathons/${id}` : "#"}
+        <button
+          type="button"
           onClick={handleViewDetails}
-          state={{ from: currentLocation }}
+          aria-label={`View details for ${name}`}
           className="
             inline-flex
             items-center
-            gap-1.5
+            justify-center
+            rounded-lg
+            bg-[#6366f1]
+            px-3.5
+            py-1.5
             text-xs
             font-semibold
-            text-indigo-600
-            transition-colors
+            text-white
+            shadow-xs
+            transition-all
             duration-150
-            hover:text-indigo-700
-            dark:text-indigo-400
-            dark:hover:text-indigo-300
+            cursor-pointer
+            hover:bg-[#5254e0]
+            active:bg-[#4345cc]
+            focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-[#6366f1]
+            focus-visible:ring-offset-2
+            dark:bg-[#6366f1]
+            dark:hover:bg-[#5254e0]
           "
         >
-          <span>View Details</span>
-          <svg
-            className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-1"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
-        </Link>
+          View Details
+        </button>
       </div>
     </article>
   );
