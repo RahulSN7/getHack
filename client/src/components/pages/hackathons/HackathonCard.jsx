@@ -12,6 +12,7 @@ import {
   formatPrize,
   formatOrganizer,
   getHackathonRegistrationStatus,
+  formatDate,
 } from "../../../utils/hackathonFormatters";
 
 // Platform normalization helper
@@ -93,6 +94,14 @@ function HackathonCard({ hackathon }) {
   const registrationOpen = hackathon.registrationOpen ?? (registrationDeadline ? new Date(registrationDeadline) > new Date() : true);
 
   const prize = formatPrize(hackathon.prizePool, hackathon.prizes, hackathon.prize);
+
+  const rawStartDate =
+    hackathon.startDate ||
+    hackathon.event?.startDate ||
+    hackathon.eventStartDate ||
+    hackathon.hackathonDate ||
+    hackathon.dates?.start;
+  const startDateFormatted = formatDate(rawStartDate);
 
   const source = hackathon.source || {};
   const rawPlatform = hackathon.hostedOn || (typeof source === "object" ? source.platform : hackathon.platform);
@@ -272,15 +281,27 @@ function HackathonCard({ hackathon }) {
 
 
 
-        {/* ── 4. Stats: Prize ── */}
+        {/* ── 4. Stats: Start Date & Prize ── */}
         <div className="mt-4 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              PRIZE
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-              {prize}
-            </p>
+          <div className={startDateFormatted ? "grid grid-cols-2 gap-3" : "block"}>
+            {startDateFormatted && (
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                  EVENT DATE
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                  {startDateFormatted}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                PRIZE
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                {prize}
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -234,7 +234,7 @@ function Hackathons() {
                 Hackathons
               </h1>
               <p className="mt-2 text-base text-neutral-500 dark:text-neutral-400">
-                Discover hackathons worth building for — aggregated across MLH, Devpost, Devfolio, Unstop, DoraHacks, Kaggle, & Hack2Skill.
+                Discover hackathons worth building for — aggregated across MLH, Devpost, Devfolio, Unstop, DoraHacks, Kaggle, Hack2Skill & Others.
               </p>
             </div>
 
@@ -245,7 +245,7 @@ function Hackathons() {
                 onClick={handleCreateHackathonClick}
                 className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#6366f1] px-4 py-2 text-sm font-semibold text-white shadow-xs transition-all duration-150 cursor-pointer hover:bg-[#5254e0] active:bg-[#4345cc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1] focus-visible:ring-offset-2 dark:bg-[#6366f1] dark:hover:bg-[#5254e0]"
               >
-                <span>+ Create Hackathon</span>
+                <span>+ Add Hackathon</span>
               </button>
             )}
           </div>

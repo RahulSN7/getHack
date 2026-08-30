@@ -73,36 +73,79 @@ function FindTeammates() {
     >
       <div className="mx-auto max-w-7xl">
         {/* Section header */}
-        <div className="max-w-2xl">
-          <p className="text-sm font-semibold tracking-wide text-indigo-500">
-            Team up
-          </p>
-          <h2
-            className="
-              mt-2
-              text-3xl
-              font-bold
-              tracking-tight
-              text-neutral-900
-              sm:text-4xl
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold tracking-wide text-indigo-500">
+              Team up
+            </p>
+            <h2
+              className="
+                mt-2
+                text-3xl
+                font-bold
+                tracking-tight
+                text-neutral-900
+                sm:text-4xl
 
-              dark:text-white
-            "
-          >
-            Find the right teammates
-          </h2>
-          <p
-            className="
-              mt-3
-              text-base
-              leading-relaxed
-              text-neutral-500
+                dark:text-white
+              "
+            >
+              Find the right teammates
+            </h2>
+            <p
+              className="
+                mt-3
+                text-base
+                leading-relaxed
+                text-neutral-500
 
-              dark:text-neutral-400
-            "
-          >
-            Search by skills, tech stack, and interests. Build a team where everyone brings something different to the table.
-          </p>
+                dark:text-neutral-400
+              "
+            >
+              Search by skills, tech stack, and interests. Build a team where everyone brings something different to the table.
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            <Link
+              to="/teammates"
+              className="
+                inline-flex
+                h-10
+                items-center
+                gap-2
+                rounded-lg
+                border
+                border-neutral-300
+                px-4
+                text-sm
+                font-medium
+                text-neutral-700
+                transition-colors
+                duration-150
+                hover:border-neutral-400
+                hover:text-neutral-950
+                dark:border-neutral-700
+                dark:text-neutral-300
+                dark:hover:border-neutral-500
+                dark:hover:text-white
+              "
+            >
+              <span>Browse all developers</span>
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
 
         {/* Dynamic Content Grid / Loading / Error / Empty State */}
@@ -172,54 +215,6 @@ function FindTeammates() {
             ))}
           </div>
         )}
-
-        {/* CTA */}
-        <div className="mt-10">
-          <Link
-            to="/teammates"
-            className="
-              inline-flex
-              h-10
-              items-center
-              gap-2
-
-              rounded-lg
-
-              border
-              border-neutral-300
-              px-4
-
-              text-sm
-              font-medium
-              text-neutral-700
-
-              transition-colors
-              duration-150
-
-              hover:border-neutral-400
-              hover:text-neutral-950
-
-              dark:border-neutral-700
-              dark:text-neutral-300
-              dark:hover:border-neutral-500
-              dark:hover:text-white
-            "
-          >
-            <span>Browse all developers</span>
-            <svg
-              className="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14" />
-              <path d="m12 5 7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
       </div>
     </section>
   );
