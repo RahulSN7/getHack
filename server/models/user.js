@@ -101,7 +101,7 @@ userSchema.methods.toSafeUser = function () {
       education: typeof p.education === "object" && p.education !== null ? p.education : {},
       college: typeof p.college === "string" ? p.college : p.education?.college || "",
       degree: typeof p.degree === "string" ? p.degree : p.education?.degree || "",
-      experienceLevel: typeof p.experienceLevel === "string" ? p.experienceLevel : "Intermediate",
+      experienceLevel: typeof p.experienceLevel === "string" ? p.experienceLevel : "",
       experienceDetails: typeof p.experienceDetails === "string" ? p.experienceDetails : "",
       interests: Array.isArray(p.interests) ? p.interests : [],
       github: typeof p.github === "string" ? p.github : "",

@@ -8,8 +8,28 @@ import { authService } from "../services/authService";
 import { AuthContext } from "./AuthContext";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("gethack_user");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
+
+  const saveUser = (userData) => {
+    setUser(userData);
+    try {
+      if (userData) {
+        localStorage.setItem("gethack_user", JSON.stringify(userData));
+      } else {
+        localStorage.removeItem("gethack_user");
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  };
 
   // Restore authenticated session from server on initial load
   useEffect(() => {
@@ -17,12 +37,16 @@ export function AuthProvider({ children }) {
     async function initAuth() {
       try {
         const data = await authService.getCurrentUser();
-        if (isMounted && data?.user) {
-          setUser(data.user);
+        if (isMounted) {
+          if (data?.user) {
+            saveUser(data.user);
+          } else {
+            saveUser(null);
+          }
         }
       } catch {
         if (isMounted) {
-          setUser(null);
+          saveUser(null);
         }
       } finally {
         if (isMounted) {
@@ -47,7 +71,7 @@ export function AuthProvider({ children }) {
   const verifyOtp = async ({ email, otp, name, role }) => {
     const data = await authService.verifyOtp({ email, otp, name, role });
     if (data?.user) {
-      setUser(data.user);
+      saveUser(data.user);
       return data.user;
     }
     throw new Error("OTP Verification failed");
@@ -67,7 +91,7 @@ export function AuthProvider({ children }) {
   const googleAuth = async ({ credential, code, role }) => {
     const data = await authService.googleAuth({ credential, code, role });
     if (data?.user) {
-      setUser(data.user);
+      saveUser(data.user);
       return data.user;
     }
     throw new Error("Google authentication failed");
@@ -80,14 +104,20 @@ export function AuthProvider({ children }) {
     } catch {
       // Ignore errors during logout cleanup
     } finally {
-      setUser(null);
+      saveUser(null);
     }
   };
 
   // Update user state locally
   const updateUser = (updatedUser) => {
     if (updatedUser) {
-      setUser((prev) => ({ ...prev, ...updatedUser }));
+      setUser((prev) => {
+        const next = { ...prev, ...updatedUser };
+        try {
+          localStorage.setItem("gethack_user", JSON.stringify(next));
+        } catch {}
+        return next;
+      });
     }
   };
 

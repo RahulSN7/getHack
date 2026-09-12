@@ -300,6 +300,11 @@ const updateOwnParticipantProfile = async (req, res) => {
         "College / University or Degree is required.";
     }
 
+    if (educationYear && !/^\d+$/.test(educationYear)) {
+      validationErrors.graduationYear =
+        "Invalid graduation year. Graduation year must contain numbers only.";
+    }
+
     cleanEducation = {
       college: educationCollege,
       degree: educationDegree,

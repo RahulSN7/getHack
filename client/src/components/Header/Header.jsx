@@ -182,7 +182,7 @@ function getNotificationIconConfig(type) {
 
 function Header() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   // --------------------------------------------------
   // DARK / LIGHT MODE (from global context)
   // --------------------------------------------------
@@ -229,6 +229,9 @@ function Header() {
   const [confirmClear, setConfirmClear] = useState(false);
   const notificationRef = useRef(null);
 
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
   // Fetch notifications list when dropdown opens
   useEffect(() => {
     if (notificationOpen) {
@@ -254,6 +257,33 @@ function Header() {
       document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [notificationOpen]);
+
+  // Close profile dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!profileOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [profileOpen]);
 
   // 11. READ NOTIFICATION & NAVIGATE (Centralized entity-based navigation)
   const handleNotificationClick = (n) => {
@@ -972,33 +1002,40 @@ function Header() {
                 LOGIN / PROFILE BUTTON
                 ================================================== */}
 
-            {isAuthenticated ? (
-              <div className="hidden sm:flex items-center gap-2 ml-1.5">
-                <Link
-                  to={`/profile/${user?.id || "m1"}`}
+            {isAuthenticated || (authLoading && user) ? (
+              <div className="relative ml-1.5" ref={profileRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen((prev) => !prev);
+                    setNotificationOpen(false);
+                  }}
+                  aria-label="User profile menu"
+                  aria-expanded={profileOpen}
                   className="
                     flex
                     h-8
                     items-center
-                    gap-2
-                    rounded-lg
+                    gap-1.5
+                    rounded-full
                     border
                     border-neutral-200
                     bg-white
-                    px-2.5
-                    py-1
+                    p-0.5
                     text-xs
                     font-semibold
                     text-neutral-900
                     transition-colors
                     hover:bg-neutral-50
+                    hover:border-neutral-300
                     dark:border-neutral-800
                     dark:bg-neutral-900
                     dark:text-white
                     dark:hover:bg-neutral-800
+                    cursor-pointer
                   "
                 >
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
                     {user?.profile?.avatar || user?.avatar ? (
                       <img
                         src={user.profile?.avatar || user.avatar}
@@ -1011,37 +1048,111 @@ function Header() {
                       "U"
                     )}
                   </span>
-                  <span className="max-w-[100px] truncate">{user?.name || "Profile"}</span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={logout}
-                  title="Log out"
+                </button>
+
+                {profileOpen && (
+                  <div
+                    className="
+                      absolute
+                      right-0
+                      top-[calc(100%+8px)]
+                      w-44
+                      overflow-hidden
+                      rounded-xl
+                      border
+                      border-neutral-200
+                      bg-white
+                      py-1
+                      shadow-lg
+                      shadow-neutral-950/10
+                      dark:border-neutral-800
+                      dark:bg-neutral-900
+                      dark:shadow-neutral-950/40
+                      z-50
+                    "
+                  >
+                    <Link
+                      to={`/profile/${user?.id || user?._id || "me"}`}
+                      onClick={() => setProfileOpen(false)}
+                      className="
+                        flex
+                        w-full
+                        items-center
+                        gap-2.5
+                        px-3.5
+                        py-2
+                        text-xs
+                        font-medium
+                        text-neutral-700
+                        transition-colors
+                        hover:bg-neutral-100
+                        dark:text-neutral-300
+                        dark:hover:bg-neutral-800
+                      "
+                    >
+                      <svg className="h-4 w-4 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      <span>Profile</span>
+                    </Link>
+
+                    <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        logout();
+                      }}
+                      className="
+                        flex
+                        w-full
+                        items-center
+                        gap-2.5
+                        px-3.5
+                        py-2
+                        text-xs
+                        font-medium
+                        text-rose-600
+                        transition-colors
+                        hover:bg-rose-50
+                        dark:text-rose-400
+                        dark:hover:bg-rose-950/40
+                        text-left
+                        cursor-pointer
+                      "
+                    >
+                      <svg className="h-4 w-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : authLoading ? (
+              <div className="relative ml-1.5">
+                <div
                   className="
-                    inline-flex
+                    flex
                     h-8
-                    w-8
                     items-center
-                    justify-center
-                    rounded-lg
+                    rounded-full
                     border
-                    border-neutral-200
-                    text-neutral-500
-                    transition-colors
-                    hover:bg-neutral-100
-                    hover:text-neutral-900
+                    border-neutral-200/80
+                    bg-white
+                    p-0.5
                     dark:border-neutral-800
-                    dark:text-neutral-400
-                    dark:hover:bg-neutral-800
-                    dark:hover:text-white
+                    dark:bg-neutral-900
                   "
                 >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                </button>
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600/80 text-[10px] font-bold text-white overflow-hidden shrink-0">
+                    U
+                  </span>
+                </div>
               </div>
             ) : (
               <Link
@@ -1256,35 +1367,79 @@ function Header() {
                 Messages
               </Link>
 
-              <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="
-                  mt-2
-                  block
-                  rounded-lg
-
-                  bg-neutral-950
-
-                  px-3
-                  py-2.5
-
-                  text-center
-                  text-sm
-                  font-medium
-                  text-white
-
-                  transition-colors
-
-                  hover:bg-neutral-800
-
-                  dark:bg-white
-                  dark:text-neutral-950
-                  dark:hover:bg-neutral-200
-                "
-              >
-                Log in
-              </Link>
+              {isAuthenticated || (authLoading && user) ? (
+                <>
+                  <Link
+                    to={`/profile/${user?.id || user?._id || "me"}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="
+                      block
+                      rounded-lg
+                      px-3
+                      py-2.5
+                      text-sm
+                      font-medium
+                      text-neutral-700
+                      transition-colors
+                      hover:bg-neutral-100
+                      dark:text-neutral-300
+                      dark:hover:bg-white/5
+                    "
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="
+                      w-full
+                      text-left
+                      mt-1
+                      block
+                      rounded-lg
+                      px-3
+                      py-2.5
+                      text-sm
+                      font-medium
+                      text-rose-600
+                      transition-colors
+                      hover:bg-rose-50
+                      dark:text-rose-400
+                      dark:hover:bg-white/5
+                      cursor-pointer
+                    "
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="
+                    mt-2
+                    block
+                    rounded-lg
+                    bg-neutral-950
+                    px-3
+                    py-2.5
+                    text-center
+                    text-sm
+                    font-medium
+                    text-white
+                    transition-colors
+                    hover:bg-neutral-800
+                    dark:bg-white
+                    dark:text-neutral-950
+                    dark:hover:bg-neutral-200
+                  "
+                >
+                  Log in
+                </Link>
+              )}
             </div>
           </nav>
         </div>

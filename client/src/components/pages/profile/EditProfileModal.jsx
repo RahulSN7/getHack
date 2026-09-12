@@ -102,7 +102,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   const [graduationYear, setGraduationYear] = useState(profile.education?.graduationYear || "");
 
   // Experience state
-  const [experienceLevel, setExperienceLevel] = useState(profile.experienceLevel || "Intermediate");
+  const [experienceLevel, setExperienceLevel] = useState(profile.experienceLevel || "");
   const [experienceDetails, setExperienceDetails] = useState(profile.experienceDetails || "");
 
   // Interests state
@@ -139,7 +139,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       setDegree(prof.degree || prof.education?.degree || "");
       setFieldOfStudy(prof.education?.fieldOfStudy || "");
       setGraduationYear(prof.education?.graduationYear || "");
-      setExperienceLevel(prof.experienceLevel || "Intermediate");
+      setExperienceLevel(prof.experienceLevel || "");
       setExperienceDetails(prof.experienceDetails || "");
       setInterests(normalizeTagArray(prof.interests));
       setInterestInput("");
@@ -328,6 +328,17 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
     if (dob > new Date()) {
       errors.dateOfBirth =
         "Date of birth cannot be in the future.";
+    }
+  }
+
+  // -----------------------------
+  // GRADUATION YEAR VALIDATION
+  // -----------------------------
+
+  if (graduationYear && String(graduationYear).trim()) {
+    const cleanYear = String(graduationYear).trim();
+    if (!/^\d+$/.test(cleanYear)) {
+      errors.graduationYear = "Invalid graduation year";
     }
   }
 
@@ -921,10 +932,21 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 <input
                   type="text"
                   value={graduationYear}
-                  onChange={(e) => setGraduationYear(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/\D/g, "");
+                    setGraduationYear(filtered);
+                    if (fieldErrors.graduationYear) {
+                      setFieldErrors((prev) => ({ ...prev, graduationYear: null }));
+                    }
+                  }}
+                  className={`mt-1 w-full rounded-lg border ${
+                    fieldErrors.graduationYear ? "border-rose-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. 2026"
                 />
+                {fieldErrors.graduationYear && (
+                  <p className="mt-1 text-xs text-rose-500 font-medium">{fieldErrors.graduationYear}</p>
+                )}
               </div>
             </div>
           </div>
@@ -945,6 +967,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                   onChange={(e) => setExperienceLevel(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                 >
+                  <option value="">Select experience level</option>
                   <option value="Beginner">Beginner (0-1 hackathons / new to coding)</option>
                   <option value="Intermediate">Intermediate (Built projects / 2+ hackathons)</option>
                   <option value="Advanced">Advanced (Experienced dev / hackathon winner)</option>

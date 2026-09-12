@@ -223,13 +223,19 @@ function OrganizerHeader() {
                   dark:hover:bg-neutral-800
                 "
               >
-                <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "O"}
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
+                  {user?.profile?.avatar || user?.avatar ? (
+                    <img
+                      src={user.profile?.avatar || user.avatar}
+                      alt={user?.name || "Organizer"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : user?.name ? (
+                    user.name.charAt(0).toUpperCase()
+                  ) : (
+                    "O"
+                  )}
                 </span>
-                <span className="max-w-[110px] truncate">{user?.name || "Organizer"}</span>
-                <svg className="h-3.5 w-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
               </button>
 
               {userDropdownOpen && (

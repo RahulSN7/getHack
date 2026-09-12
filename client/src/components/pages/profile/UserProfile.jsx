@@ -367,7 +367,7 @@ export default function UserProfile() {
   const education = profile.education || {};
   const college = profile.college || education.college || "";
   const degree = profile.degree || education.degree || "";
-  const experienceLevel = profile.experienceLevel || "Intermediate";
+  const experienceLevel = profile.experienceLevel || "";
   const experienceDetails = profile.experienceDetails || "";
   const interests = Array.isArray(profile.interests) ? profile.interests : [];
   const github = profile.github || "";
@@ -544,7 +544,7 @@ export default function UserProfile() {
               </h2>
               <div>
                 <p className="text-sm font-bold text-neutral-900 dark:text-white">
-                  {experienceLevel}
+                  {experienceLevel || "Not specified"}
                 </p>
                 {experienceDetails ? (
                   <p className="mt-1 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
