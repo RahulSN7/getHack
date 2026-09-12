@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// client/src/services/aiService.js — Frontend Service for GetHack AI
+// client/src/services/aiService.js — Frontend Service for getHack AI
 // Communicates with Express backend /api/ai endpoints.
 // ---------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ async function handleResponse(response) {
 
 export const aiService = {
   /**
-   * Send a user goal / prompt to GetHack AI
+   * Send a user goal / prompt to getHack AI
    * @param {Object} payload { message, conversationId, context }
    */
   async sendMessage({ message, conversationId, context }) {

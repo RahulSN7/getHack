@@ -245,7 +245,7 @@ async function runTests() {
 
   const resExtReg = await callLLM(historyExtReg, userContext);
   assert.ok(!resExtReg.toolCalls, "Must NOT issue external registration tool calls.");
-  assert.ok(resExtReg.text.includes("I can't complete external registration directly from GetHack"), "Must state external registration policy.");
+  assert.ok(resExtReg.text.includes("I can't complete external registration directly from getHack"), "Must state external registration policy.");
   assert.ok(resExtReg.text.includes("https://gethack.test/volthacks"), "Must provide official registration link.");
   console.log("  ✅ External registration safety handling passed.");
 

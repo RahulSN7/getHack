@@ -2,7 +2,7 @@
 
 import { Outlet } from "react-router-dom";
 import Header from "./components/Header/Header";
-import GetHackAIWidget from "./components/AI/GetHackAIWidget";
+import GetHackAIWidget from "./components/AI/getHackAIWidget";
 
 // ---------------------------------------------------------------------------
 // App — Root Layout Component

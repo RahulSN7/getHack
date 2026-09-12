@@ -116,7 +116,7 @@ async function runTests() {
     { role: "user", content: "what skill i miss" },
   ];
   const rGap = await callLLM(gapMessages, mockContext);
-  check("Agent: 'what skill i miss' returns skill gap analysis", rGap.text.includes("Based on your GetHack profile") && (rGap.text.includes("Python") || rGap.text.includes("AI")), `text=${rGap.text}`);
+  check("Agent: 'what skill i miss' returns skill gap analysis", rGap.text.includes("Based on your getHack profile") && (rGap.text.includes("Python") || rGap.text.includes("AI")), `text=${rGap.text}`);
 
   // 2e. Deadline with Typos
   const dlMessages = [
@@ -163,7 +163,7 @@ async function runTests() {
   // Turn 4: what skill i miss
   multiTurnHistory.push({ role: "user", content: "what skill i miss" });
   const step4 = await callLLM(multiTurnHistory, mockContext);
-  check("Multi-turn Step 4: 'what skill i miss' returns VoltHacks skill gap", step4.text.includes("Based on your GetHack profile"), `text=${step4.text}`);
+  check("Multi-turn Step 4: 'what skill i miss' returns VoltHacks skill gap", step4.text.includes("Based on your getHack profile"), `text=${step4.text}`);
   multiTurnHistory.push({ role: "assistant", content: step4.text, recommendations: step4.recommendations });
 
   // Turn 5: which temmate bst

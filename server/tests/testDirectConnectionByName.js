@@ -156,7 +156,7 @@ async function runDirectConnectionTests() {
     [{ role: "user", content: "Connect me with XYZ" }],
     { userProfile, teammatesData: { teammates: sampleTeammates } }
   );
-  assert(unknownResp.text.includes("couldn't find a GetHack user named XYZ"), "Should state 'I couldn't find a GetHack user named XYZ'");
+  assert(unknownResp.text.includes("couldn't find a getHack user named XYZ"), "Should state 'I couldn't find a getHack user named XYZ'");
   assert(!unknownResp.toolCalls, "Should not issue tool call for unknown user");
   console.log("  ✅ Unknown user handling passed.");
 

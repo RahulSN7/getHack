@@ -74,7 +74,7 @@ export default function GetHackAIWidget() {
         {
           id: "welcome",
           role: "assistant",
-          content: `Hi ${user?.name || "there"}! I'm **GetHack AI** — Your Hackathon Copilot. 🚀\n\nHow can I help you today? Discover hackathons, find teammates, or analyze project compatibility!`,
+          content: `Hi ${user?.name || "there"}! I'm **getHack AI** — Your Hackathon Copilot. 🚀\n\nHow can I help you today? Discover hackathons, find teammates, or analyze project compatibility!`,
           timestamp: new Date(),
         },
       ]);
@@ -179,13 +179,13 @@ export default function GetHackAIWidget() {
           className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-slate-900 dark:bg-neutral-900 text-white shadow-xl hover:shadow-2xl hover:scale-105 border border-indigo-500/35 transition-all duration-300 group cursor-pointer"
         >
           <div className="relative flex items-center justify-center">
-            <img src="/gethack-icon.png" alt="GetHack AI" className="w-5 h-5 object-contain" />
+            <img src="/getHack-icon.png" alt="getHack AI" className="w-5 h-5 object-contain" />
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
           </div>
-          <span className="font-semibold text-sm tracking-wide">GetHack AI</span>
+          <span className="font-semibold text-sm tracking-wide">getHack AI</span>
         </button>
       )}
 
@@ -196,11 +196,11 @@ export default function GetHackAIWidget() {
           <div className="flex items-center justify-between px-5 py-4 bg-slate-900 text-white border-b border-neutral-800">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-xl bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center overflow-hidden shadow-md">
-                <img src="/gethack-icon.png" alt="getHack AI" className="h-6 w-6 object-contain" />
+                <img src="/getHack-icon.png" alt="getHack AI" className="h-6 w-6 object-contain" />
               </div>
               <div>
                 <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">
-                  GetHack AI
+                  getHack AI
                   <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                     Copilot
                   </span>
@@ -276,7 +276,7 @@ export default function GetHackAIWidget() {
                         <div className="space-y-2.5 w-full">
                           {msg.recommendations.teammates.map((t, idx) => {
                             const candidateId = t.userId || t.id || t._id;
-                            const name = t.name || "GetHack Member";
+                            const name = t.name || "getHack Member";
                             const role = t.role || t.profile?.role || "Developer";
                             const skills = t.skills || t.profile?.skills || [];
                             const availability = t.availability || t.profile?.availability || "Available";
@@ -330,7 +330,7 @@ export default function GetHackAIWidget() {
 
                                 <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-neutral-200/40 dark:border-neutral-800 gap-2">
                                   <span className="text-[10px] text-neutral-400 truncate max-w-[140px]">
-                                    {t.location || t.profile?.location ? `📍 ${t.location || t.profile?.location}` : "GetHack Member"}
+                                    {t.location || t.profile?.location ? `📍 ${t.location || t.profile?.location}` : "getHack Member"}
                                   </span>
                                   <div className="flex items-center gap-2 shrink-0">
                                     {candidateId && (
@@ -464,7 +464,7 @@ export default function GetHackAIWidget() {
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Ask GetHack AI..."
+                placeholder="Ask getHack AI..."
                 disabled={loading}
                 className="flex-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               />

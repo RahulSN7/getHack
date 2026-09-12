@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 
 const createTeamDefinition = {
   name: "create_team",
-  description: "Create a new team for a hackathon on GetHack.",
+  description: "Create a new team for a hackathon on getHack.",
   parameters: {
     type: "object",
     properties: {

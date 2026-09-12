@@ -11,7 +11,7 @@ const User = require("../models/user");
  */
 const getMyProfileDefinition = {
   name: "get_my_profile",
-  description: "Retrieve the authenticated user's GetHack profile details including role, skills, interests, experience level, location, and bio.",
+  description: "Retrieve the authenticated user's getHack profile details including role, skills, interests, experience level, location, and bio.",
   parameters: {
     type: "object",
     properties: {},

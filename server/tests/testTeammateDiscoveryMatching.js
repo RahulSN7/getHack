@@ -74,7 +74,7 @@ async function runTests() {
       skills: ["Python", "Machine Learning", "TensorFlow", "AI"],
       themes: ["Artificial Intelligence", "Machine Learning"],
       registrationDeadline: new Date(Date.now() + 7 * 86400000),
-      organizerName: "GetHack Team",
+      organizerName: "getHack Team",
       created: new Date(),
     });
   }

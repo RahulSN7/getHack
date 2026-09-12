@@ -11,7 +11,7 @@ const Hackathon = require("../models/hackathon");
  */
 const searchHackathonsDefinition = {
   name: "search_hackathons",
-  description: "Search for real hackathons in the GetHack database based on skills, mode, status, location, or search keywords.",
+  description: "Search for real hackathons in the getHack database based on skills, mode, status, location, or search keywords.",
   parameters: {
     type: "object",
     properties: {

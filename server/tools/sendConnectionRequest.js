@@ -16,7 +16,7 @@ const { emitConnectionEventToUsers } = require("../services/socketService");
  */
 const sendConnectionRequestDefinition = {
   name: "send_connection_request",
-  description: "Send a connection request to a GetHack user by targetUserId.",
+  description: "Send a connection request to a getHack user by targetUserId.",
   parameters: {
     type: "object",
     properties: {
@@ -104,7 +104,7 @@ async function sendConnectionRequest(args = {}, context = {}) {
       return {
         success: false,
         reason: "user_not_found",
-        message: "I couldn't find that GetHack user.",
+        message: "I couldn't find that getHack user.",
       };
     }
 

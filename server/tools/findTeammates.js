@@ -77,7 +77,7 @@ function matchesTerm(sourceArrayOrString, targetTerm) {
  */
 const findTeammatesDefinition = {
   name: "find_teammates",
-  description: "Search and rank GetHack participant candidate teammates by skills, role, hackathon requirements, location, and availability.",
+  description: "Search and rank getHack participant candidate teammates by skills, role, hackathon requirements, location, and availability.",
   parameters: {
     type: "object",
     properties: {

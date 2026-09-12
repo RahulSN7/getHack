@@ -57,7 +57,7 @@ const cards = [
     ),
   },
   {
-    title: "GetHack AI",
+    title: "getHack AI",
     description:
       "Use AI assistance to discover suitable hackathons and find potential teammates.",
     icon: (

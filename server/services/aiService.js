@@ -1,6 +1,6 @@
 const { getToolDefinitions } = require("../tools");
 
-const SYSTEM_PROMPT = `You are GetHack AI — Your Hackathon Copilot inside the getHack application.
+const SYSTEM_PROMPT = `You are getHack AI — Your Hackathon Copilot inside the getHack application.
 Your purpose is to help users:
 1. Discover suitable hackathons based on their skills, interests, and availability.
 2. Understand hackathon details, deadlines, and rules.
@@ -1595,7 +1595,7 @@ function generateFallbackResponse(messages, context) {
       }
       if (sendConnectionResult.reason === "user_not_found") {
         return {
-          text: "I couldn't find that GetHack user.",
+          text: "I couldn't find that getHack user.",
           pendingAction: null,
         };
       }
@@ -1815,7 +1815,7 @@ function generateFallbackResponse(messages, context) {
     const regUrl = refHack?.registrationUrl || refHack?.url || "https://gethack.com/hackathons";
     const hackTitle = refHack ? (refHack.title || refHack.name) : "the hackathon";
     return {
-      text: `I can't complete external registration directly from GetHack. You can continue through the official registration page for **${hackTitle}**: ${regUrl}`,
+      text: `I can't complete external registration directly from getHack. You can continue through the official registration page for **${hackTitle}**: ${regUrl}`,
     };
   }
 
@@ -2033,7 +2033,7 @@ function generateFallbackResponse(messages, context) {
       // A. Target user not found
       if (matchingCandidates.length === 0) {
         return {
-          text: `I couldn't find a GetHack user named ${extractedDirectName}.`,
+          text: `I couldn't find a getHack user named ${extractedDirectName}.`,
         };
       }
 
@@ -3157,7 +3157,7 @@ function generateFallbackResponse(messages, context) {
       let text = `You appear to meet the listed eligibility requirements for **${title}**.\n\nYour profile matches:\n✓ Mode: ${mode}\n✓ Eligibility criteria: ${eligibilityRule}\n✓ Technical background\n\n`;
 
       if (!hasSkills || !hasLocation) {
-        text += `*Note: Please ensure your GetHack profile location and skills are updated for exact verification.* `;
+        text += `*Note: Please ensure your getHack profile location and skills are updated for exact verification.* `;
       }
 
       text += `However, verify final eligibility conditions on the official hackathon registration page.`;
@@ -3220,7 +3220,7 @@ function generateFallbackResponse(messages, context) {
       const matching = reqSkills.filter((rs) => userSkills.some((us) => us.toLowerCase().includes(rs.toLowerCase()) || rs.toLowerCase().includes(us.toLowerCase())));
       const gaps = reqSkills.filter((rs) => !matching.some((m) => m.toLowerCase() === rs.toLowerCase()));
 
-      let text = `Based on your GetHack profile:\n\nYou already have:\n${matching.length > 0 ? matching.map((s) => `• ${s}`).join("\n") : "• None of the required skills listed yet"}\n\nYou may need:\n${gaps.length > 0 ? gaps.map((s) => `• ${s}`).join("\n") : "• None! Your profile covers all listed requirements."}`;
+      let text = `Based on your getHack profile:\n\nYou already have:\n${matching.length > 0 ? matching.map((s) => `• ${s}`).join("\n") : "• None of the required skills listed yet"}\n\nYou may need:\n${gaps.length > 0 ? gaps.map((s) => `• ${s}`).join("\n") : "• None! Your profile covers all listed requirements."}`;
 
       return {
         text,
@@ -3372,12 +3372,12 @@ function generateFallbackResponse(messages, context) {
 
   if (/\b(hi|hello|hey)\b/i.test(lowerMsg)) {
     return {
-      text: `Hello! I'm **GetHack AI**, your Hackathon Copilot. 🚀\n\nHow can I help you today? You can ask me to find hackathons, recommend events for your profile, or discover complementary teammates!`,
+      text: `Hello! I'm **getHack AI**, your Hackathon Copilot. 🚀\n\nHow can I help you today? You can ask me to find hackathons, recommend events for your profile, or discover complementary teammates!`,
     };
   }
 
   return {
-    text: `I understand you're asking about "${userMessage.trim()}". As **GetHack AI — Your Hackathon Copilot**, I can help you search hackathons, analyze project deadlines, and recommend complementary teammates for your team!`,
+    text: `I understand you're asking about "${userMessage.trim()}". As **getHack AI — Your Hackathon Copilot**, I can help you search hackathons, analyze project deadlines, and recommend complementary teammates for your team!`,
   };
 }
 
