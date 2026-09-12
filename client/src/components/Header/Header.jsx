@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/useAuth";
 import { useNotifications } from "../../context/NotificationContext";
+import Logo from "../common/Logo";
 
 function formatRelativeTime(dateString) {
   if (!dateString) return "";
@@ -413,53 +414,9 @@ function Header() {
               flex
               shrink-0
               items-center
-              gap-2
             "
           >
-            {/* Logo mark */}
-
-            <span
-              className="
-                grid
-                h-8
-                w-8
-                place-items-center
-                rounded-lg
-
-                bg-neutral-950
-
-                text-base
-                font-bold
-                leading-none
-                text-white
-
-                transition-transform
-                duration-200
-
-                group-hover:scale-105
-
-                dark:bg-white
-                dark:text-neutral-950
-              "
-            >
-              g
-            </span>
-
-            {/* Logo text */}
-
-            <span
-              className="
-                text-lg
-                font-bold
-                tracking-tight
-
-                text-neutral-900
-
-                dark:text-white
-              "
-            >
-              get<span className="text-indigo-500">Hack</span>
-            </span>
+            <Logo className="h-7 w-auto" />
           </Link>
 
           {/* ==================================================

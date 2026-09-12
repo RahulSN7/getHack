@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/useAuth";
+import Logo from "../common/Logo";
 
 function OrganizerHeader() {
   const { user, logout } = useAuth();
@@ -114,33 +115,10 @@ function OrganizerHeader() {
         <div className="mx-auto flex h-14 max-w-7xl items-center px-5 sm:px-6 lg:px-8">
           {/* Logo */}
           <Link to="/organizer" className="group flex shrink-0 items-center gap-2">
-            <span
-              className="
-                grid
-                h-8
-                w-8
-                place-items-center
-                rounded-lg
-                bg-indigo-600
-                text-base
-                font-bold
-                leading-none
-                text-white
-                transition-transform
-                duration-200
-                group-hover:scale-105
-              "
-            >
-              g
+            <Logo className="h-7 w-auto" />
+            <span className="rounded-md border border-indigo-200 bg-indigo-50/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:border-indigo-900/60 dark:bg-indigo-950/80 dark:text-indigo-400">
+              Organizer
             </span>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-                get<span className="text-indigo-500">Hack</span>
-              </span>
-              <span className="rounded-md border border-indigo-200 bg-indigo-50/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:border-indigo-900/60 dark:bg-indigo-950/80 dark:text-indigo-400">
-                Organizer
-              </span>
-            </div>
           </Link>
 
           {/* Desktop Navigation */}

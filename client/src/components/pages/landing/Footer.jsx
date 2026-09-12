@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import Logo from "../../common/Logo";
 
 function Footer() {
   const navigate = useNavigate();
@@ -33,9 +34,9 @@ function Footer() {
           <div className="lg:col-span-2">
             <Link
               to="/"
-              className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white"
+              className="inline-block"
             >
-              get<span className="text-indigo-500">Hack</span>
+              <Logo className="h-7 w-auto" />
             </Link>
 
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">

@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { Link, Outlet } from "react-router-dom";
+import Logo from "../common/Logo";
 
 function AuthLayout() {
   return (
@@ -56,13 +57,8 @@ function AuthLayout() {
             <span>Back</span>
           </Link>
 
-          <Link to="/" className="inline-flex items-center gap-1.5 group">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-neutral-950 text-sm font-bold text-white transition-transform group-hover:scale-105 dark:bg-white dark:text-neutral-950">
-              g
-            </span>
-            <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-              get<span className="text-indigo-500">Hack</span>
-            </span>
+          <Link to="/" className="inline-flex items-center group">
+            <Logo className="h-8 w-auto" />
           </Link>
         </div>
       </header>
