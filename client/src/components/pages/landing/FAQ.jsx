@@ -4,42 +4,42 @@ const faqData = [
   {
     question: "What is getHack?",
     answer:
-      "getHack is a developer platform designed to help you discover hackathons, find compatible teammates based on skills, analyze project requirements, and collaborate seamlessly from idea to submission.",
+      "getHack brings hackathons, people, teams, and collaboration together in one place, helping you go from discovering an opportunity to finding the right teammates with AI assistance.",
   },
   {
     question: "Can I find teammates based on skills?",
     answer:
-      "Yes! getHack features skill-based matching that allows you to search for developers by tech stack, domain expertise, experience level, and specific project requirements to build a balanced team.",
+      "Yes. You can discover developers and designers based on their skills, experience, availability, and profile information. This helps you find people whose skills complement your own and build stronger hackathon teams.",
   },
   {
     question: "How does the AI Assistant help?",
     answer:
-      "Our AI Assistant analyzes complex hackathon rules, evaluates your team's current skill set, identifies missing roles, recommends potential teammates, and suggests hackathons that fit your team's strengths.",
+      "AI Assistant, your getHack AI, helps you make better hackathon decisions. It can help discover suitable hackathons and identify potential teammates based on your skills and requirements.",
   },
   {
     question: "Can I use getHack if I don't already have a team?",
     answer:
-      "Absolutely. Finding teammates is one of getHack's core features. You can join as an individual builder, list your skills, and connect with existing teams looking for members or form a new team.",
-  },
-  {
-    question: "Can I join hackathons remotely?",
-    answer:
-      "Yes. getHack aggregates hackathons hosted globally. For detailed venue, platform, and participation requirements, check the official registration page.",
+      "Yes. You can use getHack even if you are starting alone. Discover hackathons, find people with complementary skills, send connection requests, connect with them, and build your team through the platform.",
   },
   {
     question: "How does team matching work?",
     answer:
-      "Our matching algorithm compares project capability requirements with developer profiles, factoring in complementary skills, availability, technical interests, and experience level.",
+      "Team matching helps you discover people with skills that complement your own. getHack can use information such as skills, experience, availability, and your requirements to help identify potential teammates.",
   },
   {
     question: "Is getHack only for experienced developers?",
     answer:
-      "No! getHack is built for builders of all levels — from first-time hackathon participants to seasoned engineers. You can filter events by difficulty and find mentors or beginner-friendly teams.",
+      "No. getHack is designed for developers and builders at different experience levels. Whether you are experienced or still developing your skills, you can discover opportunities, connect with other builders, and find teammates who complement your abilities.",
   },
   {
     question: "Can I create my own team?",
     answer:
-      "Yes! You can create a team roster, define the project scope, post missing skill roles, invite developers directly, and coordinate your hackathon submission together.",
+      "Yes. You can create a team and invite or connect with people you want to collaborate with. getHack also supports team-based collaboration so you can organize your teammates around hackathon projects.",
+  },
+  {
+    question: "How can I organize my hackathon on getHack?",
+    answer:
+      "If you are organizing a hackathon, sign up for getHack with the Organizer role. Once your organizer account is set up, you can add, publish, and manage your hackathon listings so developers can discover your event on getHack.",
   },
 ];
 

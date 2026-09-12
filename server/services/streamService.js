@@ -3,7 +3,8 @@
 // Stream Chat Server-Side Integration
 // ---------------------------------------------------------------------------
 
-const { StreamChat } = require("stream-chat");
+const path = require("path");
+const { StreamChat } = require(path.join(__dirname, "../node_modules/stream-chat/dist/cjs/index.node.js"));
 
 let serverClient = null;
 

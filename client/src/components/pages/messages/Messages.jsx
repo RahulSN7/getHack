@@ -83,7 +83,7 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
 
 function Messages() {
   const { user } = useAuth();
-  const { chatClient, ready, error: chatError } = useChatContext();
+  const { chatClient, ready, error: chatError, retryConnect } = useChatContext();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -1287,9 +1287,13 @@ function Messages() {
 
           <button
             type="button"
-            onClick={() =>
-              window.location.reload()
-            }
+            onClick={() => {
+              if (retryConnect) {
+                retryConnect();
+              } else {
+                window.location.reload();
+              }
+            }}
             className="
               inline-flex items-center gap-1.5
               rounded-lg bg-neutral-900

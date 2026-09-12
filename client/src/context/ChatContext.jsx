@@ -26,6 +26,14 @@ export function ChatProvider({ children }) {
   const [error, setError] = useState(null);
   const clientRef = useRef(null);
   const connectingRef = useRef(false);
+  const [retryTrigger, setRetryTrigger] = useState(0);
+
+  const retryConnect = () => {
+    connectingRef.current = false;
+    setError(null);
+    setReady(false);
+    setRetryTrigger((prev) => prev + 1);
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -55,20 +63,30 @@ export function ChatProvider({ children }) {
 
         const { token, apiKey, user: streamUser } = data;
 
-        if (!token || !apiKey) {
+        if (!token || !apiKey || !streamUser?.id) {
           throw new Error("Invalid chat token response.");
-        }
-
-        // Disconnect any previous client
-        if (clientRef.current) {
-          await clientRef.current.disconnectUser().catch(() => {});
         }
 
         const client = StreamChat.getInstance(apiKey);
 
+        // Check if singleton instance is already connected to this user
+        if (client.userID && client.userID === String(streamUser.id) && client.user) {
+          if (!cancelled) {
+            clientRef.current = client;
+            setChatClient(client);
+            setReady(true);
+          }
+          return;
+        }
+
+        // Disconnect previous connection if connected to another user or stale
+        if (client.userID || clientRef.current) {
+          await client.disconnectUser().catch(() => {});
+        }
+
         await client.connectUser(
           {
-            id: streamUser.id,
+            id: String(streamUser.id),
             name: streamUser.name || user.name || "User",
             image: streamUser.image || user.profile?.avatar || "",
           },
@@ -99,10 +117,10 @@ export function ChatProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, user?._id || user?.id]);
+  }, [isAuthenticated, user?._id || user?.id, retryTrigger]);
 
   return (
-    <ChatCtx.Provider value={{ chatClient, ready, error }}>
+    <ChatCtx.Provider value={{ chatClient, ready, error, retryConnect }}>
       {children}
     </ChatCtx.Provider>
   );

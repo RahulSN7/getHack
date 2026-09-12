@@ -161,6 +161,10 @@ function Hackathons() {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("deadline-asc");
 
+  // Pagination state (15 per batch)
+  const [visibleCount, setVisibleCount] = useState(15);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const [allHackathons, setAllHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -184,6 +188,11 @@ function Hackathons() {
   useEffect(() => {
     loadPublicHackathons();
   }, [loadPublicHackathons]);
+
+  // Reset pagination count back to 15 when search, filters, or sort change
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [searchQuery, statusFilter, platformFilter, showSavedOnly, sortBy]);
 
   const { isSaved, savedCount } = useSaved();
 
@@ -213,6 +222,21 @@ function Hackathons() {
     const savedFiltered = applySavedFilter(platformFiltered, showSavedOnly, isSaved);
     return applySort(savedFiltered, sortBy);
   }, [allHackathons, searchQuery, statusFilter, platformFilter, showSavedOnly, isSaved, sortBy]);
+
+  // Paginated visible items
+  const visibleHackathons = useMemo(
+    () => results.slice(0, visibleCount),
+    [results, visibleCount]
+  );
+
+  const handleViewMore = () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => prev + 15);
+      setLoadingMore(false);
+    }, 300);
+  };
 
   const accentText = ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT.indigo;
@@ -429,11 +453,37 @@ function Hackathons() {
 
         {/* Card grid & Empty State */}
         {!loading && !error && (
-          <HackathonGrid
-            hackathons={results}
-            hasFilters={hasFilters}
-            onClearFilters={handleClearFilters}
-          />
+          <>
+            <HackathonGrid
+              hackathons={visibleHackathons}
+              hasFilters={hasFilters}
+              onClearFilters={handleClearFilters}
+            />
+
+            {/* View More Pagination Button */}
+            {results.length > visibleCount && (
+              <div className="mt-10 flex justify-center">
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={handleViewMore}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-200 px-6 py-3 text-sm font-semibold text-neutral-800 border border-neutral-300/80 transition-all duration-150 hover:bg-neutral-300 active:bg-neutral-400 disabled:opacity-50 dark:bg-neutral-800 dark:text-neutral-200 dark:border-neutral-700 dark:hover:bg-neutral-700 dark:active:bg-neutral-900 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                >
+                  {loadingMore ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <span>View More</span>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

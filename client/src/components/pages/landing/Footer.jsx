@@ -1,4 +1,26 @@
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
 function Footer() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleScrollTo = (id) => {
+    if (location.pathname === "/") {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+    }
+    navigate(`/#${id}`);
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
+  };
+
   return (
     <footer
       id="footer"
@@ -6,15 +28,15 @@ function Footer() {
     >
       <div className="mx-auto max-w-7xl">
         {/* Main Footer Grid */}
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           {/* Brand Column (Spans 2 on lg) */}
           <div className="lg:col-span-2">
-            <a
-              href="/"
+            <Link
+              to="/"
               className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white"
             >
               get<span className="text-indigo-500">Hack</span>
-            </a>
+            </Link>
 
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
               Discover hackathons. Find your people. Build something meaningful.
@@ -35,44 +57,48 @@ function Footer() {
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
               <li>
-                <a
-                  href="#hackathons"
+                <Link
+                  to="/hackathons"
                   className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
                 >
                   Hackathons
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#teammates"
+                <Link
+                  to="/teammates"
                   className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
                 >
                   Find Teammates
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#why-gethack"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent("gethack:open-ai"));
+                    handleScrollTo("why-gethack");
+                  }}
+                  className="text-left text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
                 >
                   AI Assistant
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#how-it-works"
+                <Link
+                  to="/create-team"
                   className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
                 >
                   Team Builder
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#how-it-works"
+                <Link
+                  to="/messages"
                   className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
                 >
                   Team Chat
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -84,32 +110,35 @@ function Footer() {
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
               <li>
-                <a
-                  href="#how-it-works"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => handleScrollTo("how-it-works")}
+                  className="text-left text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
                 >
                   How it Works
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#faq"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => handleScrollTo("faq")}
+                  className="text-left text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
                 >
                   FAQ
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#why-gethack"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => handleScrollTo("why-gethack")}
+                  className="text-left text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
                 >
                   About getHack
-                </a>
+                </button>
               </li>
               <li>
                 <a
-                  href="#footer"
+                  href="mailto:contact@gethack.com"
                   className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
                 >
                   Contact
@@ -117,77 +146,13 @@ function Footer() {
               </li>
             </ul>
           </div>
-
-          {/* Column 3: Community */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
-              Community
-            </h4>
-            <ul className="mt-4 space-y-2.5 text-sm">
-              <li>
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-                >
-                  GitHub
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://discord.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-                >
-                  Discord
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-                >
-                  LinkedIn
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://x.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-                >
-                  X / Twitter
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
 
         {/* Bottom Area */}
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-neutral-200 pt-8 sm:flex-row dark:border-neutral-800">
+        <div className="mt-14 border-t border-neutral-200 pt-8 dark:border-neutral-800">
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             © 2026 getHack. All rights reserved.
           </p>
-
-          <div className="flex items-center gap-6 text-xs text-neutral-500 dark:text-neutral-400">
-            <a
-              href="#privacy"
-              className="transition-colors hover:text-neutral-950 dark:hover:text-white"
-            >
-              Privacy Policy
-            </a>
-            <a
-              href="#terms"
-              className="transition-colors hover:text-neutral-950 dark:hover:text-white"
-            >
-              Terms of Service
-            </a>
-          </div>
         </div>
       </div>
     </footer>

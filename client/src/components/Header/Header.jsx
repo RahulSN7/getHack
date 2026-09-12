@@ -1002,7 +1002,14 @@ function Header() {
                 LOGIN / PROFILE BUTTON
                 ================================================== */}
 
-            {isAuthenticated || (authLoading && user) ? (
+            {authLoading ? (
+              <div
+                className={`ml-1.5 h-8 shrink-0 opacity-0 pointer-events-none ${
+                  user ? "w-8 block" : "w-[72px] hidden sm:block"
+                }`}
+                aria-hidden="true"
+              />
+            ) : isAuthenticated ? (
               <div className="relative ml-1.5" ref={profileRef}>
                 <button
                   type="button"
@@ -1132,27 +1139,6 @@ function Header() {
                     </button>
                   </div>
                 )}
-              </div>
-            ) : authLoading ? (
-              <div className="relative ml-1.5">
-                <div
-                  className="
-                    flex
-                    h-8
-                    items-center
-                    rounded-full
-                    border
-                    border-neutral-200/80
-                    bg-white
-                    p-0.5
-                    dark:border-neutral-800
-                    dark:bg-neutral-900
-                  "
-                >
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600/80 text-[10px] font-bold text-white overflow-hidden shrink-0">
-                    U
-                  </span>
-                </div>
               </div>
             ) : (
               <Link
@@ -1367,7 +1353,14 @@ function Header() {
                 Messages
               </Link>
 
-              {isAuthenticated || (authLoading && user) ? (
+              {authLoading ? (
+                <div
+                  className={`mt-2 w-full opacity-0 pointer-events-none ${
+                    user ? "h-[84px]" : "h-10"
+                  }`}
+                  aria-hidden="true"
+                />
+              ) : isAuthenticated ? (
                 <>
                   <Link
                     to={`/profile/${user?.id || user?._id || "me"}`}

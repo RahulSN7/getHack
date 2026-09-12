@@ -61,6 +61,12 @@ export default function GetHackAIWidget() {
     }
   }, [messages, isOpen, loading]);
 
+  useEffect(() => {
+    const handleOpenAI = () => setIsOpen(true);
+    window.addEventListener("gethack:open-ai", handleOpenAI);
+    return () => window.removeEventListener("gethack:open-ai", handleOpenAI);
+  }, []);
+
   // Initial welcome message if conversation is empty
   useEffect(() => {
     if (messages.length === 0) {

@@ -3,7 +3,8 @@
 // Integration test suite for Google OAuth endpoints and flow logic
 // ---------------------------------------------------------------------------
 
-require("dotenv").config({ path: "./server/.env" });
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const mongoose = require("mongoose");
 const User = require("../models/user");
 const authController = require("../controllers/authController");
