@@ -6,7 +6,7 @@ import HeroCTA from "../../components/pages/landing/HeroCTA";
 import FeaturedHackathons from "../../components/pages/landing/FeaturedHackathons";
 import HowItWorks from "../../components/pages/landing/HowItWorks";
 import FindTeammates from "../../components/pages/landing/FindTeammates";
-import WhyGetHack from "../../components/pages/landing/WhygetHack";
+import WhyGetHack from "../../components/pages/landing/WhyGetHack";
 import FAQ from "../../components/pages/landing/FAQ";
 import Footer from "../../components/pages/landing/Footer";
 
