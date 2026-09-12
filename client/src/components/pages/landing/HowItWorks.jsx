@@ -1,8 +1,7 @@
 const steps = [
   {
-    number: "01",
     title: "Discover",
-    description: "Find hackathons that match your interests, skills, and schedule.",
+    description: "Discover hackathons and opportunities that match your interests and skills.",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8" />
@@ -11,9 +10,8 @@ const steps = [
     ),
   },
   {
-    number: "02",
     title: "Connect",
-    description: "Find developers with complementary skills and form your team.",
+    description: "Find developers and designers with complementary skills and connect with the right people for your hackathon.",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -24,9 +22,8 @@ const steps = [
     ),
   },
   {
-    number: "03",
     title: "Collaborate",
-    description: "Stay connected, exchange ideas, and work together to turn an idea into a project.",
+    description: "Build teams, communicate with your connections, and work together to turn ideas into projects.",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="m18 16 4-4-4-4" />
@@ -43,8 +40,8 @@ function HowItWorks() {
       <div className="mx-auto max-w-7xl">
         {/* Heading */}
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold tracking-wide text-indigo-500">
-            How it works
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">
+            PROCESS
           </p>
           <h2
             className="
@@ -58,7 +55,7 @@ function HowItWorks() {
               dark:text-white
             "
           >
-            Three steps to your next hackathons
+            How getHack Works
           </h2>
         </div>
 
@@ -74,7 +71,7 @@ function HowItWorks() {
           "
         >
           {steps.map((step) => (
-            <div key={step.number}>
+            <div key={step.title}>
               {/* Icon */}
               <div
                 className="
@@ -93,31 +90,18 @@ function HowItWorks() {
                 {step.icon}
               </div>
 
-              {/* Number + title */}
-              <div className="flex items-baseline gap-2">
-                <span
-                  className="
-                    text-xs
-                    font-bold
-                    text-neutral-300
+              {/* Title */}
+              <h3
+                className="
+                  text-lg
+                  font-semibold
+                  text-neutral-900
 
-                    dark:text-neutral-600
-                  "
-                >
-                  {step.number}
-                </span>
-                <h3
-                  className="
-                    text-lg
-                    font-semibold
-                    text-neutral-900
-
-                    dark:text-white
-                  "
-                >
-                  {step.title}
-                </h3>
-              </div>
+                  dark:text-white
+                "
+              >
+                {step.title}
+              </h3>
 
               {/* Description */}
               <p
