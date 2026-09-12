@@ -129,8 +129,39 @@ function emitNotificationToUser(recipientId, notification) {
   return true;
 }
 
+/**
+ * Emit real-time connection event strictly to designated user socket rooms
+ *
+ * Event names:
+ * - "connection:request-created"
+ * - "connection:request-accepted"
+ * - "connection:request-rejected"
+ * - "connection:request-cancelled"
+ * - "connection:removed"
+ */
+function emitConnectionEventToUsers(userIds = [], eventName, payload = {}) {
+  if (!io) {
+    console.warn("[CONNECTION REALTIME] Cannot emit event: Socket.IO server not initialized.");
+    return false;
+  }
+  if (!Array.isArray(userIds) || userIds.length === 0 || !eventName) {
+    return false;
+  }
+
+  const uniqueIds = Array.from(new Set(userIds.map((id) => id ? id.toString() : "").filter(Boolean)));
+
+  uniqueIds.forEach((uid) => {
+    const roomName = `user:${uid}`;
+    console.log(`[CONNECTION REALTIME] Emitting event "${eventName}" to room ${roomName}`);
+    io.to(roomName).emit(eventName, payload);
+  });
+
+  return true;
+}
+
 module.exports = {
   initSocketService,
   getIO,
   emitNotificationToUser,
+  emitConnectionEventToUsers,
 };

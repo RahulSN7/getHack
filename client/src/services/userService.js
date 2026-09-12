@@ -53,6 +53,14 @@ async function request(endpoint, options = {}) {
   return data;
 }
 
+function notifyConnectionChanged(payload = {}) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("gethack:connection-changed", { detail: payload })
+    );
+  }
+}
+
 export const userService = {
   getOwnProfile: async () => {
     return request(
@@ -95,7 +103,7 @@ export const userService = {
       receiverId,
       note = null
     ) => {
-      return request(
+      const res = await request(
         "/network/requests",
         {
           method: "POST",
@@ -105,6 +113,8 @@ export const userService = {
           }),
         }
       );
+      notifyConnectionChanged({ type: "connection:request-created", receiverId, result: res });
+      return res;
     },
 
   getNetworkRequests:
@@ -116,7 +126,7 @@ export const userService = {
 
   respondToConnectionRequest:
     async (id, action) => {
-      return request(
+      const res = await request(
         `/network/requests/${id}`,
         {
           method: "PUT",
@@ -125,25 +135,32 @@ export const userService = {
           }),
         }
       );
+      const eventType = action === "accept" ? "connection:request-accepted" : "connection:request-rejected";
+      notifyConnectionChanged({ type: eventType, id, action, result: res });
+      return res;
     },
 
   cancelConnectionRequest:
     async (id) => {
-      return request(
+      const res = await request(
         `/network/requests/${id}`,
         {
           method: "DELETE",
         }
       );
+      notifyConnectionChanged({ type: "connection:request-cancelled", id, result: res });
+      return res;
     },
 
   removeConnection:
     async (targetUserId) => {
-      return request(
+      const res = await request(
         `/network/connections/${targetUserId}`,
         {
           method: "DELETE",
         }
       );
+      notifyConnectionChanged({ type: "connection:removed", targetUserId, result: res });
+      return res;
     },
 };

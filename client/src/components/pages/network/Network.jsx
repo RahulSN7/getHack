@@ -162,8 +162,18 @@ function Network() {
   useEffect(() => {
     let isMounted = true;
     loadNetworkData(isMounted);
+
+    const handleConnectionChanged = () => {
+      if (isMounted) {
+        loadNetworkData(true);
+      }
+    };
+
+    window.addEventListener("gethack:connection-changed", handleConnectionChanged);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("gethack:connection-changed", handleConnectionChanged);
     };
   }, []);
 

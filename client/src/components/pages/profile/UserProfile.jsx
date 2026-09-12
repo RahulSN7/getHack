@@ -204,8 +204,18 @@ export default function UserProfile() {
     }
 
     loadProfile();
+
+    const handleConnectionChanged = () => {
+      if (isMounted) {
+        loadProfile();
+      }
+    };
+
+    window.addEventListener("gethack:connection-changed", handleConnectionChanged);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("gethack:connection-changed", handleConnectionChanged);
     };
   }, [targetId, currentUser, isAuthenticated]);
 

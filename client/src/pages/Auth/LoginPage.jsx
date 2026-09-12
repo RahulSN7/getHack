@@ -58,6 +58,15 @@ function LoginPage() {
     }
   };
 
+  // Read redirect error parameters from URL query string if Google OAuth fails
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errorMsg = params.get("error");
+    if (errorMsg) {
+      setGeneralError(errorMsg);
+    }
+  }, []);
+
   // Cooldown countdown timer effect for OTP resend
   useEffect(() => {
     let timer;

@@ -976,8 +976,18 @@ function Teammates() {
     }
     fetchParticipants();
     fetchBackendTeams();
+
+    const handleConnectionChanged = () => {
+      if (isMounted) {
+        fetchParticipants();
+      }
+    };
+
+    window.addEventListener("gethack:connection-changed", handleConnectionChanged);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("gethack:connection-changed", handleConnectionChanged);
     };
   }, []);
 

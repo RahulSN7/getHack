@@ -143,11 +143,32 @@ export function NotificationProvider({ children }) {
       }
     };
 
+    const handleConnectionEvent = (eventName, data) => {
+      console.log(`[CONNECTION RT] Received socket event "${eventName}":`, data);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("gethack:connection-changed", {
+            detail: { type: eventName, ...data },
+          })
+        );
+      }
+    };
+
     socket.on("notification:created", handleNotificationCreated);
+    socket.on("connection:request-created", (data) => handleConnectionEvent("connection:request-created", data));
+    socket.on("connection:request-accepted", (data) => handleConnectionEvent("connection:request-accepted", data));
+    socket.on("connection:request-rejected", (data) => handleConnectionEvent("connection:request-rejected", data));
+    socket.on("connection:request-cancelled", (data) => handleConnectionEvent("connection:request-cancelled", data));
+    socket.on("connection:removed", (data) => handleConnectionEvent("connection:removed", data));
 
     return () => {
-      console.log("[NOTIFICATION RT] Cleaning up Socket.IO listener...");
+      console.log("[NOTIFICATION RT] Cleaning up Socket.IO listeners...");
       socket.off("notification:created", handleNotificationCreated);
+      socket.off("connection:request-created");
+      socket.off("connection:request-accepted");
+      socket.off("connection:request-rejected");
+      socket.off("connection:request-cancelled");
+      socket.off("connection:removed");
       socket.disconnect();
       socketRef.current = null;
     };

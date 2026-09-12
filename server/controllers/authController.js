@@ -196,6 +196,7 @@ const sendOtp = async (req, res) => {
 
     // Generate secure 6-digit numeric OTP
     const rawOtp = crypto.randomInt(100000, 999999).toString();
+    console.log("[OTP] OTP generated");
 
     // Hash OTP before database storage
     const salt = await bcrypt.genSalt(10);
@@ -216,6 +217,7 @@ const sendOtp = async (req, res) => {
       },
       { upsert: true, new: true }
     );
+    console.log("[OTP] OTP stored");
 
     // Dispatch OTP email
     try {
@@ -243,6 +245,7 @@ const sendOtp = async (req, res) => {
 // ── 2. VERIFY OTP ──
 const verifyOtp = async (req, res) => {
   try {
+    console.log("[OTP] Verification request received");
     const { email, otp, name, role } = req.body || {};
 
     if (!email || !otp) {
@@ -252,7 +255,7 @@ const verifyOtp = async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     const cleanOtp = String(otp).trim();
 
-    if (!EMAIL_REGEX.test(normalizedEmail)) {
+    if (!isValidEmailFormat(normalizedEmail)) {
       return res.status(400).json({ message: "Please enter a valid email address." });
     }
 
@@ -299,6 +302,8 @@ const verifyOtp = async (req, res) => {
       });
     }
 
+    console.log("[OTP] OTP verification successful");
+
     // OTP Verification Successful -> Invalidate & Delete OTP record
     await Otp.deleteOne({ email: normalizedEmail });
 
@@ -326,6 +331,8 @@ const verifyOtp = async (req, res) => {
         profile: {},
       });
     }
+
+    console.log("[OTP] Account creation successful");
 
     // Generate JWT token & set session cookie
     const token = generateToken(user._id);
@@ -493,10 +500,14 @@ const googleRedirect = (req, res) => {
     return res.redirect(`${CLIENT_URL}/login?error=Google OAuth is not configured in backend .env`);
   }
 
+  const role = req.query.role || "participant";
+  const state = Buffer.from(JSON.stringify({ role })).toString("base64");
+
   const authorizeUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: ["openid", "email", "profile"],
     prompt: "select_account",
+    state,
   });
 
   return res.redirect(authorizeUrl);
@@ -505,10 +516,22 @@ const googleRedirect = (req, res) => {
 // ── 7. GOOGLE OAUTH CALLBACK (GET /api/auth/google/callback) ──
 const googleCallback = async (req, res) => {
   try {
-    const { code } = req.query;
+    const { code, state } = req.query;
 
     if (!code) {
       return res.redirect(`${CLIENT_URL}/login?error=Google authentication was cancelled.`);
+    }
+
+    let signupRole = "participant";
+    if (state) {
+      try {
+        const decoded = JSON.parse(Buffer.from(state, "base64").toString());
+        if (decoded && decoded.role) {
+          signupRole = decoded.role.toLowerCase() === "organizer" ? "organizer" : "participant";
+        }
+      } catch (stateErr) {
+        console.warn("OAuth state decode warning:", stateErr.message);
+      }
     }
 
     const { tokens } = await oauth2Client.getToken(code);
@@ -549,9 +572,12 @@ const googleCallback = async (req, res) => {
         name,
         email,
         googleId,
-        role: "participant",
+        role: signupRole,
         emailVerified: true,
-        profile: { avatar: picture },
+        profile: {
+          avatar: picture,
+          role: signupRole === "organizer" ? "Organizer" : "Participant",
+        },
       });
     }
 

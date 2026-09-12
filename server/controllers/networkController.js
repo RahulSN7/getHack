@@ -8,6 +8,7 @@ const User = require("../models/user");
 const UserChatState = require("../models/userChatState");
 const { isProfileComplete } = require("../utils/profileValidation");
 const { createNotification } = require("../services/notificationService");
+const { emitConnectionEventToUsers } = require("../services/socketService");
 const { getStreamClient } = require("../services/streamService");
 
 // ---------------------------------------------------------------------------
@@ -97,6 +98,20 @@ const sendConnectionRequest = async (req, res) => {
           console.warn("Failed to create connection request notification:", notifErr.message);
         }
 
+        try {
+          emitConnectionEventToUsers([sender._id, receiver._id], "connection:request-created", {
+            type: "connection:request-created",
+            requestId: existing._id.toString(),
+            senderId: sender._id.toString(),
+            receiverId: receiver._id.toString(),
+            connection: existing,
+            sender: extractSafeUser(sender),
+            receiver: extractSafeUser(receiver),
+          });
+        } catch (eErr) {
+          console.warn("Failed to emit connection event:", eErr.message);
+        }
+
         return res.status(200).json({
           message: "Connection request sent successfully.",
           connection: existing,
@@ -132,6 +147,20 @@ const sendConnectionRequest = async (req, res) => {
       });
     } catch (notifErr) {
       console.warn("Failed to create connection request notification:", notifErr.message);
+    }
+
+    try {
+      emitConnectionEventToUsers([sender._id, receiver._id], "connection:request-created", {
+        type: "connection:request-created",
+        requestId: newConnection._id.toString(),
+        senderId: sender._id.toString(),
+        receiverId: receiver._id.toString(),
+        connection: newConnection,
+        sender: extractSafeUser(sender),
+        receiver: extractSafeUser(receiver),
+      });
+    } catch (eErr) {
+      console.warn("Failed to emit connection event:", eErr.message);
     }
 
     return res.status(201).json({
@@ -305,6 +334,20 @@ const respondToConnectionRequest = async (req, res) => {
     connection.status = action === "accept" ? "accepted" : "rejected";
     await connection.save();
 
+    // Emit real-time connection event to both sender and receiver
+    try {
+      const eventName = action === "accept" ? "connection:request-accepted" : "connection:request-rejected";
+      emitConnectionEventToUsers([connection.sender, connection.receiver], eventName, {
+        type: eventName,
+        requestId: connection._id.toString(),
+        senderId: connection.sender.toString(),
+        receiverId: connection.receiver.toString(),
+        connection,
+      });
+    } catch (eErr) {
+      console.warn("Failed to emit connection response event:", eErr.message);
+    }
+
     // Create notification for original sender
     try {
       const responderName = req.user.name || "A participant";
@@ -396,6 +439,17 @@ const cancelConnectionRequest = async (req, res) => {
       });
     }
 
+    try {
+      emitConnectionEventToUsers([cancelled.sender, cancelled.receiver], "connection:request-cancelled", {
+        type: "connection:request-cancelled",
+        requestId: cancelled._id.toString(),
+        senderId: cancelled.sender.toString(),
+        receiverId: cancelled.receiver.toString(),
+      });
+    } catch (eErr) {
+      console.warn("Failed to emit connection cancel event:", eErr.message);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Connection request cancelled successfully.",
@@ -446,6 +500,17 @@ const removeConnection = async (req, res) => {
 
     // Delete connection record
     await Connection.findByIdAndDelete(connection._id);
+
+    try {
+      emitConnectionEventToUsers([currentUserId, targetUserId], "connection:removed", {
+        type: "connection:removed",
+        connectionId: connection._id.toString(),
+        user1Id: currentUserId.toString(),
+        user2Id: targetUserId.toString(),
+      });
+    } catch (eErr) {
+      console.warn("Failed to emit connection remove event:", eErr.message);
+    }
 
     // --- STREAM CHAT & 1-TO-1 CHAT CLEANUP ---
     try {

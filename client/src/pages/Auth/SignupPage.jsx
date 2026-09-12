@@ -45,20 +45,31 @@ function SignupPage() {
     setGeneralError("");
     setIsGoogleLoading(true);
 
+    const targetUrl = `/api/auth/google?role=${encodeURIComponent(role.toLowerCase())}`;
+
     if (window.google?.accounts?.id) {
       try {
         window.google.accounts.id.prompt(async (notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            window.location.href = "/api/auth/google";
+            window.location.href = targetUrl;
           }
         });
       } catch {
-        window.location.href = "/api/auth/google";
+        window.location.href = targetUrl;
       }
     } else {
-      window.location.href = "/api/auth/google";
+      window.location.href = targetUrl;
     }
   };
+
+  // Read redirect error parameters from URL query string if Google OAuth fails
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const errorMsg = params.get("error");
+    if (errorMsg) {
+      setGeneralError(errorMsg);
+    }
+  }, []);
 
   // Cooldown countdown timer effect for OTP resend
   useEffect(() => {

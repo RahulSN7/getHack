@@ -1007,6 +1007,8 @@ const updateOwnOrganizerProfile = async (
   }
 };
 
+const { getEligibleTeammateCandidates } = require("../services/teammateService");
+
 // ============================================================
 // GET ALL PARTICIPANTS (For Find Teammates discovery)
 // ============================================================
@@ -1016,57 +1018,14 @@ const getAllParticipants = async (req, res) => {
     const currentUserId = req.user?._id ? req.user._id.toString() : null;
     const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : null;
 
-    // Fetch connection records for current user if logged in
-    let acceptedConnectedUserIds = new Set();
-    let connectionsMap = {};
+    const { eligibleUsers, connectionsMap } = await getEligibleTeammateCandidates(currentUserId);
 
-    if (currentUserId) {
-      const connections = await Connection.find({
-        $or: [{ sender: req.user._id }, { receiver: req.user._id }],
-      });
-
-      connections.forEach((c) => {
-        const senderId = c.sender.toString();
-        const receiverId = c.receiver.toString();
-        const otherId = senderId === currentUserId ? receiverId : senderId;
-
-        if (c.status === "accepted") {
-          acceptedConnectedUserIds.add(otherId);
-        }
-
-        connectionsMap[otherId] = {
-          status: c.status,
-          isSender: senderId === currentUserId,
-          requestId: c._id.toString(),
-        };
-      });
-    }
-
-    // Build excluded user IDs list: current user + all accepted connection partner IDs
-    const excludedUserIds = currentUserId
-      ? [currentUserId, ...Array.from(acceptedConnectedUserIds)]
-      : [];
-
-    // Fetch participant users excluding current user and accepted connections
-    const users = await User.find({
-      role: "participant",
-      ...(excludedUserIds.length > 0 ? { _id: { $nin: excludedUserIds } } : {}),
-    }).sort({ createdAt: -1 });
-
-    // Enforce profile completion requirements and double check exclusions
-    let eligibleUsers = users.filter((u) => {
-      const isNotExcluded = currentUserId
-        ? !excludedUserIds.includes(u._id.toString())
-        : true;
-      return isNotExcluded && isProfileComplete(u);
-    });
-
-    // Apply limit if specified
+    let resultList = eligibleUsers;
     if (limitParam && !isNaN(limitParam) && limitParam > 0) {
-      eligibleUsers = eligibleUsers.slice(0, limitParam);
+      resultList = resultList.slice(0, limitParam);
     }
 
-    const participants = eligibleUsers.map((u) => {
+    const participants = resultList.map((u) => {
       const safe = u.toSafeUser();
       const conn = connectionsMap[u._id.toString()] || { status: "none" };
       return {
