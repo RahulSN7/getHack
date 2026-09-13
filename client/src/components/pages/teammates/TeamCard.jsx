@@ -101,8 +101,8 @@ function TeamCard({
         border-neutral-200
         bg-white
         p-5
-        transition-all
-        duration-200
+        transition-shadow
+        duration-150
         hover:border-neutral-300
         hover:shadow-md
         hover:shadow-neutral-950/5
@@ -260,7 +260,6 @@ function TeamCard({
             text-xs
             font-semibold
             text-neutral-700
-            transition-colors
             hover:bg-neutral-50
             dark:border-neutral-800
             dark:bg-neutral-900
@@ -303,7 +302,6 @@ function TeamCard({
               text-xs
               font-semibold
               text-white
-              transition-colors
               hover:bg-indigo-500
               disabled:opacity-50
               disabled:cursor-not-allowed

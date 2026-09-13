@@ -115,8 +115,8 @@ export default function NetworkUserCard({
         dark:border-neutral-800
         dark:bg-neutral-900
         p-[20px]
-        transition-all
-        duration-200
+        transition-shadow
+        duration-150
         hover:border-neutral-300
         dark:hover:border-neutral-700
       "
@@ -197,8 +197,6 @@ export default function NetworkUserCard({
                     text-[11px]
                     font-medium
                     text-neutral-700
-                    transition-colors
-                    duration-150
                     hover:border-indigo-500/30
                     hover:text-indigo-600
                     dark:border-neutral-700/50
@@ -296,8 +294,6 @@ export default function NetworkUserCard({
                 font-semibold
                 text-white
                 shadow-2xs
-                transition-all
-                duration-150
                 hover:bg-indigo-500
                 active:scale-[0.99]
                 dark:bg-indigo-500
@@ -330,8 +326,6 @@ export default function NetworkUserCard({
                 text-xs
                 font-semibold
                 text-neutral-700
-                transition-all
-                duration-150
                 hover:border-emerald-500/40
                 hover:bg-emerald-500/10
                 hover:text-emerald-600
@@ -365,8 +359,6 @@ export default function NetworkUserCard({
                 text-xs
                 font-semibold
                 text-neutral-700
-                transition-all
-                duration-150
                 hover:border-red-500/40
                 hover:bg-red-500/10
                 hover:text-red-600

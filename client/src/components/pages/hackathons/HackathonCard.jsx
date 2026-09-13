@@ -154,8 +154,8 @@ function HackathonCard({ hackathon }) {
         bg-white
         p-4
         sm:p-5
-        transition-all
-        duration-200
+        transition-shadow
+        duration-150
         hover:border-neutral-300
         hover:shadow-md
         hover:shadow-neutral-950/5
@@ -256,8 +256,6 @@ function HackathonCard({ hackathon }) {
                 place-items-center
                 rounded-lg
                 border
-                transition-all
-                duration-150
                 focus-visible:outline
                 focus-visible:outline-2
                 focus-visible:outline-indigo-500
@@ -341,8 +339,6 @@ function HackathonCard({ hackathon }) {
             font-semibold
             text-white
             shadow-xs
-            transition-all
-            duration-150
             cursor-pointer
             hover:bg-[#1d4ed8]
             active:bg-[#1e40af]

@@ -167,8 +167,6 @@ function TeammateFilters({
           py-1.5
           text-xs
           font-semibold
-          transition-all
-          duration-150
           ${hasActiveFilters
             ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
             : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"

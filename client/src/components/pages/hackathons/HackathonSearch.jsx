@@ -50,8 +50,6 @@ function HackathonSearch({ value, onChange }) {
           text-neutral-900
           placeholder-neutral-400
           outline-none
-          transition-colors
-          duration-150
           focus:border-indigo-500
           focus:ring-1
           focus:ring-indigo-500/20

@@ -236,8 +236,6 @@ function NetworkFilters({
           py-1.5
           text-xs
           font-semibold
-          transition-all
-          duration-150
           ${
             hasActiveFilters
               ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
