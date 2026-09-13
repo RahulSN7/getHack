@@ -186,53 +186,12 @@ function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
-
-  const isOrganizer = user?.role && String(user.role).toLowerCase().trim() === "organizer";
-
-  if (isOrganizer) {
-    return <OrganizerHeader />;
-  }
-
-  if (authLoading && !user) {
-    return (
-      <header className="fixed top-0 left-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-neutral-200/60 dark:bg-neutral-950/80 dark:border-neutral-800/60">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center">
-              <Logo className="h-7 w-auto" />
-            </Link>
-            <div className="hidden md:flex gap-4">
-              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
-              <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
-              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
-          </div>
-        </div>
-      </header>
-    );
-  }
-
-  const isHackathonsActive = location.pathname.startsWith("/hackathons");
-  const isTeammatesActive =
-    location.pathname.startsWith("/teammates") ||
-    location.pathname.startsWith("/create-team") ||
-    location.pathname.startsWith("/team");
-  const isNetworkActive = location.pathname.startsWith("/network");
-  const isMessagesActive = location.pathname.startsWith("/messages");
-  // --------------------------------------------------
-  // DARK / LIGHT MODE (from global context)
-  // --------------------------------------------------
-
   const { theme, toggleTheme } = useTheme();
   const darkMode = theme === "dark";
 
   // --------------------------------------------------
   // SCROLL STATE & DETECTION FOR GLASSMORPHISM NAVBAR
   // --------------------------------------------------
-
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -248,9 +207,25 @@ function Header() {
   // --------------------------------------------------
   // NOTIFICATION & OTHER STATES (from global context)
   // --------------------------------------------------
-
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   const {
     notifications,
@@ -271,10 +246,10 @@ function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
-  // Fetch notifications list when dropdown opens
+  // Fetch notifications list with silent background revalidation when dropdown opens
   useEffect(() => {
     if (notificationOpen) {
-      fetchNotifications();
+      fetchNotifications({ silent: true });
     }
   }, [notificationOpen, fetchNotifications]);
 
@@ -323,6 +298,42 @@ function Header() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [profileOpen]);
+
+  const isOrganizer = user?.role && String(user.role).toLowerCase().trim() === "organizer";
+
+  if (isOrganizer) {
+    return <OrganizerHeader />;
+  }
+
+  if (authLoading && !user) {
+    return (
+      <header className="fixed top-0 left-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-neutral-200/60 dark:bg-neutral-950/80 dark:border-neutral-800/60">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center">
+              <Logo className="h-7 w-auto" />
+            </Link>
+            <div className="hidden md:flex gap-4">
+              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  const isHackathonsActive = location.pathname.startsWith("/hackathons");
+  const isTeammatesActive =
+    location.pathname.startsWith("/teammates") ||
+    location.pathname.startsWith("/create-team") ||
+    location.pathname.startsWith("/team");
+  const isNetworkActive = location.pathname.startsWith("/network");
+  const isMessagesActive = location.pathname.startsWith("/messages");
 
   // 11. READ NOTIFICATION & NAVIGATE (Centralized entity-based navigation)
   const handleNotificationClick = (n) => {
@@ -407,16 +418,15 @@ function Header() {
           ease-out
 
           ${
-            scrolled
+            scrolled || mobileMenuOpen
               ? `
-                bg-white/80
-                backdrop-blur-md
+                bg-white
                 border-b
-                border-neutral-200/60
+                border-neutral-200/80
                 shadow-xs
 
-                dark:bg-neutral-950/80
-                dark:border-neutral-800/60
+                dark:bg-neutral-950
+                dark:border-neutral-800/80
                 dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
               `
               : `
@@ -605,12 +615,12 @@ function Header() {
               {notificationOpen && (
                 <div
                   className="
-                    absolute
-                    right-0
-                    top-[calc(100%+8px)]
-
-                    w-80
-                    max-h-[480px]
+                    fixed
+                    top-14
+                    left-3
+                    right-3
+                    z-50
+                    max-h-[calc(100vh-80px)]
                     flex
                     flex-col
 
@@ -624,7 +634,14 @@ function Header() {
 
                     dark:bg-neutral-900
                     dark:shadow-neutral-950/40
-                    z-50
+
+                    sm:absolute
+                    sm:top-[calc(100%+8px)]
+                    sm:left-auto
+                    sm:right-0
+                    sm:w-80
+                    sm:max-w-sm
+                    sm:max-h-[480px]
                   "
                 >
                   {/* Header */}
@@ -731,7 +748,7 @@ function Header() {
 
                     {/* Notification Items Container */}
 
-                    <div className="flex-1 overflow-y-auto max-h-[420px] divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                    <div className="flex-1 overflow-y-auto max-h-[380px] sm:max-h-[420px] divide-y divide-neutral-100 dark:divide-neutral-800/60">
                       {/* 7. SKELETON LOADING STATE */}
                       {loadingNotifs && (
                         <div className="p-4 space-y-3">
@@ -821,8 +838,10 @@ function Header() {
                                     w-full
                                     items-start
                                     gap-3
-                                    px-4
-                                    py-3.5
+                                    px-3.5
+                                    sm:px-4
+                                    py-3
+                                    sm:py-3.5
                                     text-left
                                     transition-colors
                                     duration-150
@@ -873,6 +892,8 @@ function Header() {
                                     <div className="flex items-center justify-between gap-2">
                                       <p
                                         className={`
+                                          min-w-0
+                                          flex-1
                                           text-xs
                                           font-semibold
                                           truncate
@@ -1215,10 +1236,18 @@ function Header() {
             transition-[max-height,opacity]
             duration-300
             ease-out
+            bg-white
+            dark:bg-neutral-950
+            border-b
+            border-neutral-200/80
+            dark:border-neutral-800/80
+            shadow-lg
+            shadow-neutral-950/5
+            dark:shadow-neutral-950/40
 
             md:hidden
 
-            ${mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0"}
+            ${mobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}
           `}
         >
           <nav
@@ -1427,6 +1456,15 @@ function Header() {
           </nav>
         </div>
       </header>
+
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 top-14 z-40 bg-neutral-950/30 backdrop-blur-xs transition-opacity md:hidden dark:bg-neutral-950/50"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Spacer so content is not hidden behind fixed header */}
       <div className="h-14" />

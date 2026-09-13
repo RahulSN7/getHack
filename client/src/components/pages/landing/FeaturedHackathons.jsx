@@ -57,7 +57,7 @@ function FeaturedHackathons() {
   }, []);
 
   return (
-    <section id="hackathons" className="px-6 py-20">
+    <section id="hackathons" className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-7xl">
         {/* Section header */}
         <div className="flex items-end justify-between gap-4">
@@ -174,48 +174,6 @@ function FeaturedHackathons() {
             ))}
           </div>
         )}
-
-        {/* Mobile "View all" */}
-        <div className="mt-8 text-center sm:hidden">
-          <Link
-            to="/hackathons"
-            className="
-              inline-flex
-              h-10
-              items-center
-              gap-2
-              rounded-lg
-              border
-              border-neutral-300
-              px-4
-              text-sm
-              font-medium
-              text-neutral-700
-              transition-colors
-              duration-150
-              hover:border-neutral-400
-              hover:text-neutral-950
-              dark:border-neutral-700
-              dark:text-neutral-300
-              dark:hover:border-neutral-500
-              dark:hover:text-white
-            "
-          >
-            <span>View all hackathons</span>
-            <svg
-              className="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14" />
-              <path d="m12 5 7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
       </div>
     </section>
   );

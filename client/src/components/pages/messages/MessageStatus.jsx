@@ -96,6 +96,44 @@ export default function MessageStatus({ msg, channel, currentUserId, onRetry, fo
   const isMine = String(msg?.user?.id || msg?.user_id || msg?.sender_id) === String(currentUserId);
   const isDeleted = Boolean(msg?.deleted_at || msg?.type === "deleted");
 
+  // Trigger popover when forceOpen is true (e.g. from More Actions "Message Info")
+  useEffect(() => {
+    if (forceOpen && btnRef.current && isMine && !isDeleted && msg) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const popoverWidth = 220;
+      const popoverHeight = 140;
+
+      let top = rect.top - popoverHeight - 6;
+      if (top < 8) top = rect.bottom + 6;
+
+      let left = rect.right - popoverWidth;
+      left = Math.max(8, Math.min(left, window.innerWidth - popoverWidth - 8));
+
+      setPopoverCoords({ top, left });
+      setShowPopover(true);
+    }
+  }, [forceOpen, isMine, isDeleted, msg]);
+
+  useEffect(() => {
+    if (!showPopover) return;
+
+    const handleDismiss = () => {
+      setShowPopover(false);
+      if (onClosePopover) onClosePopover();
+    };
+    window.addEventListener("pointerdown", handleDismiss);
+    window.addEventListener("keydown", (e) => e.key === "Escape" && handleDismiss());
+    window.addEventListener("scroll", handleDismiss, true);
+    window.addEventListener("resize", handleDismiss);
+
+    return () => {
+      window.removeEventListener("pointerdown", handleDismiss);
+      window.removeEventListener("keydown", handleDismiss);
+      window.removeEventListener("scroll", handleDismiss, true);
+      window.removeEventListener("resize", handleDismiss);
+    };
+  }, [showPopover, onClosePopover]);
+
   // Show status only on sent messages that are not deleted
   if (!isMine || isDeleted || !msg) {
     return null;
@@ -126,44 +164,6 @@ export default function MessageStatus({ msg, channel, currentUserId, onRetry, fo
       setShowPopover(true);
     }
   };
-
-  // Trigger popover when forceOpen is true (e.g. from More Actions "Message Info")
-  useEffect(() => {
-    if (forceOpen && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      const popoverWidth = 220;
-      const popoverHeight = 140;
-
-      let top = rect.top - popoverHeight - 6;
-      if (top < 8) top = rect.bottom + 6;
-
-      let left = rect.right - popoverWidth;
-      left = Math.max(8, Math.min(left, window.innerWidth - popoverWidth - 8));
-
-      setPopoverCoords({ top, left });
-      setShowPopover(true);
-    }
-  }, [forceOpen]);
-
-  useEffect(() => {
-    if (!showPopover) return;
-
-    const handleDismiss = () => {
-      setShowPopover(false);
-      if (onClosePopover) onClosePopover();
-    };
-    window.addEventListener("pointerdown", handleDismiss);
-    window.addEventListener("keydown", (e) => e.key === "Escape" && handleDismiss());
-    window.addEventListener("scroll", handleDismiss, true);
-    window.addEventListener("resize", handleDismiss);
-
-    return () => {
-      window.removeEventListener("pointerdown", handleDismiss);
-      window.removeEventListener("keydown", handleDismiss);
-      window.removeEventListener("scroll", handleDismiss, true);
-      window.removeEventListener("resize", handleDismiss);
-    };
-  }, [showPopover, onClosePopover]);
 
   return (
     <span className="inline-flex items-center shrink-0 ml-1 select-none">

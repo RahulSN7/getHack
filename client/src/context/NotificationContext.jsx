@@ -16,10 +16,12 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
 
   const socketRef = useRef(null);
+  const inFlightPromiseRef = useRef(null);
 
   // ---------------------------------------------------------------------------
   // Fetch initial unread count from API
@@ -40,46 +42,69 @@ export function NotificationProvider({ children }) {
   }, [isAuthenticated]);
 
   // ---------------------------------------------------------------------------
-  // Fetch initial paginated notifications from API (with deduplication merge)
+  // Fetch paginated notifications from API (with deduplication & state caching)
   // ---------------------------------------------------------------------------
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (options = {}) => {
     if (!isAuthenticated) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await notificationService.getNotifications({ page: 1, limit: 20 });
-      if (res && res.success) {
-        const fetched = res.notifications || [];
-        setNotifications((prev) => {
-          const map = new Map();
-          fetched.forEach((item) => map.set(String(item._id), item));
-          prev.forEach((item) => {
-            if (!map.has(String(item._id))) {
-              map.set(String(item._id), item);
-            }
-          });
-          const merged = Array.from(map.values());
-          return merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        });
-      }
-    } catch (err) {
-      setError(err.message || "Unable to load notifications.");
-    } finally {
-      setLoading(false);
+
+    const { silent = false } = typeof options === "boolean" ? { silent: options } : options;
+
+    // Reuse existing in-flight request if one is currently pending
+    if (inFlightPromiseRef.current) {
+      return inFlightPromiseRef.current;
     }
-  }, [isAuthenticated]);
+
+    // Only show skeleton loading spinner if we haven't loaded data yet and silent is false
+    if (!hasFetchedOnce && !silent) {
+      setLoading(true);
+    }
+    setError(null);
+
+    const promise = (async () => {
+      try {
+        const res = await notificationService.getNotifications({ page: 1, limit: 20 });
+        if (res && res.success) {
+          const fetched = res.notifications || [];
+          setNotifications((prev) => {
+            const map = new Map();
+            fetched.forEach((item) => map.set(String(item._id), item));
+            prev.forEach((item) => {
+              if (!map.has(String(item._id))) {
+                map.set(String(item._id), item);
+              }
+            });
+            const merged = Array.from(map.values());
+            return merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          });
+          setHasFetchedOnce(true);
+        }
+      } catch (err) {
+        if (!hasFetchedOnce) {
+          setError(err.message || "Unable to load notifications.");
+        }
+      } finally {
+        setLoading(false);
+        inFlightPromiseRef.current = null;
+      }
+    })();
+
+    inFlightPromiseRef.current = promise;
+    return promise;
+  }, [isAuthenticated, hasFetchedOnce]);
 
   // ---------------------------------------------------------------------------
-  // Initialize initial unread count on authentication
+  // Initialize background data fetching immediately on authentication
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (isAuthenticated) {
       fetchUnreadCount();
+      fetchNotifications({ silent: true });
     } else {
       setNotifications([]);
       setUnreadCount(0);
+      setHasFetchedOnce(false);
     }
-  }, [isAuthenticated, fetchUnreadCount]);
+  }, [isAuthenticated, fetchUnreadCount, fetchNotifications]);
 
   // ---------------------------------------------------------------------------
   // Socket.IO Real-Time Connection Lifecycle & Event Listener

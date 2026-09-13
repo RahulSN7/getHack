@@ -16,26 +16,22 @@ function formatMessageTime(dateStr) {
 }
 
 export default function TeamInvitationCard({ msg, channel, currentUserId, onInvitationUpdated, forceOpen, onClosePopover }) {
-  if (msg.deleted_at || msg.type === "deleted") {
-    return null;
-  }
-
   const [loading, setLoading] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [liveData, setLiveData] = useState(null);
 
-  const invitationId = msg.invitation_id || msg.invitationId || "";
-  const targetTeamId = liveData?.team?._id || liveData?.team?.id || msg.team_id || msg.teamId || msg.team || "";
-  const teamName = liveData?.team?.teamName || msg.team_name || msg.teamName || "Team";
-  const hackathonName = liveData?.team?.hackathonName || msg.hackathon_name || msg.hackathonName || "Hackathon";
-  const senderId = String(msg.sender_id || msg.senderId || "");
-  const senderName = msg.sender_name || msg.senderName || "A connection";
-  const receiverId = String(msg.receiver_id || msg.receiverId || "");
-  const isGroupInvitation = Boolean(msg.is_group_invitation || liveData?.invitation?.isGroupInvitation);
+  const invitationId = msg?.invitation_id || msg?.invitationId || "";
+  const targetTeamId = liveData?.team?._id || liveData?.team?.id || msg?.team_id || msg?.teamId || msg?.team || "";
+  const teamName = liveData?.team?.teamName || msg?.team_name || msg?.teamName || "Team";
+  const hackathonName = liveData?.team?.hackathonName || msg?.hackathon_name || msg?.hackathonName || "Hackathon";
+  const senderId = String(msg?.sender_id || msg?.senderId || "");
+  const senderName = msg?.sender_name || msg?.senderName || "A connection";
+  const receiverId = String(msg?.receiver_id || msg?.receiverId || "");
+  const isGroupInvitation = Boolean(msg?.is_group_invitation || liveData?.invitation?.isGroupInvitation);
 
   // Dynamic team size calculation from live team data or message payload fallback
-  const currentSize = liveData?.team?.members?.length ?? liveData?.team?.currentSize ?? msg.current_size ?? msg.currentSize ?? 1;
-  const maxSize = liveData?.team?.maxSize ?? msg.max_size ?? msg.maxSize ?? 4;
+  const currentSize = liveData?.team?.members?.length ?? liveData?.team?.currentSize ?? msg?.current_size ?? msg?.currentSize ?? 1;
+  const maxSize = liveData?.team?.maxSize ?? msg?.max_size ?? msg?.maxSize ?? 4;
 
   const isMine = String(currentUserId) === senderId;
   const isRecipient = String(currentUserId) === receiverId;
@@ -43,7 +39,7 @@ export default function TeamInvitationCard({ msg, channel, currentUserId, onInvi
   // Fetch persisted invitation & team details to evaluate per-user state accurately
   useEffect(() => {
     let isMounted = true;
-    if (!invitationId) return;
+    if (!invitationId || msg?.deleted_at || msg?.type === "deleted") return;
 
     async function loadInvitationDetails() {
       try {
@@ -63,7 +59,7 @@ export default function TeamInvitationCard({ msg, channel, currentUserId, onInvi
     return () => {
       isMounted = false;
     };
-  }, [invitationId]);
+  }, [invitationId, msg?.deleted_at, msg?.type]);
 
   // Determine if the current user has already joined the hackathon team
   const currentUserHasJoinedTeam = useMemo(() => {
@@ -105,11 +101,15 @@ export default function TeamInvitationCard({ msg, channel, currentUserId, onInvi
       }
     }
     // For 1-on-1 direct invitation where current user is receiver and status is rejected
-    if (!isGroupInvitation && isRecipient && (msg.invitation_status === "rejected" || invObj?.status === "rejected")) {
+    if (!isGroupInvitation && isRecipient && (msg?.invitation_status === "rejected" || invObj?.status === "rejected")) {
       return true;
     }
     return false;
-  }, [currentUserId, liveData, isGroupInvitation, isRecipient, msg.invitation_status]);
+  }, [currentUserId, liveData, isGroupInvitation, isRecipient, msg?.invitation_status]);
+
+  if (!msg || msg.deleted_at || msg.type === "deleted") {
+    return null;
+  }
 
   const handleRespond = async (action) => {
     if (!invitationId || loading) return;

@@ -36,7 +36,7 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="px-6 py-20">
+    <section id="how-it-works" className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-7xl">
         {/* Heading */}
         <div className="max-w-2xl">

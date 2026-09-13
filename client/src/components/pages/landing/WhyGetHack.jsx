@@ -80,7 +80,7 @@ const cards = [
 
 function WhyGetHack() {
   return (
-    <section id="why-gethack" className="px-6 py-24 bg-slate-50/50 dark:bg-neutral-950/60 transition-colors">
+    <section id="why-gethack" className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-24 bg-slate-50/50 dark:bg-neutral-950/60 transition-colors">
       <div className="mx-auto max-w-7xl">
         {/* Section Header */}
         <div className="max-w-3xl">

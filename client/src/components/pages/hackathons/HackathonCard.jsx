@@ -108,18 +108,14 @@ function HackathonCard({ hackathon }) {
   const externalUrl = typeof source === "object" ? source.externalUrl : hackathon.url || hackathon.registrationUrl;
   const formattedPlatform = formatPlatformName(rawPlatform, source, externalUrl);
 
+  const logoUrl = hackathon.image || hackathon.logo || hackathon.thumbnail || hackathon.avatar;
+
   const accent = hackathon.accent || "indigo";
 
   const { isSaved, toggleSave } = useSaved();
   const saved = id ? isSaved(id) : false;
 
   const status = getHackathonRegistrationStatus(hackathon);
-  const isOpen = status === "OPEN";
-
-  const mode = hackathon.format || hackathon.event?.mode || hackathon.mode || null;
-  const minTeam = hackathon.minTeamSize || hackathon.teamSize?.min || 1;
-  const maxTeam = hackathon.maxTeamSize || hackathon.teamSize?.max || 4;
-  const teamSizeStr = minTeam === maxTeam ? `${minTeam} Member${minTeam > 1 ? "s" : ""}` : `${minTeam}–${maxTeam} Members`;
 
   const accentText = ACCENT_TEXT[accent] || ACCENT_TEXT.indigo;
   const accentBgSoft = ACCENT_BG_SOFT[accent] || ACCENT_BG_SOFT.indigo;
@@ -148,13 +144,16 @@ function HackathonCard({ hackathon }) {
       className="
         group
         flex
+        w-full
+        h-full
         flex-col
         justify-between
         rounded-xl
         border
         border-neutral-200
         bg-white
-        p-5
+        p-4
+        sm:p-5
         transition-all
         duration-200
         hover:border-neutral-300
@@ -168,8 +167,8 @@ function HackathonCard({ hackathon }) {
     >
       <div>
         {/* ── 1. Header: Logo + Name + Organizer & Status + Save Button ── */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
+        <div className="flex items-start justify-between gap-2.5 sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3">
             {/* Logo / Avatar fallback */}
             <Link
               to={id ? `/hackathons/${id}` : "#"}
@@ -178,39 +177,49 @@ function HackathonCard({ hackathon }) {
               aria-label={`View details for ${name}`}
               className="shrink-0 transition-opacity hover:opacity-90"
             >
-              <div
-                className={`
-                  grid
-                  h-9
-                  w-9
-                  shrink-0
-                  place-items-center
-                  rounded-lg
-                  text-sm
-                  font-bold
-                  ${accentBgSoft}
-                  ${accentText}
-                `}
-              >
-                {initial}
-              </div>
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={name}
+                  className="h-9 w-9 shrink-0 rounded-lg object-cover max-w-full"
+                />
+              ) : (
+                <div
+                  className={`
+                    grid
+                    h-9
+                    w-9
+                    shrink-0
+                    place-items-center
+                    rounded-lg
+                    text-sm
+                    font-bold
+                    ${accentBgSoft}
+                    ${accentText}
+                  `}
+                >
+                  {initial}
+                </div>
+              )}
             </Link>
 
             {/* Name & Organizer */}
             <div className="min-w-0 flex-1">
-              <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
+              <h3 className="break-words text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
                 <Link
                   to={id ? `/hackathons/${id}` : "#"}
                   onClick={handleViewDetails}
                   state={{ from: currentLocation }}
-                  className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                  className="transition-colors hover:text-[#2563EB] dark:hover:text-blue-400"
                 >
                   {name}
                 </Link>
               </h3>
-              <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                {organizer}
-              </p>
+              {organizer && (
+                <p className="mt-0.5 break-words text-xs text-neutral-500 dark:text-neutral-400">
+                  {organizer}
+                </p>
+              )}
             </div>
           </div>
 
@@ -243,6 +252,7 @@ function HackathonCard({ hackathon }) {
                 grid
                 h-7
                 w-7
+                shrink-0
                 place-items-center
                 rounded-lg
                 border
@@ -274,31 +284,29 @@ function HackathonCard({ hackathon }) {
 
         {/* ── 2. Platform ── */}
         {formattedPlatform && (
-          <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-2 break-words text-xs text-neutral-500 dark:text-neutral-400">
             Hosted on <span className="font-semibold text-neutral-700 dark:text-neutral-200">{formattedPlatform}</span>
           </p>
         )}
-
-
 
         {/* ── 4. Stats: Start Date & Prize ── */}
         <div className="mt-4 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
           <div className={startDateFormatted ? "grid grid-cols-2 gap-3" : "block"}>
             {startDateFormatted && (
-              <div>
+              <div className="min-w-0">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
                   EVENT DATE
                 </p>
-                <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                <p className="mt-0.5 break-words text-xs font-semibold text-neutral-800 dark:text-neutral-200">
                   {startDateFormatted}
                 </p>
               </div>
             )}
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
                 PRIZE
               </p>
-              <p className="mt-0.5 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+              <p className="mt-0.5 break-words text-xs font-semibold text-neutral-800 dark:text-neutral-200">
                 {prize}
               </p>
             </div>
@@ -307,11 +315,13 @@ function HackathonCard({ hackathon }) {
       </div>
 
       {/* ── 5. Footer: Deadline (Left) & View Details CTA (Right) ── */}
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-        <DeadlineDisplay
-          registrationDeadline={registrationDeadline}
-          registrationOpen={registrationOpen}
-        />
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
+        <div className="min-w-0 flex-1">
+          <DeadlineDisplay
+            registrationDeadline={registrationDeadline}
+            registrationOpen={registrationOpen}
+          />
+        </div>
 
         <button
           type="button"
@@ -319,12 +329,14 @@ function HackathonCard({ hackathon }) {
           aria-label={`View details for ${name}`}
           className="
             inline-flex
+            shrink-0
             items-center
             justify-center
             rounded-lg
             bg-[#2563EB]
             px-3.5
-            py-1.5
+            py-2
+            sm:py-1.5
             text-xs
             font-semibold
             text-white

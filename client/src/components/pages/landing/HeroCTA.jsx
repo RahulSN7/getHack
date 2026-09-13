@@ -2,7 +2,8 @@ function HeroCTA() {
   return (
     <div
       className="
-        mt-10
+        mt-6
+        sm:mt-10
         flex
         flex-col
         gap-3
@@ -19,6 +20,8 @@ function HeroCTA() {
           group
           inline-flex
           h-11
+          w-full
+          sm:w-auto
           items-center
           justify-center
           gap-2
@@ -75,6 +78,8 @@ function HeroCTA() {
           group
           inline-flex
           h-11
+          w-full
+          sm:w-auto
           items-center
           justify-center
           gap-2

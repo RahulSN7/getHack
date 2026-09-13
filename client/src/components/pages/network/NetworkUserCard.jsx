@@ -44,6 +44,8 @@ export default function NetworkUserCard({
   onCancel,
   onMessage,
 }) {
+  const currentLocation = useLocation();
+
   if (!person) return null;
 
   const {
@@ -67,7 +69,6 @@ export default function NetworkUserCard({
 
   const avatar = person.avatar || person.profile?.avatar || "";
 
-  const currentLocation = useLocation();
   const isIncoming = variant === "incoming-request";
   const isSent = variant === "sent-request";
   const isConnection = variant === "connection";

@@ -36,6 +36,9 @@ function UserAvatar({ avatar, name }) {
 }
 
 export default function TeammateCard({ teammate, onConnect, connectionStatus }) {
+  const currentLocation = useLocation();
+  const navigate = useNavigate();
+
   if (!teammate) return null;
 
   const {
@@ -47,9 +50,6 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
   } = teammate;
 
   const avatar = teammate.avatar || teammate.profile?.avatar || "";
-
-  const currentLocation = useLocation();
-  const navigate = useNavigate();
   const userId = teammate.id || teammate._id;
   const isOnline = availability === "available" || availability === "online" || availability === "Available";
 

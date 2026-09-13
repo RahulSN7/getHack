@@ -61,6 +61,18 @@ function OrganizerHeader() {
     };
   }, [userDropdownOpen]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   // Close mobile menu on resize to desktop
   useEffect(() => {
     const onResize = () => {
@@ -113,23 +125,25 @@ function OrganizerHeader() {
           duration-300
           ease-out
           ${
-            scrolled
+            scrolled || mobileMenuOpen
               ? `
-                bg-white/80
-                backdrop-blur-lg
-                shadow-[0_1px_3px_rgba(0,0,0,0.04)]
-                dark:bg-neutral-950/75
+                bg-white
+                border-b
+                border-neutral-200/80
+                shadow-xs
+                dark:bg-neutral-950
+                dark:border-neutral-800/80
                 dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)]
               `
               : `
                 bg-white/50
                 backdrop-blur-sm
+                border-b
+                border-neutral-200/80
                 dark:bg-neutral-950/50
+                dark:border-neutral-800/80
               `
           }
-          border-b
-          border-neutral-200/80
-          dark:border-neutral-800/80
         `}
       >
         <div className="mx-auto flex h-14 max-w-7xl items-center px-5 sm:px-6 lg:px-8">
@@ -395,8 +409,16 @@ function OrganizerHeader() {
             transition-[max-height,opacity]
             duration-300
             ease-out
+            bg-white
+            dark:bg-neutral-950
+            border-b
+            border-neutral-200/80
+            dark:border-neutral-800/80
+            shadow-lg
+            shadow-neutral-950/5
+            dark:shadow-neutral-950/40
             md:hidden
-            ${mobileMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0"}
+            ${mobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}
           `}
         >
           <nav className="mx-auto max-w-7xl px-5 pb-4 sm:px-6 lg:px-8">
@@ -439,6 +461,15 @@ function OrganizerHeader() {
           </nav>
         </div>
       </header>
+
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 top-14 z-40 bg-neutral-950/30 backdrop-blur-xs transition-opacity md:hidden dark:bg-neutral-950/50"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Fixed Header Spacer */}
       <div className="h-14" />

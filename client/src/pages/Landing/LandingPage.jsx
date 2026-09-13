@@ -14,34 +14,39 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
       {/* Hero */}
-      <main className="px-6 pt-20 pb-16">
+      <main className="px-4 pt-6 pb-8 sm:px-6 sm:pt-12 sm:pb-12 lg:px-8 lg:pt-16 lg:pb-16">
         <div className="mx-auto max-w-7xl">
-          <p className="mb-4 text-sm font-semibold tracking-widest text-indigo-500">
+          <p className="mb-2 sm:mb-4 text-xs sm:text-sm font-semibold tracking-widest text-indigo-500 uppercase">
             DISCOVER · CONNECT · COLLABORATE
           </p>
 
           <h1
             className="
-              text-5xl
-              font-bold
-              tracking-[-2px]
+              text-3xl
+              sm:text-6xl
+              lg:text-7xl
+              font-extrabold
+              tracking-tight
               text-neutral-950
-              sm:text-7xl
+              leading-[1.15]
+              sm:leading-[1.1]
               dark:text-white
             "
           >
-            Find your next
-            <br />
-            hackathon.
+            Find your{" "}
+            <span className="block sm:inline">next hackathon.</span>
           </h1>
 
           <p
             className="
-              mt-6
+              mt-3
+              sm:mt-6
               max-w-xl
-              text-lg
-              leading-8
-              text-neutral-500
+              text-sm
+              sm:text-lg
+              leading-relaxed
+              sm:leading-8
+              text-neutral-600
               dark:text-neutral-400
             "
           >

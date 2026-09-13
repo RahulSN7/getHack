@@ -64,8 +64,12 @@ function FindTeammates() {
         border-y
         border-neutral-200
         bg-neutral-50
-        px-6
-        py-20
+        px-4
+        py-8
+        sm:px-6
+        sm:py-12
+        lg:px-8
+        lg:py-20
 
         dark:border-neutral-800
         dark:bg-neutral-950/50

@@ -51,7 +51,7 @@ function FAQ() {
   };
 
   return (
-    <section id="faq" className="px-6 py-24 border-t border-neutral-200 dark:border-neutral-800">
+    <section id="faq" className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-24 border-t border-neutral-200 dark:border-neutral-800">
       <div className="mx-auto max-w-4xl">
         {/* Section Header */}
         <div className="text-center">
