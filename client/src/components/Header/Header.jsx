@@ -475,7 +475,7 @@ function Header() {
           <nav className="ml-8 hidden h-14 items-center gap-1 md:flex">
             <NavLink
               to="/hackathons"
-              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+              className={`relative flex h-full items-center px-3 text-sm font-medium ${
                 isHackathonsActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -489,7 +489,7 @@ function Header() {
 
             <NavLink
               to="/teammates"
-              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+              className={`relative flex h-full items-center px-3 text-sm font-medium ${
                 isTeammatesActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -503,7 +503,7 @@ function Header() {
 
             <NavLink
               to="/network"
-              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+              className={`relative flex h-full items-center px-3 text-sm font-medium ${
                 isNetworkActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -517,7 +517,7 @@ function Header() {
 
             <NavLink
               to="/messages"
-              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+              className={`relative flex h-full items-center px-3 text-sm font-medium ${
                 isMessagesActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"

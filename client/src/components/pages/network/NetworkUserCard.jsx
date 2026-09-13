@@ -138,7 +138,7 @@ export default function NetworkUserCard({
               <Link
                 to={profileTargetId ? `/profile/${profileTargetId}` : "#"}
                 state={{ from: currentLocation }}
-                className="transition-colors hover:text-indigo-600 dark:hover:text-[#2563EB]"
+                className="hover:text-indigo-600 dark:hover:text-[#2563EB]"
               >
                 {name}
               </Link>

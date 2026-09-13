@@ -210,7 +210,7 @@ function HackathonCard({ hackathon }) {
                   to={id ? `/hackathons/${id}` : "#"}
                   onClick={handleViewDetails}
                   state={{ from: currentLocation }}
-                  className="transition-colors hover:text-[#2563EB] dark:hover:text-blue-400"
+                  className="hover:text-[#2563EB] dark:hover:text-blue-400"
                 >
                   {name}
                 </Link>

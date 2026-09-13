@@ -46,7 +46,7 @@ export function DeadlineDisplay({
 
   return (
     <span
-      className={`shrink-0 text-xs transition-colors duration-150 ${styleClass}`}
+      className={`shrink-0 text-xs ${styleClass}`}
     >
       {info.text}
     </span>

@@ -112,7 +112,7 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
               <Link
                 to={userId ? `/profile/${userId}` : "#"}
                 state={{ from: currentLocation }}
-                className="transition-colors hover:text-indigo-600 dark:hover:text-[#2563EB]"
+                className="hover:text-indigo-600 dark:hover:text-[#2563EB]"
               >
                 {name}
               </Link>

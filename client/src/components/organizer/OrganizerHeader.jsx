@@ -160,7 +160,7 @@ function OrganizerHeader() {
           <nav className="ml-8 hidden h-14 items-center gap-1 md:flex">
             <NavLink
               to="/organizer/create"
-              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+              className={`relative flex h-full items-center px-3 text-sm font-medium ${
                 isAddHackathonActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -174,7 +174,7 @@ function OrganizerHeader() {
 
             <NavLink
               to="/organizer/hackathons"
-              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+              className={`relative flex h-full items-center px-3 text-sm font-medium ${
                 isMyHackathonsActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"

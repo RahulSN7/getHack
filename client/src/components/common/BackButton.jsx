@@ -41,8 +41,6 @@ export default function BackButton({
     font-semibold
     text-neutral-700
     shadow-2xs
-    transition-colors
-    duration-150
     hover:border-neutral-300
     hover:bg-neutral-50
     hover:text-neutral-950
@@ -65,8 +63,6 @@ export default function BackButton({
     text-xs
     font-semibold
     text-neutral-600
-    transition-colors
-    duration-150
     hover:bg-transparent
     hover:text-neutral-900
     dark:bg-transparent
