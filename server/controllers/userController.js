@@ -79,6 +79,15 @@ const updateOwnParticipantProfile = async (req, res) => {
       });
     }
 
+    // Verify ownership: ensure targetUserId (if provided) matches the authenticated user ID
+    const targetUserId = req.params?.id || req.body?.userId || req.body?.id || req.query?.userId;
+    if (targetUserId && String(targetUserId) !== String(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are only authorized to update your own profile.",
+      });
+    }
+
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -87,7 +96,8 @@ const updateOwnParticipantProfile = async (req, res) => {
       });
     }
 
-    if (user.role !== "participant") {
+    const userRole = String(user.role || "").toLowerCase().trim();
+    if (userRole !== "participant") {
       return res.status(403).json({
         message: "Only participants can update this profile.",
       });
@@ -494,6 +504,7 @@ const updateOwnParticipantProfile = async (req, res) => {
     // ========================================================
 
     try {
+      user.markModified("profile");
       await user.save();
     } catch (saveError) {
       // If DB save fails, remove newly uploaded image.
@@ -633,6 +644,7 @@ const getParticipantProfile = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      role: "participant",
       user: targetUser.toSafeUser(),
       isOwner,
       connectionState,
@@ -667,13 +679,17 @@ const getOrganizerProfile = async (req, res) => {
       id = req.user._id.toString();
     }
 
-    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
-      return res.status(404).json({
-        message: "Organizer profile not found.",
-      });
+    let organizer = null;
+
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      organizer = await User.findById(id);
     }
 
-    const organizer = await User.findById(id);
+    if (!organizer) {
+      organizer = await User.findOne({
+        "profile.handle": id,
+      });
+    }
 
     if (
       !organizer ||
@@ -810,6 +826,8 @@ const getOrganizerProfile = async (req, res) => {
     };
 
     return res.status(200).json({
+      success: true,
+      role: "organizer",
       profile: profileData,
 
       stats: {
@@ -854,7 +872,17 @@ const updateOwnOrganizerProfile = async (
       });
     }
 
-    if (req.user.role !== "organizer") {
+    // Verify ownership: ensure targetUserId (if provided) matches the authenticated user ID
+    const targetUserId = req.params?.id || req.body?.userId || req.body?.id || req.query?.userId;
+    if (targetUserId && String(targetUserId) !== String(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: "You are only authorized to update your own profile.",
+      });
+    }
+
+    const userRole = String(req.user.role || "").toLowerCase().trim();
+    if (userRole !== "organizer") {
       return res.status(403).json({
         message:
           "Forbidden. Organizer profile updates only.",
@@ -897,16 +925,22 @@ const updateOwnOrganizerProfile = async (
       user.name = name.trim();
     }
 
-    const currentProfile =
-      user.profile || {};
+    const currentProfile = user.profile || {};
+    const oldAvatar = currentProfile.avatar || "";
+
+    let newAvatar = oldAvatar;
+    if (req.file) {
+      newAvatar = `/uploads/${req.file.filename}`;
+    } else if (req.body?.removePhoto === "true" || req.body?.removePhoto === true) {
+      newAvatar = "";
+    } else if (avatar !== undefined) {
+      newAvatar = String(avatar).trim();
+    }
 
     user.profile = {
       ...currentProfile,
 
-      avatar:
-        avatar !== undefined
-          ? String(avatar).trim()
-          : currentProfile.avatar || "",
+      avatar: newAvatar,
 
       bio:
         bio !== undefined
@@ -991,12 +1025,23 @@ const updateOwnOrganizerProfile = async (
         false,
     };
 
+    user.markModified("profile");
     await user.save();
 
-    return res.status(200).json({
-      message:
-        "Profile updated successfully.",
+    if (
+      req.file &&
+      oldAvatar &&
+      oldAvatar !== newAvatar &&
+      oldAvatar.startsWith("/uploads/")
+    ) {
+      const oldFilename = path.basename(oldAvatar);
+      const oldFilePath = path.join(__dirname, "../public/uploads", oldFilename);
+      fs.unlink(oldFilePath, () => {});
+    }
 
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
       user: user.toSafeUser(),
     });
   } catch (error) {
@@ -1055,6 +1100,56 @@ const getAllParticipants = async (req, res) => {
 };
 
 // ============================================================
+// UNIFIED PROFILE LOOKUP BY ID / HANDLE
+// ============================================================
+
+const getProfileById = async (req, res) => {
+  try {
+    let { id } = req.params;
+
+    if (id === "me") {
+      if (!req.user) {
+        return res.status(401).json({
+          message: "Unauthenticated.",
+        });
+      }
+      id = req.user._id.toString();
+    }
+
+    let targetUser = null;
+
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      targetUser = await User.findById(id);
+    }
+
+    if (!targetUser) {
+      targetUser = await User.findOne({
+        "profile.handle": id,
+      });
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({
+        message: "Profile not found.",
+      });
+    }
+
+    req.params.id = targetUser._id.toString();
+
+    if (targetUser.role === "organizer") {
+      return getOrganizerProfile(req, res);
+    }
+
+    return getParticipantProfile(req, res);
+  } catch (error) {
+    console.error("GET UNIFIED PROFILE BY ID ERROR:", error);
+    return res.status(500).json({
+      message: "Unable to load profile.",
+    });
+  }
+};
+
+// ============================================================
 // EXPORT
 // ============================================================
 
@@ -1065,4 +1160,5 @@ module.exports = {
   getOrganizerProfile,
   updateOwnOrganizerProfile,
   getAllParticipants,
+  getProfileById,
 };

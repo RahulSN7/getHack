@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/useAuth";
 import { useNotifications } from "../../context/NotificationContext";
 import Logo from "../common/Logo";
+import OrganizerHeader from "../organizer/OrganizerHeader";
 
 function formatRelativeTime(dateString) {
   if (!dateString) return "";
@@ -183,7 +184,44 @@ function getNotificationIconConfig(type) {
 
 function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+
+  const isOrganizer = user?.role && String(user.role).toLowerCase().trim() === "organizer";
+
+  if (isOrganizer) {
+    return <OrganizerHeader />;
+  }
+
+  if (authLoading && !user) {
+    return (
+      <header className="fixed top-0 left-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-neutral-200/60 dark:bg-neutral-950/80 dark:border-neutral-800/60">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center">
+              <Logo className="h-7 w-auto" />
+            </Link>
+            <div className="hidden md:flex gap-4">
+              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  const isHackathonsActive = location.pathname.startsWith("/hackathons");
+  const isTeammatesActive =
+    location.pathname.startsWith("/teammates") ||
+    location.pathname.startsWith("/create-team") ||
+    location.pathname.startsWith("/team");
+  const isNetworkActive = location.pathname.startsWith("/network");
+  const isMessagesActive = location.pathname.startsWith("/messages");
   // --------------------------------------------------
   // DARK / LIGHT MODE (from global context)
   // --------------------------------------------------
@@ -423,66 +461,61 @@ function Header() {
               DESKTOP NAVIGATION
               ================================================== */}
 
-          <nav
-            className="
-              ml-8
-              hidden
-              items-center
-              gap-0.5
-
-              md:flex
-            "
-          >
+          <nav className="ml-8 hidden h-14 items-center gap-1 md:flex">
             <NavLink
               to="/hackathons"
-              className={({ isActive }) =>
-                `${navLinkClass} ${
-                  isActive
-                    ? "font-semibold text-neutral-950 dark:text-white"
-                    : ""
-                }`
-              }
+              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+                isHackathonsActive
+                  ? "font-semibold text-neutral-950 dark:text-white"
+                  : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
-              Hackathons
+              <span>Hackathons</span>
+              {isHackathonsActive && (
+                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+              )}
             </NavLink>
 
             <NavLink
               to="/teammates"
-              className={({ isActive }) =>
-                `${navLinkClass} ${
-                  isActive
-                    ? "font-semibold text-neutral-950 dark:text-white"
-                    : ""
-                }`
-              }
+              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+                isTeammatesActive
+                  ? "font-semibold text-neutral-950 dark:text-white"
+                  : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
-              Find Teammates
+              <span>Find Teammates</span>
+              {isTeammatesActive && (
+                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+              )}
             </NavLink>
 
             <NavLink
               to="/network"
-              className={({ isActive }) =>
-                `${navLinkClass} ${
-                  isActive
-                    ? "font-semibold text-neutral-950 dark:text-white"
-                    : ""
-                }`
-              }
+              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+                isNetworkActive
+                  ? "font-semibold text-neutral-950 dark:text-white"
+                  : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
-              My Network
+              <span>My Network</span>
+              {isNetworkActive && (
+                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+              )}
             </NavLink>
 
             <NavLink
               to="/messages"
-              className={({ isActive }) =>
-                `${navLinkClass} ${
-                  isActive
-                    ? "font-semibold text-neutral-950 dark:text-white"
-                    : ""
-                }`
-              }
+              className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors duration-150 ${
+                isMessagesActive
+                  ? "font-semibold text-neutral-950 dark:text-white"
+                  : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+              }`}
             >
-              Messages
+              <span>Messages</span>
+              {isMessagesActive && (
+                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+              )}
             </NavLink>
           </nav>
 

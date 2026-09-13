@@ -23,7 +23,155 @@ export default function GetHackAIWidget() {
   const [conversationId, setConversationId] = useState(null);
   const [visibleCounts, setVisibleCounts] = useState({});
 
+  const [position, setPosition] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   const messagesEndRef = useRef(null);
+  const buttonRef = useRef(null);
+  const dragStartRef = useRef({
+    startX: 0,
+    startY: 0,
+    initialPosX: 0,
+    initialPosY: 0,
+    hasMoved: false,
+    pointerId: null,
+  });
+
+  const STORAGE_KEY = "gethack_ai_button_pos";
+
+  // Clamp coordinates within visible viewport boundaries
+  const clampPosition = (x, y, btnWidth = 145, btnHeight = 48) => {
+    const padding = 12;
+    const maxX = Math.max(padding, window.innerWidth - btnWidth - padding);
+    const maxY = Math.max(padding, window.innerHeight - btnHeight - padding);
+    return {
+      x: Math.min(Math.max(padding, x), maxX),
+      y: Math.min(Math.max(padding, y), maxY),
+    };
+  };
+
+  // Restore saved position or calculate default bottom-right position
+  useEffect(() => {
+    const btnWidth = buttonRef.current?.offsetWidth || 145;
+    const btnHeight = buttonRef.current?.offsetHeight || 48;
+
+    let initialPos = null;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
+          initialPos = parsed;
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    if (initialPos) {
+      setPosition(clampPosition(initialPos.x, initialPos.y, btnWidth, btnHeight));
+    } else {
+      const defaultX = Math.max(12, window.innerWidth - btnWidth - 24);
+      const defaultY = Math.max(12, window.innerHeight - btnHeight - 24);
+      setPosition({ x: defaultX, y: defaultY });
+    }
+  }, []);
+
+  // Recalculate/clamp position on window resize or orientation change
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition((prev) => {
+        if (!prev) return prev;
+        const btnWidth = buttonRef.current?.offsetWidth || 145;
+        const btnHeight = buttonRef.current?.offsetHeight || 48;
+        return clampPosition(prev.x, prev.y, btnWidth, btnHeight);
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
+  }, []);
+
+  // Pointer Drag Handlers (Mouse, Touch, Trackpad)
+  const handlePointerDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return; // Left click or touch only
+
+    const btnNode = buttonRef.current;
+    if (!btnNode) return;
+
+    const rect = btnNode.getBoundingClientRect();
+    const currentX = position ? position.x : rect.left;
+    const currentY = position ? position.y : rect.top;
+
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialPosX: currentX,
+      initialPosY: currentY,
+      hasMoved: false,
+      pointerId: e.pointerId,
+    };
+
+    try {
+      e.target.setPointerCapture(e.pointerId);
+    } catch (err) {}
+  };
+
+  const handlePointerMove = (e) => {
+    if (dragStartRef.current.pointerId === null) return;
+    if (e.pointerId !== dragStartRef.current.pointerId) return;
+
+    const dx = e.clientX - dragStartRef.current.startX;
+    const dy = e.clientY - dragStartRef.current.startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 4) {
+      dragStartRef.current.hasMoved = true;
+      setIsDragging(true);
+
+      const btnWidth = buttonRef.current?.offsetWidth || 145;
+      const btnHeight = buttonRef.current?.offsetHeight || 48;
+
+      const targetX = dragStartRef.current.initialPosX + dx;
+      const targetY = dragStartRef.current.initialPosY + dy;
+
+      const clamped = clampPosition(targetX, targetY, btnWidth, btnHeight);
+      setPosition(clamped);
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (dragStartRef.current.pointerId === null) return;
+    if (e.pointerId !== dragStartRef.current.pointerId) return;
+
+    try {
+      e.target.releasePointerCapture(e.pointerId);
+    } catch (err) {}
+
+    const { hasMoved } = dragStartRef.current;
+    dragStartRef.current.pointerId = null;
+
+    setTimeout(() => setIsDragging(false), 50);
+
+    if (hasMoved) {
+      // Save position to localStorage after drag
+      setPosition((latest) => {
+        if (latest) {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(latest));
+          } catch (err) {}
+        }
+        return latest;
+      });
+    } else {
+      // Click/tap: open AI widget
+      setIsOpen(true);
+    }
+  };
 
   // Derive page context dynamically from route location and route params
   const getPageContext = () => {
@@ -168,15 +316,57 @@ export default function GetHackAIWidget() {
     }
   };
 
+  const getDrawerStyle = () => {
+    if (!position) return {};
+
+    const drawerWidth = Math.min(420, window.innerWidth * 0.95);
+    const drawerHeight = Math.min(580, window.innerHeight * 0.85);
+    const btnWidth = buttonRef.current?.offsetWidth || 145;
+    const btnHeight = buttonRef.current?.offsetHeight || 48;
+
+    let targetX = position.x + btnWidth - drawerWidth;
+    let targetY = position.y + btnHeight - drawerHeight;
+
+    const padding = 12;
+    const maxX = Math.max(padding, window.innerWidth - drawerWidth - padding);
+    const maxY = Math.max(padding, window.innerHeight - drawerHeight - padding);
+
+    const clampedX = Math.min(Math.max(padding, targetX), maxX);
+    const clampedY = Math.min(Math.max(padding, targetY), maxY);
+
+    return {
+      left: `${clampedX}px`,
+      top: `${clampedY}px`,
+      right: "auto",
+      bottom: "auto",
+    };
+  };
+
   if (!user) return null; // Only available for logged-in users
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
-      {/* Floating Toggle Button */}
+    <div className="font-sans">
+      {/* Floating Draggable Toggle Button */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-slate-900 dark:bg-neutral-900 text-white shadow-xl hover:shadow-2xl hover:scale-105 border border-indigo-500/35 transition-all duration-300 group cursor-pointer"
+          ref={buttonRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          style={
+            position
+              ? {
+                  left: `${position.x}px`,
+                  top: `${position.y}px`,
+                  bottom: "auto",
+                  right: "auto",
+                }
+              : {}
+          }
+          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-slate-900 dark:bg-neutral-900 text-white shadow-xl hover:shadow-2xl border border-indigo-500/35 transition-shadow duration-300 group touch-none select-none ${
+            isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
+          }`}
         >
           <div className="relative flex items-center justify-center">
             <img src="/getHack-icon.png" alt="getHack AI" className="w-5 h-5 object-contain" />
@@ -191,7 +381,10 @@ export default function GetHackAIWidget() {
 
       {/* Slide-over Copilot Drawer Window */}
       {isOpen && (
-        <div className="flex flex-col w-[380px] sm:w-[420px] max-w-[95vw] h-[580px] max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden transition-all duration-300">
+        <div
+          style={getDrawerStyle()}
+          className="fixed z-50 flex flex-col w-[380px] sm:w-[420px] max-w-[95vw] h-[580px] max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden transition-all duration-300 font-sans"
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 bg-slate-900 text-white border-b border-neutral-800">
             <div className="flex items-center gap-3">

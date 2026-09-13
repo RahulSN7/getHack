@@ -291,22 +291,22 @@ function extractTargetUserNameFromMessage(userMessage) {
   if (!userMessage || typeof userMessage !== "string") return "";
   let s = userMessage.trim();
 
-  // Explicit user name command prefixes
-  const prefixes = [
-    /^(?:please\s+)?connect\s+me\s+with\s+/i,
-    /^(?:please\s+)?connect\s+me\s+wid\s+/i,
-    /^(?:please\s+)?connect\s+with\s+/i,
-    /^(?:please\s+)?conect\s+me\s+with\s+/i,
-    /^(?:please\s+)?conect\s+me\s+wid\s+/i,
-    /^(?:please\s+)?conect\s+with\s+/i,
-    /^(?:please\s+)?send\s+(?:a\s+)?connection\s+request\s+to\s+/i,
-    /^(?:please\s+)?send\s+connection\s+to\s+/i,
-    /^(?:please\s+)?send\s+req\s+to\s+/i,
-    /^(?:please\s+)?send\s+request\s+to\s+/i,
-    /^(?:i\s+want\s+to\s+connect\s+with\s+)/i,
-    /^(?:i\s+want\s+connect\s+with\s+)/i,
-    /^(?:i\s+want\s+to\s+connect\s+wid\s+)/i,
-    /^(?:i\s+want\s+(?:to\s+)?conect\s+(?:with|wid)\s+)/i,
+  // Multi-pass strip for leading polite phrases or conversational starters
+  let prev = "";
+  while (prev !== s) {
+    prev = s;
+    s = s.replace(/^(?:can\s+you|could\s+you|please|would\s+you\s+mind|would\s+you|i\s+want\s+to|i\s+would\s+like\s+to|i\s+want|hey|hi|hello|kindly)\s+/i, "").trim();
+  }
+
+  // Strip trailing punctuation & polite suffixes
+  s = s.replace(/[?.!]+$/g, "").trim();
+  s = s.replace(/\s+(?:please|now|for\s+me|thanks|thank\s+you)$/i, "").trim();
+
+  const connectPatterns = [
+    /^(?:send\s+(?:a\s+)?connection\s+request\s+to|send\s+connection\s+to|send\s+req\s+to|send\s+request\s+to)\s+(.+)$/i,
+    /^(?:connect\s+me\s+with|connect\s+me\s+to|connect\s+with|connect\s+to|connect)\s+(.+)$/i,
+    /^(?:search\s+for|find\s+user|find)\s+(.+)$/i,
+    /^(?:add|invite)\s+(.+?)(?:\s+to\s+my\s+network|\s+to\s+network)?$/i,
   ];
 
   const pronounsAndStopwords = new Set([
@@ -314,14 +314,19 @@ function extractTargetUserNameFromMessage(userMessage) {
     "the teammate", "this user", "that user", "the user", "this person",
     "that person", "me", "myself", "first one", "second one", "the first one",
     "the second one", "1st", "2nd", "3rd", "first", "second", "third",
-    "the first two", "the 1st two", "those two", "these two", "both"
+    "the first two", "the 1st two", "those two", "these two", "both",
+    "a user", "someone", "anybody", "anyone"
   ]);
 
-  for (const p of prefixes) {
-    if (p.test(s)) {
-      let candidate = s.replace(p, "").replace(/[?.!]/g, "").trim();
-      candidate = candidate.replace(/\s+(please|now)$/i, "").trim();
-      if (candidate && !pronounsAndStopwords.has(candidate.toLowerCase())) return candidate;
+  for (const p of connectPatterns) {
+    const match = s.match(p);
+    if (match && match[1]) {
+      let cand = match[1].replace(/[?.!]/g, "").trim();
+      cand = cand.replace(/\s+(?:please|now|for\s+me)$/i, "").trim();
+      cand = cand.replace(/^(?:a\s+user\s+named|user\s+named|someone\s+named|user)\s+/i, "").trim();
+      if (cand && !pronounsAndStopwords.has(cand.toLowerCase())) {
+        return cand;
+      }
     }
   }
 
@@ -329,41 +334,60 @@ function extractTargetUserNameFromMessage(userMessage) {
 }
 
 /**
- * Match user candidates by name using exact, partial, and fuzzy/typo-tolerant matching
+ * Match user candidates by name, handle, email, or ID using exact, partial, and fuzzy matching
  * @param {Array} candidates
  * @param {string} targetName
  * @returns {Array} Matching candidate objects
  */
 function findMatchingUsersByName(candidates, targetName) {
   if (!Array.isArray(candidates) || candidates.length === 0 || !targetName) return [];
-  const cleanTarget = targetName.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const rawTarget = String(targetName).trim();
+  const cleanTarget = rawTarget.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9]/g, "");
   if (!cleanTarget) return [];
 
-  // 1. Exact or normalized full name match
+  const getCandFields = (c) => {
+    const name = c.name ? String(c.name).toLowerCase() : "";
+    const cleanName = name.replace(/[^a-z0-9]/g, "");
+    const handle = c.handle || c.profile?.handle ? String(c.handle || c.profile?.handle).toLowerCase().replace(/^@/, "") : "";
+    const cleanHandle = handle.replace(/[^a-z0-9]/g, "");
+    const email = c.email ? String(c.email).toLowerCase() : "";
+    const id = String(c.userId || c.id || c._id || "").toLowerCase();
+    return { name, cleanName, handle, cleanHandle, email, id };
+  };
+
+  // 1. Exact match on cleanName, cleanHandle, email, or ID
   const exactMatches = candidates.filter((c) => {
-    if (!c.name) return false;
-    const cleanCandName = c.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-    return cleanCandName === cleanTarget;
+    const f = getCandFields(c);
+    return (
+      f.cleanName === cleanTarget ||
+      (f.cleanHandle && f.cleanHandle === cleanTarget) ||
+      (f.email && f.email === rawTarget.toLowerCase()) ||
+      (f.id && f.id === rawTarget.toLowerCase())
+    );
   });
   if (exactMatches.length > 0) return exactMatches;
 
-  // 2. Partial / Word match (e.g. "Rahul" matching "Rahul Singh" & "Rahul Sharma")
-  const partialMatches = candidates.filter((c) => {
-    if (!c.name) return false;
-    const candLower = c.name.toLowerCase();
-    const targetLower = targetName.toLowerCase();
-    const parts = candLower.split(/\s+/);
-    return parts.includes(targetLower) || candLower === targetLower || (targetLower.length > 2 && candLower.startsWith(targetLower));
-  });
-  if (partialMatches.length > 0) return partialMatches;
-
-  // 3. Fuzzy typo match (e.g. "pydev" <-> "Py Dev", "py dev" <-> "Py Dev")
-  const fuzzyMatches = candidates.filter((c) => {
-    if (!c.name) return false;
-    const cleanCandName = c.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  // 2. Token / Word match (e.g. "Song" matching "Song Gupta" or "Rahul Song")
+  const tokenMatches = candidates.filter((c) => {
+    const f = getCandFields(c);
+    const targetLower = rawTarget.toLowerCase();
+    const parts = f.name.split(/\s+/);
     return (
-      cleanCandName.includes(cleanTarget) ||
-      cleanTarget.includes(cleanCandName)
+      parts.includes(targetLower) ||
+      f.name === targetLower ||
+      f.handle === targetLower ||
+      (targetLower.length >= 2 && (f.name.startsWith(targetLower) || f.handle.startsWith(targetLower)))
+    );
+  });
+  if (tokenMatches.length > 0) return tokenMatches;
+
+  // 3. Substring / Fuzzy match
+  const fuzzyMatches = candidates.filter((c) => {
+    const f = getCandFields(c);
+    return (
+      f.cleanName.includes(cleanTarget) ||
+      cleanTarget.includes(f.cleanName) ||
+      (f.cleanHandle && (f.cleanHandle.includes(cleanTarget) || cleanTarget.includes(f.cleanHandle)))
     );
   });
 
@@ -2010,34 +2034,51 @@ function generateFallbackResponse(messages, context) {
 
     const candidatesForConnect = teammatesData?.teammates || (previousSelectedTeammate ? [previousSelectedTeammate] : null) || (previousTeammates ? previousTeammates : null) || (networkData?.connections ? networkData.connections : null);
 
-    // Fetch candidate pool from DB if missing and target user is requested
-    if (extractedDirectName && !candidatesForConnect) {
-      return {
-        toolCalls: [
-          {
-            name: "find_teammates",
-            args: {
-              limit: 50,
-              availability: "all",
-              matchMode: "all",
-            },
-          },
-        ],
-      };
-    }
-
     // Direct Name Matching (Explicit Direct Connection Request)
-    if (extractedDirectName && candidatesForConnect && Array.isArray(candidatesForConnect)) {
-      const matchingCandidates = findMatchingUsersByName(candidatesForConnect, extractedDirectName);
+    if (extractedDirectName) {
+      let matchingCandidates = [];
+      if (candidatesForConnect && Array.isArray(candidatesForConnect)) {
+        matchingCandidates = findMatchingUsersByName(candidatesForConnect, extractedDirectName);
+      }
 
-      // A. Target user not found
+      // Check if direct find_teammates search was already executed for this target name
+      const hasSearchedForName = Array.isArray(messages) && messages.some((m) => {
+        if (m.role === "tool" && m.name === "find_teammates") {
+          let content = m.content;
+          if (typeof content === "string") {
+            try { content = JSON.parse(content); } catch (e) {}
+          }
+          if (content && content.searchArgs && content.searchArgs.query) {
+            return String(content.searchArgs.query).toLowerCase().trim() === extractedDirectName.toLowerCase().trim();
+          }
+        }
+        return false;
+      });
+
+      if (matchingCandidates.length === 0 && !hasSearchedForName) {
+        return {
+          toolCalls: [
+            {
+              name: "find_teammates",
+              args: {
+                query: extractedDirectName,
+                limit: 50,
+                availability: "all",
+                matchMode: "all",
+              },
+            },
+          ],
+        };
+      }
+
+      // A. Target user not found (only after executing direct DB search)
       if (matchingCandidates.length === 0) {
         return {
           text: `I couldn't find a getHack user named ${extractedDirectName}.`,
         };
       }
 
-      // B. Multiple matching users -> Disambiguation (Requirement #9)
+      // B. Multiple matching users -> Disambiguation
       if (matchingCandidates.length > 1) {
         return {
           text: `I found multiple users named ${extractedDirectName}. Which one do you mean?`,
@@ -2087,6 +2128,7 @@ function generateFallbackResponse(messages, context) {
           targetUserId: candidateId,
           targetName: candidateName,
         },
+        recommendations: { teammates: [targetCandidate] },
       };
     }
 
@@ -3391,6 +3433,8 @@ module.exports = {
   extractTeammateSearchContext,
   isContextResetCommand,
   checkAmbiguousReference,
+  extractTargetUserNameFromMessage,
+  findMatchingUsersByName,
 };
 
 

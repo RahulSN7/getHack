@@ -38,6 +38,10 @@ function AvailabilityBadge({ availability, isComplete }) {
 
 function UserAvatar({ avatar, name, sizeClass = "h-24 w-24 text-2xl" }) {
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [avatar]);
   const initials = name
     ? name
       .split(" ")
@@ -221,13 +225,21 @@ export default function UserProfile() {
 
   // Handle saving profile changes
   const handleSaveProfile = async (updatedData) => {
-    const res = await userService.updateParticipantProfile(updatedData);
+    const activeRole = String(currentUser?.role || profileUser?.role || "").toLowerCase().trim();
+    let res;
+    if (activeRole === "organizer") {
+      res = await userService.updateOrganizerProfile(updatedData);
+    } else {
+      res = await userService.updateParticipantProfile(updatedData);
+    }
+
     if (res?.user) {
       setProfileUser(res.user);
       if (typeof updateUser === "function") {
         updateUser(res.user);
       }
     }
+    return res;
   };
 
   // Connect button click handler

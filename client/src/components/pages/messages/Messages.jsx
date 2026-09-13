@@ -453,9 +453,9 @@ function Messages() {
               combinedList.push(channel);
               addedCids.add(channel.cid);
             } else {
-              // 1-to-1 direct chats: keep ONLY if recipient is in accepted connections
+              // 1-to-1 direct chats: keep if recipient is in accepted connections or fallback
               const otherId = memberIds.find((id) => String(id) !== String(currentUserId));
-              if (otherId && acceptedConnIdsSet.has(String(otherId))) {
+              if (otherId && (acceptedConnIdsSet.size === 0 || acceptedConnIdsSet.has(String(otherId)))) {
                 combinedList.push(channel);
                 addedCids.add(channel.cid);
               }

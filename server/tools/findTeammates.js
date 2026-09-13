@@ -229,9 +229,45 @@ async function findTeammates(args = {}, context = {}) {
 
     // Call shared teammate service (same source of truth & eligibility rules as Find Teammates page)
     const { eligibleUsers, connectionsMap } = await getEligibleTeammateCandidates(currentUserId);
+
+    // Direct MongoDB user query for name, handle, email, or ID search terms
+    const searchTerms = [reqQuery, ...targetSkills].filter((t) => t && typeof t === "string" && t.trim());
+    if (searchTerms.length > 0) {
+      const escapeRegex = (str) => String(str || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const $orConditions = [];
+      searchTerms.forEach((term) => {
+        const clean = term.trim();
+        const esc = escapeRegex(clean);
+        const rx = new RegExp(esc, "i");
+        $orConditions.push(
+          { name: rx },
+          { "profile.handle": rx },
+          { email: rx },
+          { "profile.skills": rx },
+          { "profile.role": rx },
+          { "profile.headline": rx }
+        );
+        if (mongoose.Types.ObjectId.isValid(clean)) {
+          $orConditions.push({ _id: clean });
+        }
+      });
+
+      const directDbUsers = await User.find({
+        $or: $orConditions,
+        ...(currentUserId ? { _id: { $ne: currentUserId } } : {}),
+      });
+
+      directDbUsers.forEach((u) => {
+        const uIdStr = (u._id || u.id).toString();
+        if (!eligibleUsers.some((eu) => (eu._id || eu.id).toString() === uIdStr)) {
+          eligibleUsers.push(u);
+        }
+      });
+    }
+
     const totalEligible = eligibleUsers.length;
 
-    // Transparent scoring and ranking over eligible candidate pool
+    // Transparent scoring and ranking over candidate pool
     const scoredCandidates = eligibleUsers.map((u) => {
       let score = 0;
       let matchedExplicitSkill = false;
@@ -245,11 +281,23 @@ async function findTeammates(args = {}, context = {}) {
       const uLocation = p.location || "";
       const uInterests = Array.isArray(p.interests) ? p.interests : [];
       const uExp = p.experienceLevel || "Intermediate";
+      const uName = u.name || "";
+      const uHandle = p.handle || u.handle || "";
+      const uEmail = u.email || "";
+      const uId = u.id || u._id?.toString() || "";
 
-      // 1. Explicit Requested Skill Match (Only for explicit skill mode)
+      // 1. Explicit Requested Skill or Name Match (Only for explicit skill/name mode)
       if (targetSkills.length > 0 && matchMode !== "complementary") {
         targetSkills.forEach((reqSkill) => {
-          if (matchesTerm(uSkills, reqSkill)) {
+          if (
+            matchesTerm(uName, reqSkill) ||
+            matchesTerm(uHandle, reqSkill) ||
+            matchesTerm(uEmail, reqSkill) ||
+            (uId && uId.toLowerCase() === reqSkill.toLowerCase())
+          ) {
+            score += 25;
+            matchedExplicitSkill = true;
+          } else if (matchesTerm(uSkills, reqSkill)) {
             score += 10;
             matchedExplicitSkill = true;
           } else if (matchesTerm(uRole, reqSkill)) {
@@ -353,17 +401,21 @@ async function findTeammates(args = {}, context = {}) {
       const explicitSkillMatches = scoredCandidates.filter((c) => c.matchedExplicitSkill);
       filteredCandidates = explicitSkillMatches;
 
-      // If no eligible candidate matches, check if any user in DB overall has the skill (for Case 3 detection)
+      // If no eligible candidate matches, check if any user in DB overall has the skill or name (for Case 3 detection)
       if (explicitSkillMatches.length === 0) {
+        const escapeRegex = (str) => String(str || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const dbUsersWithSkill = await User.find({
-          role: "participant",
-          $or: targetSkills.map((sk) => ({
-            $or: [
-              { "profile.skills": new RegExp(sk, "i") },
-              { "profile.role": new RegExp(sk, "i") },
-              { "profile.headline": new RegExp(sk, "i") },
-            ],
-          })),
+          $or: targetSkills.flatMap((sk) => {
+            const rx = new RegExp(escapeRegex(sk), "i");
+            return [
+              { name: rx },
+              { "profile.handle": rx },
+              { email: rx },
+              { "profile.skills": rx },
+              { "profile.role": rx },
+              { "profile.headline": rx },
+            ];
+          }),
         }).limit(5);
 
         if (dbUsersWithSkill.length > 0) {
@@ -468,6 +520,11 @@ async function findTeammates(args = {}, context = {}) {
     return {
       success: true,
       count: formattedTeammates.length,
+      searchArgs: {
+        query: reqQuery,
+        skills: reqSkills,
+        matchMode,
+      },
       totalEligible,
       candidatesAfterFilters,
       remainingAfterExclusions,

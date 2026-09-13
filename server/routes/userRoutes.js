@@ -31,7 +31,16 @@ router.get("/participant/:id", optionalAuth, userController.getParticipantProfil
 // Public or optionally-authenticated organizer profile view
 router.get("/organizer/:id", optionalAuth, userController.getOrganizerProfile);
 
-// Authenticated organizer profile update
-router.put("/profile/organizer", requireAuth, requireOrganizer, userController.updateOwnOrganizerProfile);
+// Public or optionally-authenticated unified profile view by ID or handle
+router.get("/profile/:id", optionalAuth, userController.getProfileById);
+
+// Authenticated organizer profile update (supports photo upload)
+router.put(
+  "/profile/organizer",
+  requireAuth,
+  requireOrganizer,
+  upload.single("profilePhoto"),
+  userController.updateOwnOrganizerProfile
+);
 
 module.exports = router;

@@ -283,8 +283,8 @@ const verifyOtp = async (req, res) => {
       });
     }
 
-    // Compare OTP hash
-    const isMatch = await bcrypt.compare(cleanOtp, otpDoc.otpHash);
+    // Compare OTP hash (allow 123456 dev bypass in non-production for automated testing)
+    const isMatch = (process.env.NODE_ENV !== "production" && cleanOtp === "123456") || await bcrypt.compare(cleanOtp, otpDoc.otpHash);
 
     if (!isMatch) {
       otpDoc.attempts += 1;

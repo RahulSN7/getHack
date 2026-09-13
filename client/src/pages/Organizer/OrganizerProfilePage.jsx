@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { userService } from "../../services/userService";
 import { ORGANIZER_PROFILE } from "../../data/organizerData";
@@ -68,7 +68,7 @@ function OrganizerProfilePage() {
         setLoading(true);
         setError("");
 
-        const targetId = id || (currentUser?.role === "organizer" ? "me" : null);
+        const targetId = id || "me";
 
         if (!targetId && !id) {
           // If viewing /organizer/profile as unauthenticated, show error
@@ -81,29 +81,51 @@ function OrganizerProfilePage() {
 
         const res = await userService.getOrganizerProfile(targetId || "me");
 
-        if (isMounted && res?.profile) {
-          setProfile(res.profile);
+        const fetchedProfile = res?.profile || (res?.user ? {
+          id: res.user.id || res.user._id,
+          name: res.user.name,
+          role: res.user.role,
+          handle: res.user.profile?.handle || `@${(res.user.name || "").toLowerCase().replace(/[^a-z0-9]/g, "")}`,
+          avatar: res.user.profile?.avatar || res.user.avatar || "",
+          bio: res.user.profile?.bio || "",
+          location: res.user.profile?.location || "",
+          organizationName: res.user.profile?.organizationName || res.user.name,
+          organizationType: res.user.profile?.organizationType || "Student Club",
+          organizationDescription: res.user.profile?.organizationDescription || "",
+          website: res.user.profile?.website || "",
+          github: res.user.profile?.github || "",
+          linkedin: res.user.profile?.linkedin || "",
+          twitter: res.user.profile?.twitter || "",
+          instagram: res.user.profile?.instagram || "",
+          discord: res.user.profile?.discord || "",
+          contactNumber: res.user.profile?.contactNumber || "",
+          isVerified: Boolean(res.user.profile?.isVerified),
+          createdAt: res.user.createdAt,
+        } : null);
+
+        if (isMounted && fetchedProfile) {
+          setProfile(fetchedProfile);
           setStats(res.stats || {
             joinedDate: "Mar 2026",
           });
-          setIsOwner(Boolean(res.isOwner || (currentUser && currentUser.id === res.profile.id)));
+          setIsOwner(Boolean(res.isOwner || (currentUser && (currentUser.id === fetchedProfile.id || currentUser._id === fetchedProfile.id))));
 
           setEditForm({
-            name: res.profile.name || "",
-            avatar: res.profile.avatar || "",
-            handle: res.profile.handle || `@${(res.profile.name || "").toLowerCase().replace(/[^a-z0-9]/g, "")}`,
-            location: res.profile.location || "",
-            bio: res.profile.bio || "",
-            organizationName: res.profile.organizationName || "",
-            organizationType: res.profile.organizationType || "Student Club",
-            organizationDescription: res.profile.organizationDescription || "",
-            website: res.profile.website || "",
-            github: res.profile.github || "",
-            linkedin: res.profile.linkedin || "",
-            twitter: res.profile.twitter || "",
-            instagram: res.profile.instagram || "",
-            discord: res.profile.discord || "",
-            contactNumber: res.profile.contactNumber || "",
+            name: fetchedProfile.name || "",
+            avatar: fetchedProfile.avatar || "",
+            handle: fetchedProfile.handle || `@${(fetchedProfile.name || "").toLowerCase().replace(/[^a-z0-9]/g, "")}`,
+            location: fetchedProfile.location || "",
+            bio: fetchedProfile.bio || "",
+            organizationName: fetchedProfile.organizationName || "",
+            organizationType: fetchedProfile.organizationType || "Student Club",
+            organizationDescription: fetchedProfile.organizationDescription || "",
+            website: fetchedProfile.website || "",
+            github: fetchedProfile.github || "",
+            linkedin: fetchedProfile.linkedin || "",
+            twitter: fetchedProfile.twitter || "",
+            instagram: fetchedProfile.instagram || "",
+            discord: fetchedProfile.discord || "",
+            contactNumber: fetchedProfile.contactNumber || "",
           });
           return;
         }
@@ -182,24 +204,48 @@ function OrganizerProfilePage() {
         updateUser(res.user);
       }
 
-      setProfile((prev) => ({
-        ...prev,
-        name: editForm.name.trim() || prev.name,
-        avatar: editForm.avatar.trim(),
-        handle: editForm.handle.trim() || prev.handle,
-        location: editForm.location.trim(),
-        bio: editForm.bio.trim(),
-        organizationName: editForm.organizationName.trim(),
-        organizationType: editForm.organizationType,
-        organizationDescription: editForm.organizationDescription.trim(),
-        website: editForm.website.trim(),
-        github: editForm.github.trim(),
-        linkedin: editForm.linkedin.trim(),
-        twitter: editForm.twitter.trim(),
-        instagram: editForm.instagram.trim(),
-        discord: editForm.discord.trim(),
-        contactNumber: editForm.contactNumber.trim(),
-      }));
+      // Re-fetch organizer profile to get updated server-side fields
+      const updatedRes = await userService.getOrganizerProfile(id || "me");
+      const fetchedProfile = updatedRes?.profile || (res?.user?.profile ? {
+        id: res.user.id || res.user._id,
+        name: res.user.name,
+        role: res.user.role,
+        handle: res.user.profile.handle || editForm.handle,
+        avatar: res.user.profile.avatar || res.user.avatar || editForm.avatar,
+        bio: res.user.profile.bio || editForm.bio,
+        location: res.user.profile.location || editForm.location,
+        organizationName: res.user.profile.organizationName || editForm.organizationName,
+        organizationType: res.user.profile.organizationType || editForm.organizationType,
+        organizationDescription: res.user.profile.organizationDescription || editForm.organizationDescription,
+        website: res.user.profile.website || editForm.website,
+        github: res.user.profile.github || editForm.github,
+        linkedin: res.user.profile.linkedin || editForm.linkedin,
+        twitter: res.user.profile.twitter || editForm.twitter,
+        instagram: res.user.profile.instagram || editForm.instagram,
+        discord: res.user.profile.discord || editForm.discord,
+        contactNumber: res.user.profile.contactNumber || editForm.contactNumber,
+      } : null);
+
+      if (fetchedProfile) {
+        setProfile(fetchedProfile);
+        setEditForm({
+          name: fetchedProfile.name || "",
+          avatar: fetchedProfile.avatar || "",
+          handle: fetchedProfile.handle || "",
+          location: fetchedProfile.location || "",
+          bio: fetchedProfile.bio || "",
+          organizationName: fetchedProfile.organizationName || "",
+          organizationType: fetchedProfile.organizationType || "Student Club",
+          organizationDescription: fetchedProfile.organizationDescription || "",
+          website: fetchedProfile.website || "",
+          github: fetchedProfile.github || "",
+          linkedin: fetchedProfile.linkedin || "",
+          twitter: fetchedProfile.twitter || "",
+          instagram: fetchedProfile.instagram || "",
+          discord: fetchedProfile.discord || "",
+          contactNumber: fetchedProfile.contactNumber || "",
+        });
+      }
 
       setIsEditModalOpen(false);
       setToastMessage("Profile details updated successfully!");
@@ -373,21 +419,19 @@ function OrganizerProfilePage() {
                   items-center
                   gap-2
                   rounded-lg
-                  border
-                  border-neutral-200
-                  bg-white
+                  bg-[#2563EB]
                   px-4
                   py-2
                   text-xs
                   font-semibold
-                  text-neutral-700
+                  text-white
                   shadow-2xs
                   transition-colors
-                  hover:bg-neutral-50
-                  dark:border-neutral-800
-                  dark:bg-neutral-900
-                  dark:text-neutral-300
-                  dark:hover:bg-neutral-800
+                  hover:bg-[#1d4ed8]
+                  dark:bg-[#2563EB]
+                  dark:text-white
+                  dark:hover:bg-[#1d4ed8]
+                  cursor-pointer
                 "
               >
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -541,7 +585,7 @@ function OrganizerProfilePage() {
             <div>
               <span className="block font-medium text-neutral-400 mb-0.5">Email</span>
               <span className="font-semibold text-neutral-800 dark:text-neutral-200">
-                {profileUser?.email || profile?.email || currentUser?.email || "N/A"}
+                {profile?.email || currentUser?.email || "N/A"}
               </span>
             </div>
 
@@ -694,7 +738,7 @@ function OrganizerProfilePage() {
                   Email
                 </label>
                 <div className="flex h-10 w-full items-center rounded-lg border border-neutral-200 bg-neutral-100 px-3.5 text-sm font-medium text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
-                  {profileUser?.email || profile?.email || currentUser?.email || "N/A"}
+                  {profile?.email || currentUser?.email || "N/A"}
                 </div>
               </div>
 

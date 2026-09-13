@@ -20,104 +20,142 @@ export function useChatContext() {
 }
 
 export function ChatProvider({ children }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [chatClient, setChatClient] = useState(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
+
   const clientRef = useRef(null);
-  const connectingRef = useRef(false);
+  const connectionPromiseRef = useRef(null);
+  const connectedUserIdRef = useRef(null);
   const [retryTrigger, setRetryTrigger] = useState(0);
 
   const retryConnect = () => {
-    connectingRef.current = false;
+    connectionPromiseRef.current = null;
+    connectedUserIdRef.current = null;
     setError(null);
     setReady(false);
     setRetryTrigger((prev) => prev + 1);
   };
 
   useEffect(() => {
-    if (!isAuthenticated || !user) {
-      // Disconnect if user logs out
-      if (clientRef.current) {
-        clientRef.current.disconnectUser().catch(() => {});
-        clientRef.current = null;
-        setChatClient(null);
-        setReady(false);
-      }
+    // 1. Wait for AuthContext loading to complete before determining state
+    if (authLoading) {
       return;
     }
 
-    // Avoid duplicate connections
-    if (connectingRef.current) return;
-
-    let cancelled = false;
-
-    async function connectChat() {
-      connectingRef.current = true;
+    // 2. If unauthenticated or no valid user, disconnect existing client & reset state
+    if (!isAuthenticated || !user) {
+      if (clientRef.current) {
+        clientRef.current.disconnectUser().catch(() => {});
+        clientRef.current = null;
+      }
+      connectedUserIdRef.current = null;
+      connectionPromiseRef.current = null;
+      setChatClient(null);
+      setReady(false);
       setError(null);
+      return;
+    }
 
+    const currentUserIdStr = String(user._id || user.id || "");
+    if (!currentUserIdStr) {
+      return;
+    }
+
+    let isSubscribed = true;
+
+    async function performConnect() {
       try {
-        const data = await chatService.getChatToken();
+        setError(null);
 
-        if (cancelled) return;
-
-        const { token, apiKey, user: streamUser } = data;
-
-        if (!token || !apiKey || !streamUser?.id) {
-          throw new Error("Invalid chat token response.");
-        }
-
+        const apiKey = import.meta.env.VITE_STREAM_API_KEY || "w4vu8ugf94ts";
         const client = StreamChat.getInstance(apiKey);
 
-        // Check if singleton instance is already connected to this user
-        if (client.userID && client.userID === String(streamUser.id) && client.user) {
-          if (!cancelled) {
-            clientRef.current = client;
+        // If client is already fully connected for this exact user
+        if (client.userID === currentUserIdStr && client.user) {
+          clientRef.current = client;
+          connectedUserIdRef.current = currentUserIdStr;
+          if (isSubscribed) {
             setChatClient(client);
             setReady(true);
+            setError(null);
           }
           return;
         }
 
-        // Disconnect previous connection if connected to another user or stale
-        if (client.userID || clientRef.current) {
-          await client.disconnectUser().catch(() => {});
-        }
-
-        await client.connectUser(
-          {
-            id: String(streamUser.id),
-            name: streamUser.name || user.name || "User",
-            image: streamUser.image || user.profile?.avatar || "",
-          },
-          token
-        );
-
-        if (cancelled) {
-          await client.disconnectUser().catch(() => {});
+        // If a connection for this exact user is already in progress, await it
+        if (connectionPromiseRef.current && connectedUserIdRef.current === currentUserIdStr) {
+          const connectedClient = await connectionPromiseRef.current;
+          if (isSubscribed) {
+            clientRef.current = connectedClient;
+            setChatClient(connectedClient);
+            setReady(true);
+            setError(null);
+          }
           return;
         }
 
-        clientRef.current = client;
-        setChatClient(client);
-        setReady(true);
+        // If client is connected to a different user, disconnect first
+        if (client.userID && client.userID !== currentUserIdStr) {
+          await client.disconnectUser().catch(() => {});
+        }
+
+        // Create and track the single connection promise for this user
+        connectedUserIdRef.current = currentUserIdStr;
+        const connectPromise = (async () => {
+          const data = await chatService.getChatToken();
+          const { token, apiKey: serverApiKey, user: streamUser } = data || {};
+          const activeApiKey = serverApiKey || apiKey;
+
+          if (!token || !activeApiKey || !streamUser?.id) {
+            throw new Error("Invalid chat token response.");
+          }
+
+          const streamClient = StreamChat.getInstance(activeApiKey);
+
+          if (streamClient.userID === String(streamUser.id) && streamClient.user) {
+            return streamClient;
+          }
+
+          await streamClient.connectUser(
+            {
+              id: String(streamUser.id),
+              name: streamUser.name || user.name || "User",
+              image: streamUser.image || user.profile?.avatar || user.avatar || "",
+            },
+            token
+          );
+
+          return streamClient;
+        })();
+
+        connectionPromiseRef.current = connectPromise;
+        const connectedClient = await connectPromise;
+
+        clientRef.current = connectedClient;
+        if (isSubscribed) {
+          setChatClient(connectedClient);
+          setReady(true);
+          setError(null);
+        }
       } catch (err) {
-        console.error("Stream Chat connection error:", err);
-        if (!cancelled) {
+        console.error("[ChatContext] Connection error:", err);
+        connectionPromiseRef.current = null;
+        connectedUserIdRef.current = null;
+        if (isSubscribed) {
           setError(err.message || "Failed to connect to chat.");
           setReady(false);
         }
-      } finally {
-        connectingRef.current = false;
       }
     }
 
-    connectChat();
+    performConnect();
 
     return () => {
-      cancelled = true;
+      isSubscribed = false;
     };
-  }, [isAuthenticated, user?._id || user?.id, retryTrigger]);
+  }, [isAuthenticated, authLoading, user?._id || user?.id, retryTrigger]);
 
   return (
     <ChatCtx.Provider value={{ chatClient, ready, error, retryConnect }}>
@@ -125,3 +163,4 @@ export function ChatProvider({ children }) {
     </ChatCtx.Provider>
   );
 }
+

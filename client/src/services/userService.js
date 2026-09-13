@@ -68,6 +68,10 @@ export const userService = {
     );
   },
 
+  getProfileById: async (id) => {
+    return request(`/users/profile/${id || "me"}`);
+  },
+
   updateParticipantProfile:
     async (profileData) => {
       return request(
@@ -78,6 +82,20 @@ export const userService = {
         }
       );
     },
+
+  getOrganizerProfile: async (id) => {
+    return request(`/users/organizer/${id || "me"}`);
+  },
+
+  updateOrganizerProfile: async (profileData) => {
+    return request(
+      "/users/profile/organizer",
+      {
+        method: "PUT",
+        body: typeof FormData !== "undefined" && profileData instanceof FormData ? profileData : JSON.stringify(profileData),
+      }
+    );
+  },
 
   getParticipants: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();

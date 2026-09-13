@@ -112,7 +112,14 @@ export function AuthProvider({ children }) {
   const updateUser = (updatedUser) => {
     if (updatedUser) {
       setUser((prev) => {
-        const next = { ...prev, ...updatedUser };
+        const next = {
+          ...prev,
+          ...updatedUser,
+          profile: {
+            ...(prev?.profile || {}),
+            ...(updatedUser?.profile || {}),
+          },
+        };
         try {
           localStorage.setItem("gethack_user", JSON.stringify(next));
         } catch {}

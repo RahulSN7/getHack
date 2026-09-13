@@ -27,7 +27,10 @@ function RoleProtectedRoute({ allowedRole = "organizer", children }) {
   }
 
   // Verify server-authenticated user role matches
-  if (user?.role !== allowedRole) {
+  const userRole = String(user?.role || "").toLowerCase().trim();
+  const targetAllowedRole = String(allowedRole || "").toLowerCase().trim();
+
+  if (userRole !== targetAllowedRole) {
     // Participant trying to access organizer area -> redirect to /hackathons
     return <Navigate to="/hackathons" replace />;
   }
