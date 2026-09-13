@@ -364,7 +364,7 @@ export default function GetHackAIWidget() {
                 }
               : {}
           }
-          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-slate-900 dark:bg-neutral-900 text-white shadow-xl hover:shadow-2xl border border-indigo-500/35 transition-shadow duration-300 group touch-none select-none ${
+          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-lg hover:shadow-xl border border-neutral-200/90 dark:border-indigo-500/35 transition-all duration-300 group touch-none select-none ${
             isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
           }`}
         >
