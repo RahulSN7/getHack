@@ -23,7 +23,8 @@ export default function GetHackAIWidget() {
   const [conversationId, setConversationId] = useState(null);
   const [visibleCounts, setVisibleCounts] = useState({});
 
-  const [position, setPosition] = useState(null);
+  const [buttonPosition, setButtonPosition] = useState(null);
+  const [cardPosition, setCardPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const messagesEndRef = useRef(null);
@@ -42,8 +43,8 @@ export default function GetHackAIWidget() {
 
   const STORAGE_KEY = "gethack_ai_button_pos";
 
-  // Clamp coordinates within visible viewport boundaries
-  const clampPosition = (x, y, width = 145, height = 48) => {
+  // Clamp button coordinates within visible viewport boundaries
+  const clampButtonPosition = (x, y, width = 145, height = 48) => {
     const padding = 12;
     const maxX = Math.max(padding, window.innerWidth - width - padding);
     const maxY = Math.max(padding, window.innerHeight - height - padding);
@@ -53,7 +54,18 @@ export default function GetHackAIWidget() {
     };
   };
 
-  // Restore saved position or calculate default position
+  // Clamp card coordinates within visible viewport boundaries
+  const clampCardPosition = (x, y, width = 380, height = 580) => {
+    const padding = 12;
+    const maxX = Math.max(padding, window.innerWidth - width - padding);
+    const maxY = Math.max(padding, window.innerHeight - height - padding);
+    return {
+      x: Math.min(Math.max(padding, x), maxX),
+      y: Math.min(Math.max(padding, y), maxY),
+    };
+  };
+
+  // Restore saved button position or calculate default position
   useEffect(() => {
     const btnWidth = buttonRef.current?.offsetWidth || 145;
     const btnHeight = buttonRef.current?.offsetHeight || 48;
@@ -72,26 +84,29 @@ export default function GetHackAIWidget() {
     }
 
     if (initialPos) {
-      setPosition(clampPosition(initialPos.x, initialPos.y, btnWidth, btnHeight));
+      setButtonPosition(clampButtonPosition(initialPos.x, initialPos.y, btnWidth, btnHeight));
     } else {
       const defaultX = Math.max(12, window.innerWidth - btnWidth - 24);
       const defaultY = Math.max(12, window.innerHeight - btnHeight - 24);
-      setPosition({ x: defaultX, y: defaultY });
+      setButtonPosition({ x: defaultX, y: defaultY });
     }
   }, []);
 
-  // Recalculate/clamp position on window resize or orientation change
+  // Recalculate/clamp positions on window resize or orientation change
   useEffect(() => {
     const handleResize = () => {
-      setPosition((prev) => {
+      setButtonPosition((prev) => {
         if (!prev) return prev;
-        const activeWidth = isOpen
-          ? cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95)
-          : buttonRef.current?.offsetWidth || 145;
-        const activeHeight = isOpen
-          ? cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85)
-          : buttonRef.current?.offsetHeight || 48;
-        return clampPosition(prev.x, prev.y, activeWidth, activeHeight);
+        const btnWidth = buttonRef.current?.offsetWidth || 145;
+        const btnHeight = buttonRef.current?.offsetHeight || 48;
+        return clampButtonPosition(prev.x, prev.y, btnWidth, btnHeight);
+      });
+
+      setCardPosition((prev) => {
+        if (!prev) return prev;
+        const cardWidth = cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95);
+        const cardHeight = cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85);
+        return clampCardPosition(prev.x, prev.y, cardWidth, cardHeight);
       });
     };
 
@@ -101,7 +116,7 @@ export default function GetHackAIWidget() {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
     };
-  }, [isOpen]);
+  }, []);
 
   // Global window pointer listeners to guarantee smooth drag tracking across the viewport
   useEffect(() => {
@@ -129,33 +144,30 @@ export default function GetHackAIWidget() {
   }, []);
 
   const handleOpenWidget = () => {
-    setPosition((prev) => {
-      if (!prev) return prev;
-      const drawerWidth = cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95);
-      const drawerHeight = cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85);
+    const drawerWidth = cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95);
+    const drawerHeight = cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85);
+    const btnWidth = buttonRef.current?.offsetWidth || 145;
+    const btnHeight = buttonRef.current?.offsetHeight || 48;
 
-      const maxX = Math.max(12, window.innerWidth - drawerWidth - 12);
-      const maxY = Math.max(12, window.innerHeight - drawerHeight - 12);
+    const startX = buttonPosition ? buttonPosition.x + btnWidth - drawerWidth : window.innerWidth - drawerWidth - 12;
+    const startY = buttonPosition ? buttonPosition.y + btnHeight - drawerHeight : window.innerHeight - drawerHeight - 12;
 
-      const clampedX = Math.min(Math.max(12, prev.x), maxX);
-      const clampedY = Math.min(Math.max(12, prev.y), maxY);
-
-      return { x: clampedX, y: clampedY };
-    });
+    setCardPosition(clampCardPosition(startX, startY, drawerWidth, drawerHeight));
     setIsOpen(true);
   };
 
   const startDrag = (clientX, clientY, pointerId = null, element = null) => {
     const activeNode = isOpen ? cardRef.current : buttonRef.current;
     const rect = activeNode ? activeNode.getBoundingClientRect() : { left: 0, top: 0 };
-    const currentX = position ? position.x : rect.left;
-    const currentY = position ? position.y : rect.top;
+    const currentPos = isOpen
+      ? cardPosition || { x: rect.left, y: rect.top }
+      : buttonPosition || { x: rect.left, y: rect.top };
 
     dragStartRef.current = {
       startX: clientX,
       startY: clientY,
-      initialPosX: currentX,
-      initialPosY: currentY,
+      initialPosX: currentPos.x,
+      initialPosY: currentPos.y,
       hasMoved: false,
       pointerId,
       element,
@@ -175,15 +187,21 @@ export default function GetHackAIWidget() {
       dragStartRef.current.hasMoved = true;
       setIsDragging(true);
 
-      const activeNode = dragStartRef.current.isDrawer ? cardRef.current : buttonRef.current;
-      const activeWidth = activeNode?.offsetWidth || (dragStartRef.current.isDrawer ? Math.min(420, window.innerWidth * 0.95) : 145);
-      const activeHeight = activeNode?.offsetHeight || (dragStartRef.current.isDrawer ? Math.min(580, window.innerHeight * 0.85) : 48);
+      const isDrawer = dragStartRef.current.isDrawer;
+      const activeNode = isDrawer ? cardRef.current : buttonRef.current;
+      const activeWidth = activeNode?.offsetWidth || (isDrawer ? Math.min(420, window.innerWidth * 0.95) : 145);
+      const activeHeight = activeNode?.offsetHeight || (isDrawer ? Math.min(580, window.innerHeight * 0.85) : 48);
 
       const targetX = dragStartRef.current.initialPosX + dx;
       const targetY = dragStartRef.current.initialPosY + dy;
 
-      const clamped = clampPosition(targetX, targetY, activeWidth, activeHeight);
-      setPosition(clamped);
+      if (isDrawer) {
+        const clamped = clampCardPosition(targetX, targetY, activeWidth, activeHeight);
+        setCardPosition(clamped);
+      } else {
+        const clamped = clampButtonPosition(targetX, targetY, activeWidth, activeHeight);
+        setButtonPosition(clamped);
+      }
     }
   };
 
@@ -205,15 +223,17 @@ export default function GetHackAIWidget() {
     setIsDragging(false);
 
     if (hasMoved) {
-      // Save position to localStorage after drag
-      setPosition((latest) => {
-        if (latest) {
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(latest));
-          } catch (err) {}
-        }
-        return latest;
-      });
+      if (!isDrawer) {
+        // Save ONLY launcher button position to localStorage when launcher button is dragged
+        setButtonPosition((latest) => {
+          if (latest) {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(latest));
+            } catch (err) {}
+          }
+          return latest;
+        });
+      }
     } else if (!isDrawer) {
       // Click/tap without dragging on collapsed button: open AI widget
       handleOpenWidget();
@@ -286,10 +306,10 @@ export default function GetHackAIWidget() {
   }, [messages, isOpen, loading]);
 
   useEffect(() => {
-    const handleOpenAI = () => setIsOpen(true);
+    const handleOpenAI = () => handleOpenWidget();
     window.addEventListener("gethack:open-ai", handleOpenAI);
     return () => window.removeEventListener("gethack:open-ai", handleOpenAI);
-  }, []);
+  }, [buttonPosition]);
 
   // Initial welcome message if conversation is empty
   useEffect(() => {
@@ -393,12 +413,12 @@ export default function GetHackAIWidget() {
   };
 
   const getDrawerStyle = () => {
-    if (!position) return {};
+    if (!cardPosition) return {};
 
     const drawerWidth = cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95);
     const drawerHeight = cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85);
 
-    const clamped = clampPosition(position.x, position.y, drawerWidth, drawerHeight);
+    const clamped = clampCardPosition(cardPosition.x, cardPosition.y, drawerWidth, drawerHeight);
 
     return {
       left: `${clamped.x}px`,
@@ -428,10 +448,10 @@ export default function GetHackAIWidget() {
             }
           }}
           style={{
-            ...(position
+            ...(buttonPosition
               ? {
-                  left: `${position.x}px`,
-                  top: `${position.y}px`,
+                  left: `${buttonPosition.x}px`,
+                  top: `${buttonPosition.y}px`,
                   bottom: "auto",
                   right: "auto",
                 }
