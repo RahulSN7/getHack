@@ -21,7 +21,7 @@ function CreateHackathonPage() {
     registrationDeadline: "",
     startDate: "",
     endDate: "",
-    format: "Online",
+    format: "",
     venue: "",
     city: "",
     country: "",
@@ -454,12 +454,20 @@ function CreateHackathonPage() {
                 name="format"
                 value={formData.format}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.format ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
               >
+                <option value="" disabled hidden>
+                  Select Event Format
+                </option>
                 <option value="Online">Online</option>
                 <option value="Offline">Offline</option>
                 <option value="Hybrid">Hybrid</option>
               </select>
+              {errors.format && (
+                <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">
+                  {errors.format}
+                </p>
+              )}
             </div>
 
             {/* Display location fields conditionally when Offline or Hybrid */}

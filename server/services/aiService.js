@@ -325,7 +325,7 @@ function extractTargetUserNameFromMessage(userMessage) {
       cand = cand.replace(/\s+(?:please|now|for\s+me)$/i, "").trim();
       cand = cand.replace(/^(?:a\s+user\s+named|user\s+named|someone\s+named|user)\s+/i, "").trim();
       if (cand && !pronounsAndStopwords.has(cand.toLowerCase())) {
-        return cand;
+        return cand; 
       }
     }
   }

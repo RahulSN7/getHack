@@ -28,6 +28,7 @@ export default function GetHackAIWidget() {
 
   const messagesEndRef = useRef(null);
   const buttonRef = useRef(null);
+  const cardRef = useRef(null);
   const dragStartRef = useRef({
     startX: 0,
     startY: 0,
@@ -35,22 +36,24 @@ export default function GetHackAIWidget() {
     initialPosY: 0,
     hasMoved: false,
     pointerId: null,
+    element: null,
+    isDrawer: false,
   });
 
   const STORAGE_KEY = "gethack_ai_button_pos";
 
   // Clamp coordinates within visible viewport boundaries
-  const clampPosition = (x, y, btnWidth = 145, btnHeight = 48) => {
+  const clampPosition = (x, y, width = 145, height = 48) => {
     const padding = 12;
-    const maxX = Math.max(padding, window.innerWidth - btnWidth - padding);
-    const maxY = Math.max(padding, window.innerHeight - btnHeight - padding);
+    const maxX = Math.max(padding, window.innerWidth - width - padding);
+    const maxY = Math.max(padding, window.innerHeight - height - padding);
     return {
       x: Math.min(Math.max(padding, x), maxX),
       y: Math.min(Math.max(padding, y), maxY),
     };
   };
 
-  // Restore saved position or calculate default bottom-right position
+  // Restore saved position or calculate default position
   useEffect(() => {
     const btnWidth = buttonRef.current?.offsetWidth || 145;
     const btnHeight = buttonRef.current?.offsetHeight || 48;
@@ -82,9 +85,13 @@ export default function GetHackAIWidget() {
     const handleResize = () => {
       setPosition((prev) => {
         if (!prev) return prev;
-        const btnWidth = buttonRef.current?.offsetWidth || 145;
-        const btnHeight = buttonRef.current?.offsetHeight || 48;
-        return clampPosition(prev.x, prev.y, btnWidth, btnHeight);
+        const activeWidth = isOpen
+          ? cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95)
+          : buttonRef.current?.offsetWidth || 145;
+        const activeHeight = isOpen
+          ? cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85)
+          : buttonRef.current?.offsetHeight || 48;
+        return clampPosition(prev.x, prev.y, activeWidth, activeHeight);
       });
     };
 
@@ -94,68 +101,108 @@ export default function GetHackAIWidget() {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("orientationchange", handleResize);
     };
+  }, [isOpen]);
+
+  // Global window pointer listeners to guarantee smooth drag tracking across the viewport
+  useEffect(() => {
+    const handleGlobalPointerMove = (e) => {
+      if (dragStartRef.current.pointerId !== null) {
+        moveDrag(e.clientX, e.clientY, e.pointerId);
+      }
+    };
+
+    const handleGlobalPointerUp = (e) => {
+      if (dragStartRef.current.pointerId !== null) {
+        endDrag(e.pointerId);
+      }
+    };
+
+    window.addEventListener("pointermove", handleGlobalPointerMove, { passive: true });
+    window.addEventListener("pointerup", handleGlobalPointerUp, { passive: true });
+    window.addEventListener("pointercancel", handleGlobalPointerUp, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointermove", handleGlobalPointerMove);
+      window.removeEventListener("pointerup", handleGlobalPointerUp);
+      window.removeEventListener("pointercancel", handleGlobalPointerUp);
+    };
   }, []);
 
-  // Pointer Drag Handlers (Mouse, Touch, Trackpad)
-  const handlePointerDown = (e) => {
-    if (e.button !== undefined && e.button !== 0) return; // Left click or touch only
+  const handleOpenWidget = () => {
+    setPosition((prev) => {
+      if (!prev) return prev;
+      const drawerWidth = cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95);
+      const drawerHeight = cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85);
 
-    const btnNode = buttonRef.current;
-    if (!btnNode) return;
+      const maxX = Math.max(12, window.innerWidth - drawerWidth - 12);
+      const maxY = Math.max(12, window.innerHeight - drawerHeight - 12);
 
-    const rect = btnNode.getBoundingClientRect();
+      const clampedX = Math.min(Math.max(12, prev.x), maxX);
+      const clampedY = Math.min(Math.max(12, prev.y), maxY);
+
+      return { x: clampedX, y: clampedY };
+    });
+    setIsOpen(true);
+  };
+
+  const startDrag = (clientX, clientY, pointerId = null, element = null) => {
+    const activeNode = isOpen ? cardRef.current : buttonRef.current;
+    const rect = activeNode ? activeNode.getBoundingClientRect() : { left: 0, top: 0 };
     const currentX = position ? position.x : rect.left;
     const currentY = position ? position.y : rect.top;
 
     dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: clientX,
+      startY: clientY,
       initialPosX: currentX,
       initialPosY: currentY,
       hasMoved: false,
-      pointerId: e.pointerId,
+      pointerId,
+      element,
+      isDrawer: isOpen,
     };
-
-    try {
-      e.target.setPointerCapture(e.pointerId);
-    } catch (err) {}
   };
 
-  const handlePointerMove = (e) => {
+  const moveDrag = (clientX, clientY, pointerId = null) => {
     if (dragStartRef.current.pointerId === null) return;
-    if (e.pointerId !== dragStartRef.current.pointerId) return;
+    if (pointerId !== null && dragStartRef.current.pointerId !== pointerId) return;
 
-    const dx = e.clientX - dragStartRef.current.startX;
-    const dy = e.clientY - dragStartRef.current.startY;
+    const dx = clientX - dragStartRef.current.startX;
+    const dy = clientY - dragStartRef.current.startY;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist > 4) {
+    if (dist > 6) {
       dragStartRef.current.hasMoved = true;
       setIsDragging(true);
 
-      const btnWidth = buttonRef.current?.offsetWidth || 145;
-      const btnHeight = buttonRef.current?.offsetHeight || 48;
+      const activeNode = dragStartRef.current.isDrawer ? cardRef.current : buttonRef.current;
+      const activeWidth = activeNode?.offsetWidth || (dragStartRef.current.isDrawer ? Math.min(420, window.innerWidth * 0.95) : 145);
+      const activeHeight = activeNode?.offsetHeight || (dragStartRef.current.isDrawer ? Math.min(580, window.innerHeight * 0.85) : 48);
 
       const targetX = dragStartRef.current.initialPosX + dx;
       const targetY = dragStartRef.current.initialPosY + dy;
 
-      const clamped = clampPosition(targetX, targetY, btnWidth, btnHeight);
+      const clamped = clampPosition(targetX, targetY, activeWidth, activeHeight);
       setPosition(clamped);
     }
   };
 
-  const handlePointerUp = (e) => {
+  const endDrag = (pointerId = null) => {
     if (dragStartRef.current.pointerId === null) return;
-    if (e.pointerId !== dragStartRef.current.pointerId) return;
+    if (pointerId !== null && dragStartRef.current.pointerId !== pointerId) return;
 
-    try {
-      e.target.releasePointerCapture(e.pointerId);
-    } catch (err) {}
+    const { element, pointerId: activePointerId, hasMoved, isDrawer } = dragStartRef.current;
 
-    const { hasMoved } = dragStartRef.current;
+    if (element && activePointerId !== null && typeof element.releasePointerCapture === "function") {
+      try {
+        if (element.hasPointerCapture(activePointerId)) {
+          element.releasePointerCapture(activePointerId);
+        }
+      } catch (err) {}
+    }
+
     dragStartRef.current.pointerId = null;
-
-    setTimeout(() => setIsDragging(false), 50);
+    setIsDragging(false);
 
     if (hasMoved) {
       // Save position to localStorage after drag
@@ -167,10 +214,39 @@ export default function GetHackAIWidget() {
         }
         return latest;
       });
-    } else {
-      // Click/tap: open AI widget
-      setIsOpen(true);
+    } else if (!isDrawer) {
+      // Click/tap without dragging on collapsed button: open AI widget
+      handleOpenWidget();
     }
+  };
+
+  // Consolidated Pointer Handlers for Mouse, Trackpad, and Touch
+  const handlePointerDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    const target = e.currentTarget;
+    if (target && typeof target.setPointerCapture === "function") {
+      try {
+        target.setPointerCapture(e.pointerId);
+      } catch (err) {}
+    }
+    startDrag(e.clientX, e.clientY, e.pointerId, target);
+  };
+
+  const handlePointerMove = (e) => {
+    if (dragStartRef.current.pointerId === null) return;
+    if (e.pointerId !== undefined && e.pointerId !== dragStartRef.current.pointerId) return;
+    moveDrag(e.clientX, e.clientY, e.pointerId);
+  };
+
+  const handlePointerUp = (e) => {
+    if (dragStartRef.current.pointerId === null) return;
+    if (e.pointerId !== undefined && e.pointerId !== dragStartRef.current.pointerId) return;
+    endDrag(e.pointerId);
+  };
+
+  const handlePointerCancel = (e) => {
+    if (dragStartRef.current.pointerId === null) return;
+    endDrag(e.pointerId);
   };
 
   // Derive page context dynamically from route location and route params
@@ -319,26 +395,17 @@ export default function GetHackAIWidget() {
   const getDrawerStyle = () => {
     if (!position) return {};
 
-    const drawerWidth = Math.min(420, window.innerWidth * 0.95);
-    const drawerHeight = Math.min(580, window.innerHeight * 0.85);
-    const btnWidth = buttonRef.current?.offsetWidth || 145;
-    const btnHeight = buttonRef.current?.offsetHeight || 48;
+    const drawerWidth = cardRef.current?.offsetWidth || Math.min(420, window.innerWidth * 0.95);
+    const drawerHeight = cardRef.current?.offsetHeight || Math.min(580, window.innerHeight * 0.85);
 
-    let targetX = position.x + btnWidth - drawerWidth;
-    let targetY = position.y + btnHeight - drawerHeight;
-
-    const padding = 12;
-    const maxX = Math.max(padding, window.innerWidth - drawerWidth - padding);
-    const maxY = Math.max(padding, window.innerHeight - drawerHeight - padding);
-
-    const clampedX = Math.min(Math.max(padding, targetX), maxX);
-    const clampedY = Math.min(Math.max(padding, targetY), maxY);
+    const clamped = clampPosition(position.x, position.y, drawerWidth, drawerHeight);
 
     return {
-      left: `${clampedX}px`,
-      top: `${clampedY}px`,
+      left: `${clamped.x}px`,
+      top: `${clamped.y}px`,
       right: "auto",
       bottom: "auto",
+      touchAction: "none",
     };
   };
 
@@ -353,18 +420,25 @@ export default function GetHackAIWidget() {
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          style={
-            position
+          onPointerCancel={handlePointerCancel}
+          onClick={(e) => {
+            if (dragStartRef.current.hasMoved) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+          style={{
+            ...(position
               ? {
                   left: `${position.x}px`,
                   top: `${position.y}px`,
                   bottom: "auto",
                   right: "auto",
                 }
-              : {}
-          }
-          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-lg hover:shadow-xl border border-neutral-200/90 dark:border-indigo-500/35 transition-all duration-300 group touch-none select-none ${
+              : {}),
+            touchAction: "none",
+          }}
+          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-lg hover:shadow-xl border border-neutral-200/90 dark:border-indigo-500/35 transition-shadow transition-transform duration-300 group touch-none select-none ${
             isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
           }`}
         >
@@ -382,11 +456,23 @@ export default function GetHackAIWidget() {
       {/* Slide-over Copilot Drawer Window */}
       {isOpen && (
         <div
+          ref={cardRef}
           style={getDrawerStyle()}
-          className="fixed z-50 flex flex-col w-[380px] sm:w-[420px] max-w-[95vw] h-[580px] max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden transition-all duration-300 font-sans"
+          className={`fixed z-50 flex flex-col w-[380px] sm:w-[420px] max-w-[95vw] h-[580px] max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden transition-shadow duration-300 font-sans ${
+            isDragging ? "ring-2 ring-indigo-500/40" : ""
+          }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 bg-slate-900 text-white border-b border-neutral-800">
+          <div
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            style={{ touchAction: "none" }}
+            className={`flex items-center justify-between px-5 py-4 bg-slate-900 text-white border-b border-neutral-800 select-none touch-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-xl bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center overflow-hidden shadow-md">
                 <img src="/getHack-icon.png" alt="getHack AI" className="h-6 w-6 object-contain" />
@@ -402,6 +488,8 @@ export default function GetHackAIWidget() {
               </div>
             </div>
             <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setIsOpen(false)}
               className="text-neutral-400 hover:text-white p-1.5 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
               title="Close Copilot"
@@ -413,7 +501,16 @@ export default function GetHackAIWidget() {
           </div>
 
           {/* Context Banner */}
-          <div className="bg-slate-950/50 dark:bg-neutral-950 px-4 py-2 text-[11px] text-neutral-400 border-b border-neutral-200/20 flex items-center justify-between">
+          <div
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            style={{ touchAction: "none" }}
+            className={`bg-slate-950/50 dark:bg-neutral-950 px-4 py-2 text-[11px] text-neutral-400 border-b border-neutral-200/20 flex items-center justify-between select-none touch-none ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
             <span className="flex items-center gap-1.5 font-medium text-neutral-300">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
               Context: <strong className="capitalize text-indigo-400">{getPageContext().page}</strong>
