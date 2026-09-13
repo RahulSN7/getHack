@@ -295,12 +295,9 @@ function HackathonDetailsPage() {
                 </h1>
                 <p className="mt-1 text-sm font-medium text-neutral-500 dark:text-neutral-400">
                   Organized by{" "}
-                  <Link
-                    to={`/organizer/${hackathon?.organizerId || hackathon?.organizer || "org_demo"}/profile`}
-                    className="font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-                  >
+                  <span className="font-semibold text-neutral-900 dark:text-white">
                     {organizer}
-                  </Link>
+                  </span>
                 </p>
 
                 {/* Status & Location badge */}
