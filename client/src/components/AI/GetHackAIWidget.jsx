@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // client/src/components/AI/GetHackAIWidget.jsx
-// Native Floating GetHack AI Copilot Component
+// Native Floating GetHack AI Assistant Component
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useRef } from "react";
@@ -318,7 +318,7 @@ export default function GetHackAIWidget() {
         {
           id: "welcome",
           role: "assistant",
-          content: `Hi ${user?.name || "there"}! I'm **getHack AI** — Your Hackathon Copilot. 🚀\n\nHow can I help you today? Discover hackathons, find teammates, or analyze project compatibility!`,
+          content: `Hi ${user?.name || "there"}! I'm **getHack AI** — Your Hackathon Assistant. 🚀\n\nHow can I help you today? Discover hackathons or find teammates.`,
           timestamp: new Date(),
         },
       ]);
@@ -473,7 +473,7 @@ export default function GetHackAIWidget() {
         </button>
       )}
 
-      {/* Slide-over Copilot Drawer Window */}
+      {/* Slide-over Assistant Drawer Window */}
       {isOpen && (
         <div
           ref={cardRef}
@@ -501,10 +501,10 @@ export default function GetHackAIWidget() {
                 <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">
                   getHack AI
                   <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Copilot
+                    Assistant
                   </span>
                 </h3>
-                <p className="text-xs text-neutral-400">Your Hackathon Copilot</p>
+               
               </div>
             </div>
             <button
@@ -512,7 +512,7 @@ export default function GetHackAIWidget() {
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setIsOpen(false)}
               className="text-neutral-400 hover:text-white p-1.5 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
-              title="Close Copilot"
+              title="Close Assistant"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

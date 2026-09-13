@@ -1,6 +1,6 @@
 const { getToolDefinitions } = require("../tools");
 
-const SYSTEM_PROMPT = `You are getHack AI — Your Hackathon Copilot inside the getHack application.
+const SYSTEM_PROMPT = `You are getHack AI — Your Hackathon Assistant inside the getHack application.
 Your purpose is to help users:
 1. Discover suitable hackathons based on their skills, interests, and availability.
 2. Understand hackathon details, deadlines, and rules.
@@ -3414,12 +3414,12 @@ function generateFallbackResponse(messages, context) {
 
   if (/\b(hi|hello|hey)\b/i.test(lowerMsg)) {
     return {
-      text: `Hello! I'm **getHack AI**, your Hackathon Copilot. 🚀\n\nHow can I help you today? You can ask me to find hackathons, recommend events for your profile, or discover complementary teammates!`,
+      text: `Hello! I'm **getHack AI**, your Hackathon Assistant. 🚀\n\nHow can I help you today? You can ask me to find hackathons, recommend events for your profile, or discover complementary teammates!`,
     };
   }
 
   return {
-    text: `I understand you're asking about "${userMessage.trim()}". As **getHack AI — Your Hackathon Copilot**, I can help you search hackathons, analyze project deadlines, and recommend complementary teammates for your team!`,
+    text: `I understand you're asking about "${userMessage.trim()}". As **getHack AI — Your Hackathon Assistant**, I can help you search hackathons, analyze project deadlines, and recommend complementary teammates for your team!`,
   };
 }
 
