@@ -267,7 +267,7 @@ function Hackathons() {
               <button
                 type="button"
                 onClick={handleCreateHackathonClick}
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#6366f1] px-4 py-2 text-sm font-semibold text-white shadow-xs transition-all duration-150 cursor-pointer hover:bg-[#5254e0] active:bg-[#4345cc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1] focus-visible:ring-offset-2 dark:bg-[#6366f1] dark:hover:bg-[#5254e0]"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white shadow-xs transition-all duration-150 cursor-pointer hover:bg-[#1d4ed8] active:bg-[#1e40af] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 dark:bg-[#2563EB] dark:hover:bg-[#1d4ed8]"
               >
                 <span>+ Add Hackathon</span>
               </button>

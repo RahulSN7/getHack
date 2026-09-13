@@ -322,7 +322,7 @@ function HackathonCard({ hackathon }) {
             items-center
             justify-center
             rounded-lg
-            bg-[#6366f1]
+            bg-[#2563EB]
             px-3.5
             py-1.5
             text-xs
@@ -332,14 +332,14 @@ function HackathonCard({ hackathon }) {
             transition-all
             duration-150
             cursor-pointer
-            hover:bg-[#5254e0]
-            active:bg-[#4345cc]
+            hover:bg-[#1d4ed8]
+            active:bg-[#1e40af]
             focus-visible:outline-none
             focus-visible:ring-2
-            focus-visible:ring-[#6366f1]
+            focus-visible:ring-[#2563EB]
             focus-visible:ring-offset-2
-            dark:bg-[#6366f1]
-            dark:hover:bg-[#5254e0]
+            dark:bg-[#2563EB]
+            dark:hover:bg-[#1d4ed8]
           "
         >
           View Details

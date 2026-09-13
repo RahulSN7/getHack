@@ -467,7 +467,7 @@ export default function UserProfile() {
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#1d4ed8] active:bg-[#1e40af] dark:bg-[#2563EB] dark:hover:bg-[#1d4ed8]"
                 >
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                   <span>Edit Profile</span>

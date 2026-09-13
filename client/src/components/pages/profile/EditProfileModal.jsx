@@ -841,7 +841,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
               <button
                 type="button"
                 onClick={handleAddSkill}
-                className="rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                className="rounded-lg bg-[#2563EB] px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-[#1d4ed8] active:bg-[#1e40af] dark:bg-[#2563EB] dark:hover:bg-[#1d4ed8]"
               >
                 Add
               </button>
@@ -1013,7 +1013,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
               <button
                 type="button"
                 onClick={handleAddInterest}
-                className="rounded-lg bg-neutral-100 px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                className="rounded-lg bg-[#2563EB] px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-[#1d4ed8] active:bg-[#1e40af] dark:bg-[#2563EB] dark:hover:bg-[#1d4ed8]"
               >
                 Add
               </button>
@@ -1126,7 +1126,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-indigo-500 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#2563EB] px-5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-[#1d4ed8] active:bg-[#1e40af] disabled:opacity-50 dark:bg-[#2563EB] dark:hover:bg-[#1d4ed8]"
             >
               {saving ? "Saving..." : "Save Profile"}
             </button>

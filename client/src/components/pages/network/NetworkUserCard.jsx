@@ -28,7 +28,7 @@ function UserAvatar({ avatar, name }) {
           className="h-[56px] w-[56px] rounded-full object-cover border border-[#232336]"
         />
       ) : (
-        <div className="grid h-[56px] w-[56px] place-items-center rounded-full bg-[#885CF6]/20 font-bold text-base text-[#885CF6] border border-[#232336]">
+        <div className="grid h-[56px] w-[56px] place-items-center rounded-full bg-[#2563EB]/20 font-bold text-base text-[#2563EB] border border-[#232336]">
           {initials}
         </div>
       )}
@@ -137,13 +137,13 @@ export default function NetworkUserCard({
               <Link
                 to={profileTargetId ? `/profile/${profileTargetId}` : "#"}
                 state={{ from: currentLocation }}
-                className="transition-colors hover:text-indigo-600 dark:hover:text-[#885CF6]"
+                className="transition-colors hover:text-indigo-600 dark:hover:text-[#2563EB]"
               >
                 {name}
               </Link>
             </h3>
 
-            <p className="truncate text-[14px] font-medium text-indigo-600 dark:text-[#885CF6]">
+            <p className="truncate text-[14px] font-medium text-neutral-600 dark:text-neutral-400">
               {role}
             </p>
 
