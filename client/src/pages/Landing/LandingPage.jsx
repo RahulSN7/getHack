@@ -12,7 +12,7 @@ import Footer from "../../components/pages/landing/Footer";
 
 function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       {/* Hero */}
       <main className="px-4 pt-6 pb-8 sm:px-6 sm:pt-12 sm:pb-12 lg:px-8 lg:pt-16 lg:pb-16">
         <div className="mx-auto max-w-7xl">

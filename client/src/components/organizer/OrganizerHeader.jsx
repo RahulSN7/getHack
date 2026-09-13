@@ -121,18 +121,19 @@ function OrganizerHeader() {
           left-0
           z-50
           w-full
-          transition-[background-color,backdrop-filter,box-shadow]
+          transition-shadow
           duration-300
           ease-out
           ${
             scrolled || mobileMenuOpen
               ? `
-                bg-white
+                bg-white/80
+                backdrop-blur-md
                 border-b
-                border-neutral-200/80
+                border-neutral-200/60
                 shadow-xs
-                dark:bg-neutral-950
-                dark:border-neutral-800/80
+                dark:bg-neutral-950/80
+                dark:border-neutral-800/60
                 dark:shadow-[0_1px_3px_rgba(0,0,0,0.2)]
               `
               : `

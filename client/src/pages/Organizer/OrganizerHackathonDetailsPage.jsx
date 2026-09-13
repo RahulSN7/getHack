@@ -89,7 +89,7 @@ function OrganizerHackathonDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 px-6 py-20 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+      <div className="min-h-screen bg-slate-50 px-6 py-20 dark:bg-neutral-950 dark:text-neutral-100">
         <div className="mx-auto max-w-xl text-center">
           <div className="flex items-center justify-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
             <svg className="h-4 w-4 animate-spin text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -105,7 +105,7 @@ function OrganizerHackathonDetailsPage() {
   // Error State (Unauthorized / Permission / 404)
   if (error || !hackathon) {
     return (
-      <div className="min-h-screen bg-slate-50 px-6 py-20 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+      <div className="min-h-screen bg-slate-50 px-6 py-20 dark:bg-neutral-950 dark:text-neutral-100">
         <div className="mx-auto max-w-xl text-center space-y-4">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/80 dark:text-red-400">
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -181,7 +181,7 @@ function OrganizerHackathonDetailsPage() {
   const hasEventDetails = hasOnlineSpecs || hasOfflineSpecs;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         {/* ── 1. Top Navigation Action ── */}
         <div className="mb-6 flex items-center justify-between">

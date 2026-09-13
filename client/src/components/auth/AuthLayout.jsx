@@ -8,7 +8,7 @@ import Logo from "../common/Logo";
 
 function AuthLayout() {
   return (
-    <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
       {/* ── Top Header Navigation Bar ── */}
       <header className="mx-auto w-full max-w-[440px] pt-2">
         <div className="flex items-center justify-between gap-4">

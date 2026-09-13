@@ -393,7 +393,7 @@ export default function UserProfile() {
   const formattedDOB = formatDateOfBirth(dateOfBirth);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
         {/* ── Top-Left Back Button ── */}
         <div>

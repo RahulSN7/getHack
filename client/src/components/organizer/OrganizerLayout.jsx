@@ -8,7 +8,7 @@ import OrganizerHeader from "./OrganizerHeader";
 
 function OrganizerLayout() {
   return (
-    <div className="min-h-screen bg-slate-50 text-neutral-900 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <OrganizerHeader />
       <Outlet />
     </div>

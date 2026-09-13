@@ -26,9 +26,9 @@ export function ThemeProvider({ children }) {
     return "light";
   });
 
-  useEffect(() => {
+  const applyThemeToDOM = (newTheme) => {
     const root = document.documentElement;
-    if (theme === "dark") {
+    if (newTheme === "dark") {
       root.classList.add("dark");
       root.style.colorScheme = "dark";
       try {
@@ -45,14 +45,23 @@ export function ThemeProvider({ children }) {
         // Ignore localStorage errors
       }
     }
+  };
+
+  useEffect(() => {
+    applyThemeToDOM(theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+    setThemeState((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      applyThemeToDOM(next);
+      return next;
+    });
   };
 
   const setTheme = (newTheme) => {
     if (newTheme === "dark" || newTheme === "light") {
+      applyThemeToDOM(newTheme);
       setThemeState(newTheme);
     }
   };
