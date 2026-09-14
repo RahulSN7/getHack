@@ -3,8 +3,10 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
 import { hackathonService } from "../../services/hackathonService";
+import { chatService } from "../../services/chatService";
 import { ORGANIZER_HACKATHONS } from "../../data/organizerData";
 import BackButton from "../../components/common/BackButton";
 
@@ -37,11 +39,13 @@ function formatDateForInput(dateVal) {
 function EditHackathonPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     organizerName: "",
+    image: "",
     hostedOn: "",
     registrationOpens: "",
     registrationDeadline: "",
@@ -55,9 +59,45 @@ function EditHackathonPage() {
     prizes: "",
   });
 
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoError, setPhotoError] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoError("");
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please select a valid image file (PNG, JPG, WebP, GIF, SVG).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setPhotoError("Image size must be less than 10MB.");
+      return;
+    }
+
+    setPhotoFile(file);
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      setPhotoPreview(previewUrl);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoPreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview("");
+    setPhotoError("");
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -97,6 +137,9 @@ function EditHackathonPage() {
           console.log("Edit form start date:", formattedStartDate);
           console.log("Edit form end date:", formattedEndDate);
 
+          const existingImage = h.image || h.photo || h.logo || h.hackathonImage || "";
+          setPhotoPreview(existingImage);
+
           setFormData({
             title: h.title || h.name || "",
             description: h.description || "",
@@ -104,6 +147,7 @@ function EditHackathonPage() {
               h.organizerName ||
               (typeof h.organizer === "object" ? h.organizer?.name : h.organizer) ||
               "",
+            image: existingImage,
             hostedOn: h.hostedOn || h.platform || (typeof h.source === "object" ? h.source?.platform : "") || "",
             registrationOpens: formatDateForInput(regOpensRaw),
             registrationDeadline: formatDateForInput(regDeadlineRaw),
@@ -211,10 +255,34 @@ function EditHackathonPage() {
     try {
       setSubmitting(true);
 
+      let finalImageUrl = photoPreview && !photoPreview.startsWith("blob:") ? photoPreview : "";
+      if (photoFile) {
+        try {
+          const res = await chatService.uploadFile(photoFile);
+          const uploadedUrl = res?.fileUrl || res?.publicUrl || res?.url;
+          if (uploadedUrl) {
+            finalImageUrl = uploadedUrl;
+          } else {
+            finalImageUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(photoFile);
+            });
+          }
+        } catch {
+          finalImageUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(photoFile);
+          });
+        }
+      }
+
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         organizerName: formData.organizerName.trim(),
+        image: finalImageUrl,
         hostedOn: formData.hostedOn.trim() || undefined,
         registrationOpens: formData.registrationOpens || undefined,
         registrationDeadline: formData.registrationDeadline,
@@ -356,6 +424,60 @@ function EditHackathonPage() {
                 placeholder="Enter organizer or organization name (e.g. Google Developer Student Club)"
                 className={inputClass}
               />
+            </div>
+
+            {/* Hackathon Photo Section */}
+            <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-950/40 space-y-3">
+              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                Hackathon Photo / Logo
+              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                {photoPreview ? (
+                  <div className="relative group shrink-0">
+                    <img
+                      src={photoPreview}
+                      alt="Hackathon preview"
+                      className="h-20 w-20 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      className="absolute -top-1.5 -right-1.5 grid h-5 w-5 place-items-center rounded-full bg-red-600 text-white text-[10px] shadow-sm hover:bg-red-700 transition-colors"
+                      title="Remove Photo"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid h-20 w-20 shrink-0 place-items-center rounded-xl bg-indigo-50 border-2 border-dashed border-indigo-200 text-indigo-400 dark:bg-neutral-900 dark:border-neutral-800">
+                    <svg className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                  </div>
+                )}
+
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+                      <svg className="h-4 w-4 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                      </svg>
+                      <span>{photoPreview ? "Change Photo" : "Upload Photo"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {photoError && (
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                      {photoError}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div>

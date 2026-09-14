@@ -8,7 +8,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import DeleteConfirmationModal from "../../components/organizer/DeleteConfirmationModal";
 import { hackathonService } from "../../services/hackathonService";
-import { getHackathonRegistrationStatus } from "../../utils/hackathonFormatters";
+import { getHackathonRegistrationStatus, getHackathonImage } from "../../utils/hackathonFormatters";
 
 // Helper to format date string
 function formatDate(dateStr) {
@@ -248,6 +248,7 @@ function OrganizerDashboardPage() {
                 {recentHackathons.map((h) => {
                   const statusLabel = getHackathonRegistrationStatus(h);
                   const badge = getStatusBadge(statusLabel);
+                  const photoUrl = getHackathonImage(h);
 
                   return (
                     <div
@@ -272,41 +273,55 @@ function OrganizerDashboardPage() {
                         sm:items-center
                       "
                     >
-                      <div className="space-y-2 max-w-2xl">
-                        <div className="flex flex-wrap items-center gap-2.5">
-                          <h3 className="text-base font-bold tracking-tight text-neutral-900 dark:text-white">
-                            <Link
-                              to={`/organizer/hackathons/${h.id}`}
-                              state={{ from: currentLocation }}
-                              className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                      <div className="flex flex-col sm:flex-row items-start gap-4 flex-1 min-w-0 max-w-2xl">
+                        {photoUrl ? (
+                          <img
+                            src={photoUrl}
+                            alt={h.title || h.name || "Hackathon"}
+                            className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                          />
+                        ) : (
+                          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold text-base dark:bg-neutral-800 dark:border-neutral-700 dark:text-indigo-400">
+                            {(h.title || h.name || "H").charAt(0).toUpperCase()}
+                          </div>
+                        )}
+
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <h3 className="text-base font-bold tracking-tight text-neutral-900 dark:text-white">
+                              <Link
+                                to={`/organizer/hackathons/${h.id}`}
+                                state={{ from: currentLocation }}
+                                className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                              >
+                                {h.title || h.name}
+                              </Link>
+                            </h3>
+                            <span
+                              className={`
+                                rounded-md
+                                px-2.5
+                                py-0.5
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-wide
+                                ${badge.className}
+                              `}
                             >
-                              {h.title || h.name}
-                            </Link>
-                          </h3>
-                          <span
-                            className={`
-                              rounded-md
-                              px-2.5
-                              py-0.5
-                              text-[10px]
-                              font-bold
-                              uppercase
-                              tracking-wide
-                              ${badge.className}
-                            `}
-                          >
-                            {badge.label}
-                          </span>
-                        </div>
+                              {badge.label}
+                            </span>
+                          </div>
 
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
-                          {h.shortDescription || h.description}
-                        </p>
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2">
+                            {h.shortDescription || h.description}
+                          </p>
 
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400 pt-1">
-                          <span>Deadline: {formatDate(h.registrationDeadline)}</span>
-                          <span>Start: {formatDate(h.startDate || h.hackathonDate)}</span>
-                          <span>End: {formatDate(h.endDate || h.eventEndDate)}</span>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400 pt-1">
+                            <span>Deadline: {formatDate(h.registrationDeadline)}</span>
+                            <span>Start: {formatDate(h.startDate || h.hackathonDate)}</span>
+                            <span>End: {formatDate(h.endDate || h.eventEndDate)}</span>
+                          </div>
                         </div>
                       </div>
 

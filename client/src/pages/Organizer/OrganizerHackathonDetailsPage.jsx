@@ -9,8 +9,9 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ACCENT_BG_SOFT, ACCENT_TEXT } from "../../constants/themeTokens";
 import DeadlineDisplay from "../../components/pages/hackathons/DeadlineDisplay";
+import { useAuth } from "../../context/useAuth";
 import { hackathonService } from "../../services/hackathonService";
-import { getHackathonRegistrationStatus, formatLocation } from "../../utils/hackathonFormatters";
+import { getHackathonRegistrationStatus, formatLocation, getHackathonImage } from "../../utils/hackathonFormatters";
 import BackButton from "../../components/common/BackButton";
 
 function formatTeamSize(min, max, customText) {
@@ -44,13 +45,16 @@ function formatDate(dateStr) {
 
 function OrganizerHackathonDetailsPage() {
   const { id } = useParams();
+  const { user } = useAuth();
 
   const [hackathon, setHackathon] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
+    setImgError(false);
     async function loadOrganizerHackathon() {
       try {
         setLoading(true);
@@ -160,6 +164,7 @@ function OrganizerHackathonDetailsPage() {
     mapUrl,
   } = hackathon;
 
+  const hackathonImage = getHackathonImage(hackathon);
   const status = getHackathonRegistrationStatus(hackathon);
   const isOpen = status === "OPEN";
 
@@ -198,27 +203,36 @@ function OrganizerHackathonDetailsPage() {
         <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
-              {/* Avatar logo */}
-              <div
-                className={`
-                  grid
-                  h-12
-                  w-12
-                  shrink-0
-                  place-items-center
-                  rounded-xl
-                  text-lg
-                  font-bold
-                  shadow-2xs
-                  ring-1
-                  ring-black/5
-                  dark:ring-white/10
-                  ${accentBgSoft}
-                  ${accentText}
-                `}
-              >
-                {initial}
-              </div>
+              {/* Hackathon Photo / Logo */}
+              {hackathonImage && !imgError ? (
+                <img
+                  src={hackathonImage}
+                  alt={name}
+                  onError={() => setImgError(true)}
+                  className="h-12 w-12 shrink-0 rounded-xl object-cover shadow-2xs ring-1 ring-black/5 dark:ring-white/10"
+                />
+              ) : (
+                <div
+                  className={`
+                    grid
+                    h-12
+                    w-12
+                    shrink-0
+                    place-items-center
+                    rounded-xl
+                    text-lg
+                    font-bold
+                    shadow-2xs
+                    ring-1
+                    ring-black/5
+                    dark:ring-white/10
+                    ${accentBgSoft}
+                    ${accentText}
+                  `}
+                >
+                  {initial}
+                </div>
+              )}
 
               {/* Title & Metadata */}
               <div>

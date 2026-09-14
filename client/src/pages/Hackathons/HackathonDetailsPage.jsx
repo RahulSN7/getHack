@@ -21,6 +21,7 @@ import {
   formatFee,
   formatMode,
   getHackathonRegistrationStatus,
+  getHackathonImage,
 } from "../../utils/hackathonFormatters";
 
 // Helper to format date string cleanly
@@ -59,11 +60,12 @@ function isValidRegistrationUrl(urlStr) {
 function HackathonDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isSaved, toggleSave } = useSaved();
 
   const [hackathon, setHackathon] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -73,6 +75,7 @@ function HackathonDetailsPage() {
 
   useEffect(() => {
     let isMounted = true;
+    setImgError(false);
     async function loadHackathon() {
       try {
         setLoading(true);
@@ -219,6 +222,7 @@ function HackathonDetailsPage() {
     mapUrl,
   } = hackathon;
 
+  const hackathonImage = getHackathonImage(hackathon);
   const saved = isSaved(id);
   const status = getHackathonRegistrationStatus(hackathon);
   const isOpen = status === "OPEN";
@@ -266,27 +270,36 @@ function HackathonDetailsPage() {
         <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
-              {/* Avatar logo */}
-              <div
-                className={`
-                  grid
-                  h-12
-                  w-12
-                  shrink-0
-                  place-items-center
-                  rounded-xl
-                  text-lg
-                  font-bold
-                  shadow-2xs
-                  ring-1
-                  ring-black/5
-                  dark:ring-white/10
-                  ${accentBgSoft}
-                  ${accentText}
-                `}
-              >
-                {initial}
-              </div>
+              {/* Hackathon Photo / Logo */}
+              {hackathonImage && !imgError ? (
+                <img
+                  src={hackathonImage}
+                  alt={name}
+                  onError={() => setImgError(true)}
+                  className="h-12 w-12 shrink-0 rounded-xl object-cover shadow-2xs ring-1 ring-black/5 dark:ring-white/10"
+                />
+              ) : (
+                <div
+                  className={`
+                    grid
+                    h-12
+                    w-12
+                    shrink-0
+                    place-items-center
+                    rounded-xl
+                    text-lg
+                    font-bold
+                    shadow-2xs
+                    ring-1
+                    ring-black/5
+                    dark:ring-white/10
+                    ${accentBgSoft}
+                    ${accentText}
+                  `}
+                >
+                  {initial}
+                </div>
+              )}
 
               {/* Title & Metadata */}
               <div>

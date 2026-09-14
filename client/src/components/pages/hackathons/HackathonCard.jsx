@@ -3,6 +3,7 @@
 // Displays Platform, Themes, Prize Pool & Deadline. Zero Mode/Fee/TeamSize/Eligibility fields.
 // ---------------------------------------------------------------------------
 
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { useSaved } from "../../../context/SavedContext";
@@ -13,6 +14,7 @@ import {
   formatOrganizer,
   getHackathonRegistrationStatus,
   formatDate,
+  getHackathonImage,
 } from "../../../utils/hackathonFormatters";
 
 // Platform normalization helper
@@ -84,7 +86,7 @@ function formatPlatformName(platformInput, sourceObj, urlInput) {
 function HackathonCard({ hackathon }) {
   const currentLocation = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const id = hackathon.id || hackathon._id;
   const name = typeof hackathon.name === "string" ? hackathon.name : typeof hackathon.title === "string" ? hackathon.title : "Untitled Hackathon";
@@ -108,7 +110,8 @@ function HackathonCard({ hackathon }) {
   const externalUrl = typeof source === "object" ? source.externalUrl : hackathon.url || hackathon.registrationUrl;
   const formattedPlatform = formatPlatformName(rawPlatform, source, externalUrl);
 
-  const logoUrl = hackathon.image || hackathon.logo || hackathon.thumbnail || hackathon.avatar;
+  const [imgError, setImgError] = useState(false);
+  const logoUrl = getHackathonImage(hackathon);
 
   const accent = hackathon.accent || "indigo";
 
@@ -177,10 +180,11 @@ function HackathonCard({ hackathon }) {
               aria-label={`View details for ${name}`}
               className="shrink-0 transition-opacity hover:opacity-90"
             >
-              {logoUrl ? (
+              {logoUrl && !imgError ? (
                 <img
                   src={logoUrl}
-                  alt={name}
+                  alt={organizer || name}
+                  onError={() => setImgError(true)}
                   className="h-9 w-9 shrink-0 rounded-lg object-cover max-w-full"
                 />
               ) : (

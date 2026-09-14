@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ORGANIZER_HACKATHONS } from "../../data/organizerData";
+import { getHackathonImage } from "../../utils/hackathonFormatters";
 
 function OrganizerManagePage() {
   const [activeTab, setActiveTab] = useState("all"); // all | active | drafts | completed
@@ -117,21 +118,36 @@ function OrganizerManagePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200/70 dark:divide-neutral-800/70">
-                {filteredHackathons.map((h) => (
-                  <tr key={h.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <Link
-                          to={`/organizer/hackathons/${h.id}`}
-                          className="font-bold text-neutral-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400 text-sm"
-                        >
-                          {h.name}
-                        </Link>
-                        <p className="mt-0.5 text-neutral-500 dark:text-neutral-400 text-[11px]">
-                          {h.mode} · {h.prizePool}
-                        </p>
-                      </div>
-                    </td>
+                {filteredHackathons.map((h) => {
+                  const photoUrl = getHackathonImage(h);
+                  return (
+                    <tr key={h.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {photoUrl ? (
+                            <img
+                              src={photoUrl}
+                              alt={h.name || h.title}
+                              className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
+                            />
+                          ) : (
+                            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold text-xs dark:bg-neutral-800 dark:border-neutral-700 dark:text-indigo-400">
+                              {(h.name || h.title || "H").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <Link
+                              to={`/organizer/hackathons/${h.id}`}
+                              className="font-bold text-neutral-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400 text-sm"
+                            >
+                              {h.name}
+                            </Link>
+                            <p className="mt-0.5 text-neutral-500 dark:text-neutral-400 text-[11px]">
+                              {h.mode} · {h.prizePool}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
                     <td className="px-6 py-4">
                       <span
                         className={`

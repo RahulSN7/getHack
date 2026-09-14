@@ -263,3 +263,68 @@ export function formatDate(dateStr) {
   }
 }
 
+/**
+ * Extract hackathon-specific photo or logo URL.
+ * Strictly independent from organizer profile photo.
+ * @param {Object} hackathon
+ * @returns {string|null}
+ */
+export function getHackathonImage(hackathon) {
+  if (!hackathon || typeof hackathon !== "object") return null;
+
+  if (hackathon.image && typeof hackathon.image === "string" && hackathon.image.trim()) {
+    return hackathon.image.trim();
+  }
+  if (hackathon.photo && typeof hackathon.photo === "string" && hackathon.photo.trim()) {
+    return hackathon.photo.trim();
+  }
+  if (hackathon.logo && typeof hackathon.logo === "string" && hackathon.logo.trim()) {
+    return hackathon.logo.trim();
+  }
+  if (hackathon.hackathonPhoto && typeof hackathon.hackathonPhoto === "string" && hackathon.hackathonPhoto.trim()) {
+    return hackathon.hackathonPhoto.trim();
+  }
+  if (hackathon.hackathonImage && typeof hackathon.hackathonImage === "string" && hackathon.hackathonImage.trim()) {
+    return hackathon.hackathonImage.trim();
+  }
+  if (hackathon.thumbnail && typeof hackathon.thumbnail === "string" && hackathon.thumbnail.trim()) {
+    return hackathon.thumbnail.trim();
+  }
+
+  return null;
+}
+
+/**
+ * Extract organizer profile photo or logo URL consistently
+ * @param {Object} hackathon
+ * @returns {string|null}
+ */
+export function getOrganizerPhoto(hackathon, user = null) {
+  if (!hackathon || typeof hackathon !== "object") return null;
+
+  if (typeof hackathon.organizer === "object" && hackathon.organizer !== null) {
+    const ref = hackathon.organizer.ref;
+    if (ref && typeof ref === "object") {
+      const p = ref.profile || {};
+      if (p.avatar && typeof p.avatar === "string" && p.avatar.trim()) return p.avatar.trim();
+      if (p.organizationLogo && typeof p.organizationLogo === "string" && p.organizationLogo.trim()) return p.organizationLogo.trim();
+      if (ref.avatar && typeof ref.avatar === "string" && ref.avatar.trim()) return ref.avatar.trim();
+    }
+
+    const refId = typeof ref === "string" ? ref : ref?._id || ref?.id;
+    const currentUserId = user?._id || user?.id;
+    if (refId && currentUserId && refId.toString() === currentUserId.toString()) {
+      const uAvatar = user.profile?.avatar || user.profile?.organizationLogo || user.avatar;
+      if (uAvatar && typeof uAvatar === "string" && uAvatar.trim()) return uAvatar.trim();
+    }
+
+    if (hackathon.organizer.logo && typeof hackathon.organizer.logo === "string" && hackathon.organizer.logo.trim()) return hackathon.organizer.logo.trim();
+    if (hackathon.organizer.avatar && typeof hackathon.organizer.avatar === "string" && hackathon.organizer.avatar.trim()) return hackathon.organizer.avatar.trim();
+  }
+
+  if (hackathon.organizerPhoto && typeof hackathon.organizerPhoto === "string" && hackathon.organizerPhoto.trim()) return hackathon.organizerPhoto.trim();
+  if (hackathon.avatar && typeof hackathon.avatar === "string" && hackathon.avatar.trim()) return hackathon.avatar.trim();
+
+  return null;
+}
+

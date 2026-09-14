@@ -18,7 +18,7 @@ export default function Logo({
   if (iconOnly) {
     return (
       <img
-        src="/getHack-icon.png"
+        src="/gethack-icon.png"
         alt={alt}
         className={`object-contain shrink-0 transition-transform duration-200 group-hover:scale-105 ${className}`}
       />
@@ -28,7 +28,7 @@ export default function Logo({
   if (variant === "light") {
     return (
       <img
-        src="/getHack-logo-white.png"
+        src="/gethack-logo-white.png"
         alt={alt}
         className={`object-contain shrink-0 transition-transform duration-200 group-hover:scale-105 ${className}`}
       />
@@ -38,7 +38,7 @@ export default function Logo({
   if (variant === "dark") {
     return (
       <img
-        src="/getHack-logo.png"
+        src="/gethack-logo.png"
         alt={alt}
         className={`object-contain shrink-0 transition-transform duration-200 group-hover:scale-105 ${className}`}
       />
@@ -48,12 +48,12 @@ export default function Logo({
   return (
     <span className="inline-flex items-center">
       <img
-        src="/getHack-logo.png"
+        src="/gethack-logo.png"
         alt={alt}
         className={`object-contain shrink-0 transition-transform duration-200 group-hover:scale-105 dark:hidden ${className}`}
       />
       <img
-        src="/getHack-logo-white.png"
+        src="/gethack-logo-white.png"
         alt={alt}
         className={`object-contain shrink-0 transition-transform duration-200 group-hover:scale-105 hidden dark:block ${className}`}
       />

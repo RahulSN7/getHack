@@ -8,6 +8,7 @@ import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { aiService } from "../../services/aiService";
 import { useAuth } from "../../context/AuthContext";
 import HackathonCard from "../pages/hackathons/HackathonCard";
+import Logo from "../common/Logo";
 
 export default function GetHackAIWidget() {
   const { user } = useAuth();
@@ -462,8 +463,8 @@ export default function GetHackAIWidget() {
             isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
           }`}
         >
-          <div className="relative flex items-center justify-center">
-            <img src="/getHack-icon.png" alt="getHack AI" className="w-5 h-5 object-contain" />
+          <div className="relative flex items-center justify-center pointer-events-none">
+            <Logo iconOnly className="w-5 h-5 object-contain pointer-events-none" alt="getHack AI" />
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
@@ -494,8 +495,8 @@ export default function GetHackAIWidget() {
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center overflow-hidden shadow-md">
-                <img src="/getHack-icon.png" alt="getHack AI" className="h-6 w-6 object-contain" />
+              <div className="flex items-center justify-center pointer-events-none">
+                <Logo iconOnly className="h-6 w-6 object-contain pointer-events-none" alt="getHack AI" />
               </div>
               <div>
                 <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">

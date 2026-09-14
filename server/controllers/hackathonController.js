@@ -151,7 +151,7 @@ const getPublicHackathons = async (req, res) => {
 
     const total = await Hackathon.countDocuments(query);
     const hackathons = await Hackathon.find(query)
-      .populate("organizer.ref", "name email")
+      .populate("organizer.ref", "name email profile")
       .sort(sortOptions)
       .skip(skip)
       .limit(limit);
@@ -215,9 +215,9 @@ const getHackathonById = async (req, res) => {
     let hackathon;
 
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      hackathon = await Hackathon.findById(id).populate("organizer.ref", "name email");
+      hackathon = await Hackathon.findById(id).populate("organizer.ref", "name email profile");
     } else {
-      hackathon = await Hackathon.findOne({ slug: id }).populate("organizer.ref", "name email");
+      hackathon = await Hackathon.findOne({ slug: id }).populate("organizer.ref", "name email profile");
     }
 
     if (!hackathon) {
@@ -272,6 +272,7 @@ const createHackathon = async (req, res) => {
       contact,
       fee,
       hostedOn,
+      image,
     } = req.body;
 
     const hackathonTitle = title || name;
@@ -302,9 +303,11 @@ const createHackathon = async (req, res) => {
       title: hackathonTitle,
       shortDescription: shortDescription || "",
       description,
+      image: image ? String(image).trim() : "",
       organizerName: organizerName || req.user.name || "Organizer",
       organizer: {
         name: organizerName || req.user.name || "Organizer",
+        logo: req.user.profile?.avatar || req.user.profile?.organizationLogo || req.user.avatar || "",
         ref: req.user._id,
       },
       source: {
@@ -375,7 +378,9 @@ const getMyHackathons = async (req, res) => {
       ],
     };
 
-    const rawHackathons = await Hackathon.find(query).sort({ createdAt: -1 });
+    const rawHackathons = await Hackathon.find(query)
+      .populate("organizer.ref", "name email profile avatar")
+      .sort({ createdAt: -1 });
 
     // Deduplicate by string ID
     const seenIds = new Set();
@@ -448,7 +453,7 @@ const getOrganizerHackathonById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Hackathon not found." });
     }
 
-    const hackathon = await Hackathon.findById(id).populate("organizer.ref", "name email");
+    const hackathon = await Hackathon.findById(id).populate("organizer.ref", "name email profile");
 
     if (!hackathon) {
       return res.status(404).json({ success: false, message: "Hackathon not found." });
