@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testComposerEmojiPickerBehavior.js
 // Integration Test Suite for Composer Emoji Picker Dismissal & Attachment Logic
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

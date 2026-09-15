@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testCandidateCountRule.js
 // Test Suite for Candidate Count Display Rules (<= 5 all, > 5 best 5)
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {
@@ -28,7 +28,7 @@ async function runCandidateCountRuleTests() {
   console.log("=== GET HACK AI CANDIDATE COUNT RULE TEST SUITE ===\n");
 
   const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/gethack";
-  
+
   let attempts = 0;
   while (attempts < 3) {
     try {

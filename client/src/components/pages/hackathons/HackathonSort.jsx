@@ -1,12 +1,12 @@
-// ---------------------------------------------------------------------------
+
 // HackathonSort — sort control + result count
 // Clean native select styled to match the design system.
-// ---------------------------------------------------------------------------
+
 
 const SORT_OPTIONS = [
-  { value: "deadline-asc",  label: "Deadline — soonest first" },
+  { value: "deadline-asc", label: "Deadline — soonest first" },
   { value: "deadline-desc", label: "Deadline — latest first" },
-  { value: "prize-desc",    label: "Prize — highest first" },
+  { value: "prize-desc", label: "Prize — highest first" },
 ];
 
 function HackathonSort({ value, onChange, resultCount }) {

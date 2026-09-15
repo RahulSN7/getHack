@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/aiController.js — Controller for GetHack AI Endpoints
-// ---------------------------------------------------------------------------
+
 
 const crypto = require("crypto");
 const AiConversation = require("../models/aiConversation");

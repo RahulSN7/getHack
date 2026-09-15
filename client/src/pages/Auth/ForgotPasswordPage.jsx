@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // ForgotPasswordPage.jsx — Password Reset Request Page
 // Standardized getHack design system inside standalone AuthLayout.
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { Link } from "react-router-dom";

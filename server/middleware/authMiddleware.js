@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/middleware/authMiddleware.js — Authentication Verification Middleware
 // Verifies JWT token from HTTP-only cookie or Authorization header.
-// ---------------------------------------------------------------------------
+
 
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testZeroFlickerMenuPositioning.js
 // Integration Test Suite for Zero-Flicker Pre-Calculated Menu Positioning
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

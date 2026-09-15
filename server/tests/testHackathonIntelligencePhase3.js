@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testHackathonIntelligencePhase3.js
 // Unit & Integration Test Suite for GetHack A1 Phase 3: Hackathon Intelligence
-// ---------------------------------------------------------------------------
+
 
 const assert = require("assert");
 const { callLLM } = require("../services/aiService");
@@ -58,10 +58,10 @@ async function runTests() {
 
   let testPassed = 0;
 
-  // -------------------------------------------------------------------------
-  // TEST 1: HACKATHON_DETAILS ("Tell me about this hackathon")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 1: HACKATHON_DETAILS ('Tell me about this hackathon') ---");
+  -----------------------
+    // TEST 1: HACKATHON_DETAILS ("Tell me about this hackathon")
+    -----------------------
+      console.log("\n--- TEST 1: HACKATHON_DETAILS ('Tell me about this hackathon') ---");
   const msgDetails = { role: "user", content: "Tell me about this hackathon" };
   const historyWithHack = [
     { role: "assistant", content: "Recommended hackathon:", recommendations: { hackathons: [sampleHackathon] } },
@@ -76,10 +76,10 @@ async function runTests() {
   console.log("✅ TEST 1 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 2: HACKATHON_REQUIREMENTS ("What skills does it require?")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 2: HACKATHON_REQUIREMENTS ('What skills does it require?') ---");
+  -----------------------
+    // TEST 2: HACKATHON_REQUIREMENTS ("What skills does it require?")
+    -----------------------
+      console.log("\n--- TEST 2: HACKATHON_REQUIREMENTS ('What skills does it require?') ---");
   const msgReqs = { role: "user", content: "What skills does it require?" };
   const resReqs = await callLLM([...historyWithHack, { role: "assistant", content: resDetails.text }, msgReqs], context);
 
@@ -90,10 +90,10 @@ async function runTests() {
   console.log("✅ TEST 2 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 3: HACKATHON_DEADLINE ("When is the deadline?")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 3: HACKATHON_DEADLINE ('When is the deadline?') ---");
+  -----------------------
+    // TEST 3: HACKATHON_DEADLINE ("When is the deadline?")
+    -----------------------
+      console.log("\n--- TEST 3: HACKATHON_DEADLINE ('When is the deadline?') ---");
   const msgDeadline = { role: "user", content: "When is the deadline?" };
   const resDeadline = await callLLM([...historyWithHack, msgDeadline], context);
 
@@ -104,10 +104,10 @@ async function runTests() {
   console.log("✅ TEST 3 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 4: HACKATHON_ELIGIBILITY ("Am I eligible?")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 4: HACKATHON_ELIGIBILITY ('Am I eligible?') ---");
+  -----------------------
+    // TEST 4: HACKATHON_ELIGIBILITY ("Am I eligible?")
+    -----------------------
+      console.log("\n--- TEST 4: HACKATHON_ELIGIBILITY ('Am I eligible?') ---");
   const msgElig = { role: "user", content: "Am I eligible?" };
   const resElig = await callLLM([...historyWithHack, msgElig], context);
 
@@ -117,10 +117,10 @@ async function runTests() {
   console.log("✅ TEST 4 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 5: HACKATHON_PROFILE_FIT ("How good is this hackathon for me?")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 5: HACKATHON_PROFILE_FIT ('How good is this hackathon for me?') ---");
+  -----------------------
+    // TEST 5: HACKATHON_PROFILE_FIT ("How good is this hackathon for me?")
+    -----------------------
+      console.log("\n--- TEST 5: HACKATHON_PROFILE_FIT ('How good is this hackathon for me?') ---");
   const msgFit = { role: "user", content: "How good is this hackathon for me?" };
   const resFit = await callLLM([...historyWithHack, msgFit], context);
 
@@ -131,10 +131,10 @@ async function runTests() {
   console.log("✅ TEST 5 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 6: HACKATHON_SKILL_GAP ("What skills am I missing?")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 6: HACKATHON_SKILL_GAP ('What skills am I missing?') ---");
+  -----------------------
+    // TEST 6: HACKATHON_SKILL_GAP ("What skills am I missing?")
+    -----------------------
+      console.log("\n--- TEST 6: HACKATHON_SKILL_GAP ('What skills am I missing?') ---");
   const msgGap = { role: "user", content: "What skills am I missing?" };
   const resGap = await callLLM([...historyWithHack, msgGap], context);
 
@@ -145,10 +145,10 @@ async function runTests() {
   console.log("✅ TEST 6 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 7: HACKATHON_TEAM_REQUIREMENTS ("What teammates do I need for this hackathon?")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 7: HACKATHON_TEAM_REQUIREMENTS ('What teammates do I need for this hackathon?') ---");
+  -----------------------
+    // TEST 7: HACKATHON_TEAM_REQUIREMENTS ("What teammates do I need for this hackathon?")
+    -----------------------
+      console.log("\n--- TEST 7: HACKATHON_TEAM_REQUIREMENTS ('What teammates do I need for this hackathon?') ---");
   const msgTeamReq = { role: "user", content: "What teammates do I need for this hackathon?" };
   const resTeamReqTool = await callLLM([...historyWithHack, msgTeamReq], context);
 
@@ -163,10 +163,10 @@ async function runTests() {
   console.log("✅ TEST 7 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 8: Full Continuous Conversation Workflow (Test 1 through Test 7 in sequence)
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 8: Full Continuous Conversation Workflow ---");
+  -----------------------
+    // TEST 8: Full Continuous Conversation Workflow (Test 1 through Test 7 in sequence)
+    -----------------------
+      console.log("\n--- TEST 8: Full Continuous Conversation Workflow ---");
   const workflowMessages = [
     { role: "user", content: "Show me AI hackathons" },
     { role: "assistant", content: "Found hackathons:", recommendations: { hackathons: [sampleHackathon] } },
@@ -196,10 +196,10 @@ async function runTests() {
   console.log("✅ TEST 8 PASSED (Full continuous multi-turn workflow verified!)");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 9: Exact prompt 'What skills do I require?' using context
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 9: Exact prompt 'What skills do I require?' with context ---");
+  -----------------------
+    // TEST 9: Exact prompt 'What skills do I require?' using context
+    -----------------------
+      console.log("\n--- TEST 9: Exact prompt 'What skills do I require?' with context ---");
   const testRequirementPhrases = [
     "What skills do I require?",
     "What skills do I need?",
@@ -226,10 +226,10 @@ async function runTests() {
   console.log("✅ TEST 9 PASSED (All 11 requirement phrasing variations correctly answered using hackathon context!)");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 10: Fresh conversation 'What skills do I require?' without context
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 10: Fresh conversation 'What skills do I require?' without context ---");
+  -----------------------
+    // TEST 10: Fresh conversation 'What skills do I require?' without context
+    -----------------------
+      console.log("\n--- TEST 10: Fresh conversation 'What skills do I require?' without context ---");
   const freshMsg = { role: "user", content: "What skills do I require?" };
   const freshRes = await callLLM([freshMsg], context);
 

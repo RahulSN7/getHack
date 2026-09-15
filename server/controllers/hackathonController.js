@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/hackathonController.js — Hackathon API Controller
 // Handles multi-platform aggregated hackathon querying, pagination, search, filters,
 // user hackathon creation, and admin manual sync triggers.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const Hackathon = require("../models/hackathon");
@@ -18,9 +18,9 @@ function isValidUrl(string) {
   }
 }
 
-// ---------------------------------------------------------------------------
+
 // GET /api/hackathons — Get All Hackathons (Paginated, Filtered, Sorted)
-// ---------------------------------------------------------------------------
+
 const getPublicHackathons = async (req, res) => {
   if (mongoose.connection.readyState !== 1) {
     return res.status(503).json({
@@ -178,33 +178,33 @@ const getPublicHackathons = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/hackathons/upcoming — Get Upcoming Hackathons
-// ---------------------------------------------------------------------------
+
 const getUpcomingHackathons = async (req, res) => {
   req.query.status = "upcoming";
   return getPublicHackathons(req, res);
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/hackathons/active — Get Currently Active/Live Hackathons
-// ---------------------------------------------------------------------------
+
 const getActiveHackathons = async (req, res) => {
   req.query.status = "live";
   return getPublicHackathons(req, res);
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/hackathons/registration-open — Get Registration Open Hackathons
-// ---------------------------------------------------------------------------
+
 const getRegistrationOpenHackathons = async (req, res) => {
   req.query.status = "registration-open";
   return getPublicHackathons(req, res);
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/hackathons/:id — Get Single Hackathon by ID or Slug
-// ---------------------------------------------------------------------------
+
 const getHackathonById = async (req, res) => {
   if (mongoose.connection.readyState !== 1) {
     return res.status(503).json({ success: false, message: "Database connection unavailable." });
@@ -244,9 +244,9 @@ const getHackathonById = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/hackathons — Add Hackathon (Organizer Only)
-// ---------------------------------------------------------------------------
+
 const createHackathon = async (req, res) => {
   try {
     const {
@@ -350,9 +350,9 @@ const createHackathon = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/hackathons/my — Get My Organized Hackathons (Organizer Only)
-// ---------------------------------------------------------------------------
+
 const getMyHackathons = async (req, res) => {
   try {
     const now = new Date();
@@ -442,9 +442,9 @@ const getMyHackathons = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/hackathons/organizer/:id — Get Organizer Hackathon by ID (Owner Only)
-// ---------------------------------------------------------------------------
+
 const getOrganizerHackathonById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -474,9 +474,9 @@ const getOrganizerHackathonById = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PUT /api/hackathons/:id — Update Hackathon (Organizer + Owner Only)
-// ---------------------------------------------------------------------------
+
 const updateHackathon = async (req, res) => {
   try {
     const { id } = req.params;
@@ -548,9 +548,9 @@ const updateHackathon = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // DELETE /api/hackathons/:id — Delete Hackathon (Organizer + Owner Only)
-// ---------------------------------------------------------------------------
+
 const deleteHackathon = async (req, res) => {
   try {
     const { id } = req.params;
@@ -582,9 +582,9 @@ const deleteHackathon = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/admin/hackathons/sync — Manual Trigger for Synchronization
-// ---------------------------------------------------------------------------
+
 const triggerSync = async (req, res) => {
   try {
     console.log("[Admin Sync] Manual sync requested via API");

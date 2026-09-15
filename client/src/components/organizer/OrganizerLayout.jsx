@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // OrganizerLayout.jsx — Dedicated Layout & Navigation Shell for Organizer Portal
 // Standardized container layout matching getHack design language.
-// ---------------------------------------------------------------------------
+
 
 import { Outlet } from "react-router-dom";
 import OrganizerHeader from "./OrganizerHeader";

@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/notificationRoutes.js — Express Router for Notifications
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

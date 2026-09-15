@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testContainerViewportMenuDirection.js
 // Integration Test Suite for Container Viewport Menu Direction
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

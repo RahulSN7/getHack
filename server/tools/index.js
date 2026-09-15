@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/index.js — GetHack AI Agent Tools Registry & Dispatcher
 // Central entrypoint for all agent tool schemas and execution.
-// ---------------------------------------------------------------------------
+
 
 const {
   searchHackathonsDefinition,

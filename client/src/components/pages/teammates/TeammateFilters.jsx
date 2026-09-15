@@ -1,13 +1,13 @@
-// ---------------------------------------------------------------------------
+
 // TeammateFilters — filter popover for Find Teammates page
 // Same popover pattern as HackathonFilters.jsx
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useRef, useState } from "react";
 
-// ---------------------------------------------------------------------------
+
 // Render helper: radio-style option group (defined outside to avoid re-creation)
-// ---------------------------------------------------------------------------
+
 
 function OptionGroup({ label, options, value, onChange }) {
   return (
@@ -31,10 +31,9 @@ function OptionGroup({ label, options, value, onChange }) {
                 font-medium
                 transition-all
                 duration-150
-                ${
-                  active
-                    ? "bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-500/30 dark:text-indigo-400 dark:ring-indigo-400/30"
-                    : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                ${active
+                  ? "bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-500/30 dark:text-indigo-400 dark:ring-indigo-400/30"
+                  : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 }
               `}
             >
@@ -47,9 +46,9 @@ function OptionGroup({ label, options, value, onChange }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Filter options
-// ---------------------------------------------------------------------------
+
 
 const ROLE_OPTIONS = [
   { id: "all", label: "All Roles" },
@@ -83,9 +82,9 @@ const TEAM_STATUS_OPTIONS = [
   { id: "Full", label: "Team complete" },
 ];
 
-// ---------------------------------------------------------------------------
+
 // Component
-// ---------------------------------------------------------------------------
+
 
 function TeammateFilters({
   activeTab,

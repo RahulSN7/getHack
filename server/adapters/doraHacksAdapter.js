@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/adapters/doraHacksAdapter.js
 // Adapter for fetching live hackathons from DoraHacks
-// ---------------------------------------------------------------------------
+
 
 const PLATFORM_NAME = "dorahacks";
 

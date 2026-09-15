@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // client/src/utils/teamMemberResolver.js
 // Utility helper functions for normalizing and resolving team member & leader profiles
 // Prevents rendering raw MongoDB ObjectIds as visible user names
-// ---------------------------------------------------------------------------
+
 
 import { TEAMMATES } from "../data/teammates";
 

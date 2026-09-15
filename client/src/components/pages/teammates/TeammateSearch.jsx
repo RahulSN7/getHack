@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // TeammateSearch — search input for the Find Teammates page
 // Same design pattern as HackathonSearch.jsx
-// ---------------------------------------------------------------------------
+
 
 function TeammateSearch({ value, onChange, placeholder }) {
   return (

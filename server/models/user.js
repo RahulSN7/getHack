@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/user.js — Mongoose User Model for getHack
 // Strict single-role schema: participant OR organizer
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");

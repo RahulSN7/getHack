@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testMoreActionsMenuUX.js
 // Integration Test Suite for More Actions (⋮) Menu UX & Zero-Flicker Positioning
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 
@@ -49,7 +49,7 @@ console.log("==============================================\n");
 // TEST 1: Single menu state mutation
 runTest("Test 1: Opening Menu B automatically closes Menu A (single active menu state)", () => {
   let activeMessageMenu = "msg-A";
-  
+
   // User clicks Msg B ⋮ button
   activeMessageMenu = "msg-B";
 

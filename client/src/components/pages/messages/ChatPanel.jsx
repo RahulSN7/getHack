@@ -1,9 +1,9 @@
-// ---------------------------------------------------------------------------
+
 // ChatPanel.jsx — Right-Side Chat Panel with Production Messaging UX
 // Includes quick reaction bar (👍 ❤️ 😂 😮 😢 🙏 +), expanded emoji picker,
 // replies, edit/delete, copy, typing indicators, search, report user, presence,
 // attachments, per-user remove chat, and complete Block/Unblock system.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -195,10 +195,10 @@ function getDisplayEmoji(typeKey) {
 
 const EMOJI_PICKER_LIST = ["👍", "❤️", "😂", "🎉", "🔥", "😊", "🙏", "🚀", "💡", "💯", "👏", "✨", "😍", "🙌", "🤔", "😮"];
 
-// ---------------------------------------------------------------------------
+
 // EditHistoryModal Component
 // Displays current message and persistent previous edit history versions
-// ---------------------------------------------------------------------------
+
 function EditHistoryModal({ msg, onClose }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -312,10 +312,10 @@ function EditHistoryModal({ msg, onClose }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Floating Action Menu Component for Message Options (Reply, Copy, Edit, Message Info, Delete, Report)
 // Positioned relative to message button trigger with zero flicker (pre-calculated initialCoords + useLayoutEffect)
-// ---------------------------------------------------------------------------
+
 function FloatingMessageMenu({
   msg,
   initialCoords,

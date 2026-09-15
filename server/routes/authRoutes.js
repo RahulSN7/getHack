@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/authRoutes.js — Express Router for OTP Authentication APIs
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

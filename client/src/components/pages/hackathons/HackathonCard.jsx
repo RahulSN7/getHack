@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // HackathonCard — compact, information-first card design with Save / Bookmark
 // Displays Platform, Themes, Prize Pool & Deadline. Zero Mode/Fee/TeamSize/Eligibility fields.
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";

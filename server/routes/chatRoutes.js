@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/chatRoutes.js — Chat API Routes
 // Provides Stream Chat token generation, user sync, and block/unblock endpoints.
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

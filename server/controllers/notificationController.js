@@ -1,15 +1,15 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/notificationController.js — Express Controllers for Notifications
 // Safe, paginated, and user-scoped notification API actions
-// ---------------------------------------------------------------------------
+
 
 const Notification = require("../models/notification");
 const User = require("../models/user");
 const mongoose = require("mongoose");
 
-// ---------------------------------------------------------------------------
+
 // GET /api/notifications — Fetch paginated notifications for current user
-// ---------------------------------------------------------------------------
+
 const getNotifications = async (req, res) => {
   try {
     if (!req.user) {
@@ -58,9 +58,9 @@ const getNotifications = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/notifications/unread-count — Count unread notifications for user
-// ---------------------------------------------------------------------------
+
 const getUnreadNotificationCount = async (req, res) => {
   try {
     if (!req.user) {
@@ -82,9 +82,9 @@ const getUnreadNotificationCount = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PATCH /api/notifications/:notificationId/read — Mark single notification read
-// ---------------------------------------------------------------------------
+
 const markNotificationAsRead = async (req, res) => {
   try {
     if (!req.user) {
@@ -128,9 +128,9 @@ const markNotificationAsRead = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PATCH /api/notifications/read-all — Mark all user notifications read
-// ---------------------------------------------------------------------------
+
 const markAllNotificationsAsRead = async (req, res) => {
   try {
     if (!req.user) {
@@ -157,9 +157,9 @@ const markAllNotificationsAsRead = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // DELETE /api/notifications/:notificationId — Delete single user notification
-// ---------------------------------------------------------------------------
+
 const deleteNotification = async (req, res) => {
   try {
     if (!req.user) {
@@ -196,9 +196,9 @@ const deleteNotification = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // DELETE /api/notifications — Clear all user notifications
-// ---------------------------------------------------------------------------
+
 const clearAllNotifications = async (req, res) => {
   try {
     if (!req.user) {

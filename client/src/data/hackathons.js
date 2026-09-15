@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // Shared hackathon data
 // Used by FeaturedHackathons (landing page), Hackathons (discovery page),
 // and Hackathon Details page.
-// ---------------------------------------------------------------------------
+
 
 const now = Date.now();
 const relISO = (msFromNow) => new Date(now + msFromNow).toISOString();

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testUpwardMenuGap.js
 // Integration Test Suite for Upward Menu Gap Calculation
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testPhase3PersonalizedRecommendations.js
 // Integration test suite for Phase 3: get_my_profile tool & Personalized Recommendations
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {

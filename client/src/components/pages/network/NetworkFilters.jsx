@@ -1,13 +1,13 @@
-// ---------------------------------------------------------------------------
+
 // NetworkFilters — filter popover for My Network / Collaborate page
 // Same popover pattern as TeammateFilters.jsx & HackathonFilters.jsx
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useRef, useState } from "react";
 
-// ---------------------------------------------------------------------------
+
 // OptionGroup helper for radio-style filter choices
-// ---------------------------------------------------------------------------
+
 
 function OptionGroup({ label, options, value, onChange }) {
   return (
@@ -31,10 +31,9 @@ function OptionGroup({ label, options, value, onChange }) {
                 font-medium
                 transition-all
                 duration-150
-                ${
-                  active
-                    ? "bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-500/30 dark:text-indigo-400 dark:ring-indigo-400/30"
-                    : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                ${active
+                  ? "bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-500/30 dark:text-indigo-400 dark:ring-indigo-400/30"
+                  : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 }
               `}
             >
@@ -47,9 +46,9 @@ function OptionGroup({ label, options, value, onChange }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // MultiSelectSkills helper for multi-skill selection
-// ---------------------------------------------------------------------------
+
 
 function MultiSelectSkills({ label, skills, selectedSkills, onChange }) {
   if (!skills || skills.length === 0) return null;
@@ -86,10 +85,9 @@ function MultiSelectSkills({ label, skills, selectedSkills, onChange }) {
                 font-medium
                 transition-all
                 duration-150
-                ${
-                  active
-                    ? "bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-500/30 dark:text-indigo-400 dark:ring-indigo-400/30"
-                    : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                ${active
+                  ? "bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-500/30 dark:text-indigo-400 dark:ring-indigo-400/30"
+                  : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 }
               `}
             >
@@ -103,9 +101,9 @@ function MultiSelectSkills({ label, skills, selectedSkills, onChange }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Filter Options Data
-// ---------------------------------------------------------------------------
+
 
 const AVAILABILITY_OPTIONS = [
   { id: "all", label: "All" },
@@ -119,9 +117,9 @@ const AGE_OPTIONS = [
   { id: "older", label: "Older (> 7 days)" },
 ];
 
-// ---------------------------------------------------------------------------
+
 // Component
-// ---------------------------------------------------------------------------
+
 
 function NetworkFilters({
   activeTab,
@@ -181,15 +179,15 @@ function NetworkFilters({
   const activeCount =
     activeTab === "connections"
       ? (connAvailability !== "all" ? 1 : 0) +
-        (connRole !== "all" ? 1 : 0) +
-        connSkills.length
+      (connRole !== "all" ? 1 : 0) +
+      connSkills.length
       : activeTab === "requests"
-      ? requestAge !== "all"
-        ? 1
-        : 0
-      : sentAge !== "all"
-      ? 1
-      : 0;
+        ? requestAge !== "all"
+          ? 1
+          : 0
+        : sentAge !== "all"
+          ? 1
+          : 0;
 
   const hasActiveFilters = activeCount > 0;
 
@@ -236,10 +234,9 @@ function NetworkFilters({
           py-1.5
           text-xs
           font-semibold
-          ${
-            hasActiveFilters
-              ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
-              : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
+          ${hasActiveFilters
+            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
+            : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
           }
         `}
       >

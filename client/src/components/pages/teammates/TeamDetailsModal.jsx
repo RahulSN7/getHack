@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // TeamDetailsModal.jsx — Master View Team UI Layout Modal
 // Uses the EXACT SAME Master Design layout, cards, section hierarchy, member grid,
 // typography, and action buttons as TeamDetailsPage.jsx for Leader, Member, and User
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";

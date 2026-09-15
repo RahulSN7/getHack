@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/hackathonValidator.js
 // Validates normalized hackathon objects prior to DB upsert
-// ---------------------------------------------------------------------------
+
 
 /**
  * Validate normalized hackathon object

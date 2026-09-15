@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testMessageStatusResolution.js
 // Integration Test Suite for WhatsApp-Style Message Status System
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testMessageEditTimeLimit.js
 // Integration Test Suite for WhatsApp-Style Message Edit Time Limit
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

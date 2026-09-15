@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testSidebarUnreadTab.js
 // Unit & Logic Test Suite for Messages Sidebar Unread Tab
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/hackathonNormalizer.js
 // Normalizes platform adapter outputs into unified getHack Hackathon objects
-// ---------------------------------------------------------------------------
+
 
 const normalizeExternalUrl = require("../utils/normalizeExternalUrl");
 

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/runTests.js
 // Test Suite for getHack — Mode Removal & Registration CTA Separation Strategy
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const { validateRegistrationUrl } = require("../services/detectors/urlValidator");
@@ -27,9 +27,9 @@ console.log("\n==============================================");
 console.log("Running getHack Mode Removal & Registration CTA Tests");
 console.log("==============================================\n");
 
-// ---------------------------------------------------------------------------
+
 // Scenario 1: registrationUrl Normalization & Preservation
-// ---------------------------------------------------------------------------
+
 console.log("[Scenario 1: registrationUrl Normalization & Preservation]");
 
 runTest("Valid registration URL is recognized and normalized to HTTPS", () => {
@@ -49,9 +49,9 @@ runTest("Data pipeline preserves registrationUrl field", () => {
   assert.strictEqual(processed.registrationUrl, "https://aihack.devfolio.co/");
 });
 
-// ---------------------------------------------------------------------------
+
 // Scenario 2: Missing registrationUrl Handling
-// ---------------------------------------------------------------------------
+
 console.log("\n[Scenario 2: Missing registrationUrl Handling]");
 
 runTest("Empty or missing registration URL is flagged as invalid", () => {
@@ -61,9 +61,9 @@ runTest("Empty or missing registration URL is flagged as invalid", () => {
   assert.strictEqual(validateRegistrationUrl("#").isValid, false);
 });
 
-// ---------------------------------------------------------------------------
+
 // Scenario 3: Prize Pool & Separation of Responsibilities
-// ---------------------------------------------------------------------------
+
 console.log("\n[Scenario 3: Prize Pool & Separation of Responsibilities]");
 
 runTest("Prize pool formatting returns prize info only", () => {
@@ -80,9 +80,9 @@ runTest("Prize pool formatting returns prize info only", () => {
   assert.strictEqual(validate(processed).isValid, true);
 });
 
-// ---------------------------------------------------------------------------
+
 // Scenario 4: Smart Deadline Calculation & Execution Integrity
-// ---------------------------------------------------------------------------
+
 console.log("\n[Scenario 4: Smart Deadline & Pipeline Execution]");
 
 runTest("Deadline calculation accurately determines Open status for future deadlines", () => {

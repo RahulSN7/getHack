@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // OrganizerHeader.jsx — Dedicated Navigation Header for Organizer Portal
 // Adheres strictly to getHack visual language, typography, and theme tokens.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
@@ -134,10 +134,9 @@ function OrganizerHeader() {
           transition-all
           duration-300
           ease-out
-          ${
-            scrolled && !mobileMenuOpen
-              ? "pt-3.5 sm:pt-4 px-3.5 sm:px-6 lg:px-8"
-              : "pt-0 px-0"
+          ${scrolled && !mobileMenuOpen
+            ? "pt-3.5 sm:pt-4 px-3.5 sm:px-6 lg:px-8"
+            : "pt-0 px-0"
           }
         `}
       >
@@ -149,9 +148,8 @@ function OrganizerHeader() {
             duration-300
             ease-out
             overflow-visible
-            ${
-              scrolled && !mobileMenuOpen
-                ? `
+            ${scrolled && !mobileMenuOpen
+              ? `
                   max-w-6xl
                   rounded-full
                   border
@@ -164,13 +162,12 @@ function OrganizerHeader() {
                   dark:bg-neutral-950/80
                   dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]
                 `
-                : `
+              : `
                   max-w-7xl
                   rounded-none
                   border-b
-                  ${
-                    scrolled || mobileMenuOpen
-                      ? `
+                  ${scrolled || mobileMenuOpen
+                ? `
                         border-neutral-200/60
                         bg-white/80
                         backdrop-blur-md
@@ -179,13 +176,13 @@ function OrganizerHeader() {
                         dark:bg-neutral-950/80
                         dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
                       `
-                      : `
+                : `
                         border-transparent
                         bg-transparent
                         shadow-none
                         backdrop-blur-none
                       `
-                  }
+              }
                 `
             }
           `}
@@ -203,89 +200,86 @@ function OrganizerHeader() {
               ${scrolled && !mobileMenuOpen ? "px-4 sm:px-6" : "px-5 sm:px-6 lg:px-8"}
             `}
           >
-          {/* Logo */}
-          <Link to="/organizer" className="group flex shrink-0 items-center gap-2">
-            <Logo className="h-7 w-auto" />
-            <span className="rounded-md border border-indigo-200 bg-indigo-50/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:border-indigo-900/60 dark:bg-indigo-950/80 dark:text-indigo-400">
-              Organizer
-            </span>
-          </Link>
+            {/* Logo */}
+            <Link to="/organizer" className="group flex shrink-0 items-center gap-2">
+              <Logo className="h-7 w-auto" />
+              <span className="rounded-md border border-indigo-200 bg-indigo-50/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:border-indigo-900/60 dark:bg-indigo-950/80 dark:text-indigo-400">
+                Organizer
+              </span>
+            </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="ml-8 hidden h-14 items-center gap-1 md:flex">
-            <NavLink
-              to="/organizer/create"
-              className={`relative flex h-full items-center px-3 text-sm font-medium ${
-                isAddHackathonActive
-                  ? "font-semibold text-neutral-950 dark:text-white"
-                  : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              <span>Add Hackathon</span>
-              {isAddHackathonActive && (
-                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
-              )}
-            </NavLink>
+            {/* Desktop Navigation */}
+            <nav className="ml-8 hidden h-14 items-center gap-1 md:flex">
+              <NavLink
+                to="/organizer/create"
+                className={`relative flex h-full items-center px-3 text-sm font-medium ${isAddHackathonActive
+                    ? "font-semibold text-neutral-950 dark:text-white"
+                    : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+                  }`}
+              >
+                <span>Add Hackathon</span>
+                {isAddHackathonActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+                )}
+              </NavLink>
 
-            <NavLink
-              to="/organizer/hackathons"
-              className={`relative flex h-full items-center px-3 text-sm font-medium ${
-                isMyHackathonsActive
-                  ? "font-semibold text-neutral-950 dark:text-white"
-                  : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              <span>My Hackathons</span>
-              {isMyHackathonsActive && (
-                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
-              )}
-            </NavLink>
-          </nav>
+              <NavLink
+                to="/organizer/hackathons"
+                className={`relative flex h-full items-center px-3 text-sm font-medium ${isMyHackathonsActive
+                    ? "font-semibold text-neutral-950 dark:text-white"
+                    : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
+                  }`}
+              >
+                <span>My Hackathons</span>
+                {isMyHackathonsActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+                )}
+              </NavLink>
+            </nav>
 
-          {/* Right Action Menu */}
-          <div className="ml-auto flex items-center gap-1">
-            {/* Theme Toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className={iconBtnClass}
-            >
-              {darkMode ? (
-                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2" />
-                  <path d="M12 20v2" />
-                  <path d="M4.93 4.93l1.41 1.41" />
-                  <path d="M17.66 17.66l1.41 1.41" />
-                  <path d="M2 12h2" />
-                  <path d="M20 12h2" />
-                  <path d="M6.34 17.66l-1.41 1.41" />
-                  <path d="M19.07 4.93l-1.41 1.41" />
-                </svg>
-              ) : (
-                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              )}
-            </button>
+            {/* Right Action Menu */}
+            <div className="ml-auto flex items-center gap-1">
+              {/* Theme Toggle */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                className={iconBtnClass}
+              >
+                {darkMode ? (
+                  <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M12 2v2" />
+                    <path d="M12 20v2" />
+                    <path d="M4.93 4.93l1.41 1.41" />
+                    <path d="M17.66 17.66l1.41 1.41" />
+                    <path d="M2 12h2" />
+                    <path d="M20 12h2" />
+                    <path d="M6.34 17.66l-1.41 1.41" />
+                    <path d="M19.07 4.93l-1.41 1.41" />
+                  </svg>
+                ) : (
+                  <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )}
+              </button>
 
-            {/* Profile Dropdown / Actions */}
-            {authLoading ? (
-              <div
-                className={`ml-1.5 h-8 shrink-0 opacity-0 pointer-events-none ${
-                  user ? "w-8 block" : "w-[72px] hidden sm:block"
-                }`}
-                aria-hidden="true"
-              />
-            ) : isAuthenticated ? (
-              <div ref={dropdownRef} className="relative ml-1.5 hidden sm:block">
-                <button
-                  type="button"
-                  onClick={() => setUserDropdownOpen((prev) => !prev)}
-                  aria-label="Organizer profile menu"
-                  aria-expanded={userDropdownOpen}
-                  className="
+              {/* Profile Dropdown / Actions */}
+              {authLoading ? (
+                <div
+                  className={`ml-1.5 h-8 shrink-0 opacity-0 pointer-events-none ${user ? "w-8 block" : "w-[72px] hidden sm:block"
+                    }`}
+                  aria-hidden="true"
+                />
+              ) : isAuthenticated ? (
+                <div ref={dropdownRef} className="relative ml-1.5 hidden sm:block">
+                  <button
+                    type="button"
+                    onClick={() => setUserDropdownOpen((prev) => !prev)}
+                    aria-label="Organizer profile menu"
+                    aria-expanded={userDropdownOpen}
+                    className="
                     flex
                     h-8
                     w-8
@@ -308,25 +302,25 @@ function OrganizerHeader() {
                     dark:hover:bg-neutral-800
                     cursor-pointer
                   "
-                >
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
-                    {user?.profile?.avatar || user?.avatar ? (
-                      <img
-                        src={user.profile?.avatar || user.avatar}
-                        alt={user?.name || "Organizer"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : user?.name ? (
-                      user.name.charAt(0).toUpperCase()
-                    ) : (
-                      "O"
-                    )}
-                  </span>
-                </button>
+                  >
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
+                      {user?.profile?.avatar || user?.avatar ? (
+                        <img
+                          src={user.profile?.avatar || user.avatar}
+                          alt={user?.name || "Organizer"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : user?.name ? (
+                        user.name.charAt(0).toUpperCase()
+                      ) : (
+                        "O"
+                      )}
+                    </span>
+                  </button>
 
-                {userDropdownOpen && (
-                  <div
-                    className="
+                  {userDropdownOpen && (
+                    <div
+                      className="
                       absolute
                       right-0
                       top-[calc(100%+12px)]
@@ -344,11 +338,11 @@ function OrganizerHeader() {
                       dark:shadow-neutral-950/50
                       z-50
                     "
-                  >
-                    <Link
-                      to="/organizer/profile"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="
+                    >
+                      <Link
+                        to="/organizer/profile"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="
                         flex
                         w-full
                         items-center
@@ -363,23 +357,23 @@ function OrganizerHeader() {
                         dark:text-neutral-300
                         dark:hover:bg-neutral-800
                       "
-                    >
-                      <svg className="h-4 w-4 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                      <span>Profile</span>
-                    </Link>
+                      >
+                        <svg className="h-4 w-4 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Profile</span>
+                      </Link>
 
-                    <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
+                      <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        logout();
-                      }}
-                      className="
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          logout();
+                        }}
+                        className="
                         flex
                         w-full
                         items-center
@@ -396,21 +390,21 @@ function OrganizerHeader() {
                         text-left
                         cursor-pointer
                       "
-                    >
-                      <svg className="h-4 w-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" y1="12" x2="9" y2="12" />
-                      </svg>
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="
+                      >
+                        <svg className="h-4 w-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                          <polyline points="16 17 21 12 16 7" />
+                          <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="
                   hidden
                   h-8
                   items-center
@@ -430,37 +424,37 @@ function OrganizerHeader() {
                   dark:hover:bg-neutral-200
                   sm:flex
                 "
-              >
-                Log in
-              </Link>
-            )}
-
-            {/* Mobile Menu Button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label="Toggle menu"
-              className={`${iconBtnClass} md:hidden`}
-            >
-              {mobileMenuOpen ? (
-                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                </svg>
-              ) : (
-                <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="4" y1="7" x2="20" y2="7" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="17" x2="20" y2="17" />
-                </svg>
+                >
+                  Log in
+                </Link>
               )}
-            </button>
-          </div>
-        </div>
 
-        {/* Mobile Navigation Drawer */}
-        <div
-          className={`
+              {/* Mobile Menu Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                aria-label="Toggle menu"
+                className={`${iconBtnClass} md:hidden`}
+              >
+                {mobileMenuOpen ? (
+                  <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                  </svg>
+                ) : (
+                  <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="4" y1="7" x2="20" y2="7" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="17" x2="20" y2="17" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Navigation Drawer */}
+          <div
+            className={`
             overflow-hidden
             transition-[max-height,opacity]
             duration-300
@@ -476,48 +470,48 @@ function OrganizerHeader() {
             md:hidden
             ${mobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}
           `}
-        >
-          <nav className="mx-auto max-w-7xl px-5 pb-4 sm:px-6 lg:px-8">
-            <div className="space-y-0.5 border-t border-neutral-200/60 pt-3 dark:border-neutral-800">
-              <Link
-                to="/organizer/create"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-              >
-                Add Hackathon
-              </Link>
+          >
+            <nav className="mx-auto max-w-7xl px-5 pb-4 sm:px-6 lg:px-8">
+              <div className="space-y-0.5 border-t border-neutral-200/60 pt-3 dark:border-neutral-800">
+                <Link
+                  to="/organizer/create"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                >
+                  Add Hackathon
+                </Link>
 
-              <Link
-                to="/organizer/hackathons"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-              >
-                My Hackathons
-              </Link>
+                <Link
+                  to="/organizer/hackathons"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                >
+                  My Hackathons
+                </Link>
 
-              <Link
-                to="/organizer/profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-              >
-                Profile
-              </Link>
+                <Link
+                  to="/organizer/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                >
+                  Profile
+                </Link>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  logout();
-                }}
-                className="mt-2 w-full rounded-lg bg-neutral-950 px-3 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-              >
-                Log out
-              </button>
-            </div>
-          </nav>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="mt-2 w-full rounded-lg bg-neutral-950 px-3 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+                >
+                  Log out
+                </button>
+              </div>
+            </nav>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
 
       {/* Mobile Backdrop Overlay */}
       {mobileMenuOpen && (

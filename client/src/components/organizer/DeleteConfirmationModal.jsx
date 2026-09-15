@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // DeleteConfirmationModal.jsx — Hackathon Deletion Confirmation Modal
-// ---------------------------------------------------------------------------
+
 
 import { useEffect } from "react";
 

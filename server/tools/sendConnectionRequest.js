@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/sendConnectionRequest.js — send_connection_request Agent Tool
 // Controlled action tool to send connection requests to GetHack users.
 // Reuses existing Connection model, profile validation, and notification system.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const Connection = require("../models/connection");

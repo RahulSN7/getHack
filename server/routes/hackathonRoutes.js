@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/hackathonRoutes.js — Express Router for Hackathons
 // Exposes public discovery endpoints, organizer management, and admin sync trigger.
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testNotificationSystem.js
 // Unit & Integration Test Suite for getHack Notification System Foundation
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const mongoose = require("mongoose");

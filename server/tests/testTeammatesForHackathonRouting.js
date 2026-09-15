@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testTeammatesForHackathonRouting.js
 // Integration Test Suite for GetHack A1 "Best Teammates for A1 Hackathon" Intent Routing
-// ---------------------------------------------------------------------------
+
 
 const assert = require("assert");
 const mongoose = require("mongoose");
@@ -130,10 +130,10 @@ async function runTests() {
   let testPassed = 0;
   let testTotal = 8;
 
-  // -------------------------------------------------------------------------
-  // TEST 1: User asks "Find teammates for A1 hackathon"
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 1: User asks 'Find teammates for A1 hackathon' ---");
+  -----------------------
+    // TEST 1: User asks "Find teammates for A1 hackathon"
+    -----------------------
+      console.log("\n--- TEST 1: User asks 'Find teammates for A1 hackathon' ---");
   const t1UserMsg = { role: "user", content: "Find teammates for A1 hackathon" };
   const t1Res = await callLLM([t1UserMsg], context);
 
@@ -152,10 +152,10 @@ async function runTests() {
   console.log("✅ TEST 1 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 2: User asks "Provide me best teammates for A1 hackathon"
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 2: User asks 'Provide me best teammates for A1 hackathon' ---");
+  -----------------------
+    // TEST 2: User asks "Provide me best teammates for A1 hackathon"
+    -----------------------
+      console.log("\n--- TEST 2: User asks 'Provide me best teammates for A1 hackathon' ---");
   const t2UserMsg = { role: "user", content: "Provide me best teammates for A1 hackathon" };
   const t2Res = await callLLM([t2UserMsg], context);
 
@@ -171,10 +171,10 @@ async function runTests() {
   console.log("✅ TEST 2 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 3: User asks "Find Python teammates for A1"
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 3: User asks 'Find Python teammates for A1' ---");
+  -----------------------
+    // TEST 3: User asks "Find Python teammates for A1"
+    -----------------------
+      console.log("\n--- TEST 3: User asks 'Find Python teammates for A1' ---");
   const t3UserMsg = { role: "user", content: "Find Python teammates for A1" };
   const t3Res = await callLLM([t3UserMsg], context);
 
@@ -191,10 +191,10 @@ async function runTests() {
   console.log("✅ TEST 3 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 4: User asks "Find AI teammates for this hackathon" after hackathon search turn
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 4: User asks 'Find AI teammates for this hackathon' ---");
+  -----------------------
+    // TEST 4: User asks "Find AI teammates for this hackathon" after hackathon search turn
+    -----------------------
+      console.log("\n--- TEST 4: User asks 'Find AI teammates for this hackathon' ---");
   const turn1SearchUserMsg = { role: "user", content: "Suggest me hackathons" };
   const turn1SearchAssistantMsg = { role: "assistant", content: "Here are upcoming hackathons:", recommendations: { hackathons: sampleHackathons } };
   const t4UserMsg = { role: "user", content: "Find AI teammates for this hackathon" };
@@ -211,10 +211,10 @@ async function runTests() {
   console.log("✅ TEST 4 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 5: User asks "Which teammate is best for A1?"
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 5: User asks 'Which teammate is best for A1?' ---");
+  -----------------------
+    // TEST 5: User asks "Which teammate is best for A1?"
+    -----------------------
+      console.log("\n--- TEST 5: User asks 'Which teammate is best for A1?' ---");
   const t5UserMsg = { role: "user", content: "Which teammate is best for A1?" };
   const t5ToolResMsg = { role: "tool", name: "find_teammates", content: JSON.stringify({ count: sampleTeammates.length, candidatesAfterFilters: sampleTeammates.length, teammates: sampleTeammates }) };
   const t5FinalRes = await callLLM([t5UserMsg, { role: "assistant", content: "Finding teammates..." }, t5ToolResMsg], context);
@@ -225,10 +225,10 @@ async function runTests() {
   console.log("✅ TEST 5 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 6: User asks "Find A1 hackathons"
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 6: User asks 'Find A1 hackathons' ---");
+  -----------------------
+    // TEST 6: User asks "Find A1 hackathons"
+    -----------------------
+      console.log("\n--- TEST 6: User asks 'Find A1 hackathons' ---");
   const t6UserMsg = { role: "user", content: "Find A1 hackathons" };
   const t6Res = await callLLM([t6UserMsg], context);
 
@@ -244,10 +244,10 @@ async function runTests() {
   console.log("✅ TEST 6 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 7: User asks "Which one is best?" (hackathon follow-up)
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 7: User asks 'Which one is best?' after hackathon search ---");
+  -----------------------
+    // TEST 7: User asks "Which one is best?" (hackathon follow-up)
+    -----------------------
+      console.log("\n--- TEST 7: User asks 'Which one is best?' after hackathon search ---");
   const t7UserMsg = { role: "user", content: "Which one is best?" };
   const t7FinalRes = await callLLM([turn1SearchUserMsg, turn1SearchAssistantMsg, t7UserMsg], context);
 
@@ -257,10 +257,10 @@ async function runTests() {
   console.log("✅ TEST 7 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 8: User asks "Find teammates for this hackathon"
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 8: User asks 'Find teammates for this hackathon' ---");
+  -----------------------
+    // TEST 8: User asks "Find teammates for this hackathon"
+    -----------------------
+      console.log("\n--- TEST 8: User asks 'Find teammates for this hackathon' ---");
   const t8UserMsg = { role: "user", content: "Find teammates for this hackathon" };
   const t8Res = await callLLM([turn1SearchUserMsg, turn1SearchAssistantMsg, t8UserMsg], context);
 

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // OtpInput.jsx — 6-Digit Interactive OTP Input Component
 // Supports auto-advance, backspace navigation, paste functionality, and dark mode.
-// ---------------------------------------------------------------------------
+
 
 import { useRef, useEffect } from "react";
 
@@ -116,10 +116,9 @@ function OtpInput({ value = "", onChange, length = 6, disabled = false, error = 
             transition-all
             duration-150
             outline-hidden
-            ${
-              error
-                ? "border-red-500 bg-red-50/50 text-red-900 focus:ring-2 focus:ring-red-500 dark:border-red-500/80 dark:bg-red-950/20 dark:text-red-300"
-                : "border-neutral-300 bg-white text-neutral-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
+            ${error
+              ? "border-red-500 bg-red-50/50 text-red-900 focus:ring-2 focus:ring-red-500 dark:border-red-500/80 dark:bg-red-950/20 dark:text-red-300"
+              : "border-neutral-300 bg-white text-neutral-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
             }
             ${disabled ? "cursor-not-allowed opacity-50" : ""}
           `}

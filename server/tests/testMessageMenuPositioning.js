@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testMessageMenuPositioning.js
 // Unit & Logic Test Suite for Smart Message Action Menu Positioning
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

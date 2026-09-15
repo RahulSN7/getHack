@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // TeammateCard.jsx — Redesigned Teammate Card Component for Find Teammates
 // Matches exact getHack dark theme & reference design specifications
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";

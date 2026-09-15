@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/findTeammates.js — find_teammates Agent Tool
 // Searches GetHack participant candidates by skills, role, interests, location, & availability.
 // Uses shared teammateService to ensure EXACT candidate data parity with the Find Teammates page.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const Hackathon = require("../models/hackathon");

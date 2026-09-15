@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // client/src/components/common/BackButton.jsx
 // Reusable Dynamic Back Button for getHack (Profile, Hackathon Details, Group Info, etc.)
 // Supports standard button card variant (default) and text link variant (`variant="link"`).
-// ---------------------------------------------------------------------------
+
 
 import { useNavigate, useLocation } from "react-router-dom";
 

@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // CreateHackathonPage.jsx — Professional Multi-Section Hackathon Creation Form
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -452,8 +452,8 @@ function CreateHackathonPage() {
                 onChange={handleChange}
                 placeholder="Describe your hackathon, problem statements, guidelines, and target participants"
                 className={`w-full rounded-lg border bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors dark:bg-neutral-950 dark:text-white ${errors.description
-                    ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
-                    : "border-neutral-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
+                  ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
+                  : "border-neutral-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
                   }`}
               />
               {errors.description && (

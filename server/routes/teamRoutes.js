@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/teamRoutes.js — Express Router for Team Management
 // Defines endpoints for team creation, retrieval, and joining
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

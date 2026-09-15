@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testUnreadBadgeSync.js
 // Integration Test Suite for Messages Unread Badge Real-Time Synchronization
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

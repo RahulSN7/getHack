@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/networkController.js — Network & Connection Request Controllers
 // Enforces backend profile completion checks, note validation, and connection limits
-// ---------------------------------------------------------------------------
+
 
 const Connection = require("../models/connection");
 const User = require("../models/user");
@@ -11,9 +11,9 @@ const { createNotification } = require("../services/notificationService");
 const { emitConnectionEventToUsers } = require("../services/socketService");
 const { getStreamClient } = require("../services/streamService");
 
-// ---------------------------------------------------------------------------
+
 // POST /api/network/requests — Send Connection Request
-// ---------------------------------------------------------------------------
+
 const sendConnectionRequest = async (req, res) => {
   try {
     if (!req.user) {
@@ -173,9 +173,9 @@ const sendConnectionRequest = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/network/requests — Fetch Connections, Incoming & Outgoing Requests
-// ---------------------------------------------------------------------------
+
 function extractSafeUser(userDoc) {
   if (!userDoc) return {};
   if (typeof userDoc.toSafeUser === "function") {
@@ -305,9 +305,9 @@ const getNetworkRequests = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PUT /api/network/requests/:id — Respond to Connection Request (Accept/Decline)
-// ---------------------------------------------------------------------------
+
 const respondToConnectionRequest = async (req, res) => {
   try {
     if (!req.user) {
@@ -382,9 +382,9 @@ const respondToConnectionRequest = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // DELETE /api/network/requests/:id — Cancel Sent Connection Request
-// ---------------------------------------------------------------------------
+
 const cancelConnectionRequest = async (req, res) => {
   try {
     if (!req.user) {
@@ -461,9 +461,9 @@ const cancelConnectionRequest = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // DELETE /api/network/connections/:targetUserId — Remove Accepted Connection
-// ---------------------------------------------------------------------------
+
 const removeConnection = async (req, res) => {
   try {
     if (!req.user) {

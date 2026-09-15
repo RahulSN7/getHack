@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/userChatState.js — Per-User Chat State & Preferences
 // Tracks per-user favorite status and closed (archived) status for channels.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // HackathonSearch — controlled search input with clear button
-// ---------------------------------------------------------------------------
+
 
 function HackathonSearch({ value, onChange }) {
   return (

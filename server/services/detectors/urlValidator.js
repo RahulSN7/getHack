@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/detectors/urlValidator.js
 // URL Validation Module for getHack
-// ---------------------------------------------------------------------------
+
 
 /**
  * Validate URL string syntax and check if URL is a valid registration URL

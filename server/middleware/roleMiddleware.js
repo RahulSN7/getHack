@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/middleware/roleMiddleware.js — Role Authorization Middleware
 // Enforces server-side authorization check based on authenticated DB user.role.
-// ---------------------------------------------------------------------------
+
 
 const requireRole = (allowedRole) => {
   return (req, res, next) => {

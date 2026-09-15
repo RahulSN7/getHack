@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // HackathonFilters — compact filter button with popover UI
 // Combines Status, Format & Platform filtering into a restrained popover UI.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useRef, useState } from "react";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
@@ -106,9 +106,8 @@ function HackathonFilters({
         onClick={handleToggleOpen}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        aria-label={`Filter hackathons${
-          hasActiveFilters ? `, ${activeCount} filter active` : ""
-        }`}
+        aria-label={`Filter hackathons${hasActiveFilters ? `, ${activeCount} filter active` : ""
+          }`}
         className={`
           inline-flex
           items-center
@@ -119,10 +118,9 @@ function HackathonFilters({
           py-1.5
           text-xs
           font-semibold
-          ${
-            hasActiveFilters || isOpen
-              ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
-              : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
+          ${hasActiveFilters || isOpen
+            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/30 dark:text-indigo-400"
+            : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-700 dark:hover:text-white"
           }
         `}
       >
@@ -211,10 +209,9 @@ function HackathonFilters({
                         font-medium
                         transition-colors
                         duration-150
-                        ${
-                          isSelected
-                            ? `${accentBgSoft} ${accentText}`
-                            : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                        ${isSelected
+                          ? `${accentBgSoft} ${accentText}`
+                          : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                         }
                       `}
                     >
@@ -250,10 +247,9 @@ function HackathonFilters({
                         font-medium
                         transition-colors
                         duration-150
-                        ${
-                          isSelected
-                            ? `${accentBgSoft} ${accentText}`
-                            : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                        ${isSelected
+                          ? `${accentBgSoft} ${accentText}`
+                          : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                         }
                       `}
                     >

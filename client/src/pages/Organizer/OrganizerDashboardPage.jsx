@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // OrganizerDashboardPage.jsx — Clean, Polished Organizer Dashboard
 // Fetches real organizer hackathons, displays status breakdown & recent hackathons.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -85,8 +85,8 @@ function OrganizerDashboardPage() {
           const list = Array.isArray(data?.hackathons)
             ? data.hackathons
             : Array.isArray(data?.data)
-            ? data.data
-            : [];
+              ? data.data
+              : [];
           setHackathons(list);
         }
       } catch (err) {

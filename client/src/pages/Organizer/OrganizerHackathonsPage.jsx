@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // OrganizerHackathonsPage.jsx — "My Hackathons" Central Management Area
 // Displays authenticated organizer's hackathons with View, Edit, & Delete actions.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -84,8 +84,8 @@ function OrganizerHackathonsPage() {
           const list = Array.isArray(data?.hackathons)
             ? data.hackathons
             : Array.isArray(data?.data)
-            ? data.data
-            : [];
+              ? data.data
+              : [];
           setHackathons(list);
         }
       } catch (err) {
@@ -221,10 +221,9 @@ function OrganizerHackathonsPage() {
               font-semibold
               transition-all
               duration-150
-              ${
-                activeFilter === tab.key
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
-                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              ${activeFilter === tab.key
+                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
               }
             `}
           >

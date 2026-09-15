@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep12ProductionAudit.js
 // Automated Test Suite for Step 12: Security, Performance & Production Audit
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const mongoose = require("mongoose");

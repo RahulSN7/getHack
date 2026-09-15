@@ -1,7 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // client/src/components/AI/GetHackAIWidget.jsx
 // Native Floating GetHack AI Assistant Component
-// ---------------------------------------------------------------------------
 
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";

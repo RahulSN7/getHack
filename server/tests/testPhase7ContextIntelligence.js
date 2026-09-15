@@ -75,9 +75,9 @@ async function runPhase7Tests() {
     },
   };
 
-  // =========================================================
+  // =======
   // TEST A — Hackathon Context & Multi-turn Flow
-  // =========================================================
+  // =======
   console.log("--- TEST A: Hackathon Context & Multi-turn Flow ---");
   const conversationA = [];
 
@@ -178,9 +178,9 @@ async function runPhase7Tests() {
   });
 
 
-  // =========================================================
+  // =======
   // TEST B — Teammate Context & Pronoun Direct Connect
-  // =========================================================
+  // =======
   console.log("\n--- TEST B: Teammate Context & Pronoun Direct Connect ---");
   const conversationB = [];
 
@@ -243,9 +243,9 @@ async function runPhase7Tests() {
   );
 
 
-  // =========================================================
+  // =======
   // TEST C — Hackathon Switch
-  // =========================================================
+  // =======
   console.log("\n--- TEST C: Hackathon Selection Switch ---");
   const conversationC = [];
 
@@ -316,9 +316,9 @@ async function runPhase7Tests() {
   );
 
 
-  // =========================================================
+  // =======
   // TEST D — Ambiguous Context Handling
-  // =========================================================
+  // =======
   console.log("\n--- TEST D: Ambiguous Context Handling ---");
   const conversationD = [];
 
@@ -347,9 +347,9 @@ async function runPhase7Tests() {
   );
 
 
-  // =========================================================
+  // =======
   // TEST E — Skill Override Priority
-  // =========================================================
+  // =======
   console.log("\n--- TEST E: Skill Override Priority ---");
   const conversationE = [];
 
@@ -369,9 +369,9 @@ async function runPhase7Tests() {
   );
 
 
-  // =========================================================
+  // =======
   // TEST F — Direct Connection via Pronoun
-  // =========================================================
+  // =======
   console.log("\n--- TEST F: Direct Connection via Pronoun ---");
   const conversationF = [];
 

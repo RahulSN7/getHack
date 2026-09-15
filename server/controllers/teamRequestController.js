@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/teamRequestController.js — Controller for Team Join Requests
 // Handles sending team join requests, listing incoming/sent requests, accept/reject, & cancel
-// ---------------------------------------------------------------------------
+
 
 const TeamRequest = require("../models/teamRequest");
 const Team = require("../models/team");

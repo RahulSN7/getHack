@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/acceptConnectionRequest.js — Tool for Accepting Incoming Connection Requests
-// ---------------------------------------------------------------------------
+
 
 const Connection = require("../models/connection");
 const User = require("../models/user");

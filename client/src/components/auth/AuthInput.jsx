@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // AuthInput.jsx — Reusable Accessible Form Control for Auth Pages
 // Supports card-level theme adaptation, password visibility toggle & error text.
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 
@@ -26,9 +26,8 @@ function AuthInput({
       <div className="flex items-center justify-between">
         <label
           htmlFor={id}
-          className={`block text-xs font-semibold ${
-            isDark ? "text-neutral-200" : "text-neutral-800"
-          }`}
+          className={`block text-xs font-semibold ${isDark ? "text-neutral-200" : "text-neutral-800"
+            }`}
         >
           {label} {required && <span className="text-red-500">*</span>}
         </label>
@@ -55,10 +54,9 @@ function AuthInput({
             transition-all
             duration-150
             ${isPasswordType ? "pr-10" : "pr-3.5"}
-            ${
-              error
-                ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
-                : isDark
+            ${error
+              ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
+              : isDark
                 ? "border-neutral-800 bg-neutral-950 text-white placeholder-neutral-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20"
                 : "border-neutral-200 bg-white text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
             }
@@ -79,10 +77,9 @@ function AuthInput({
               rounded
               p-1
               transition-colors
-              ${
-                isDark
-                  ? "text-neutral-400 hover:text-white"
-                  : "text-neutral-400 hover:text-neutral-600"
+              ${isDark
+                ? "text-neutral-400 hover:text-white"
+                : "text-neutral-400 hover:text-neutral-600"
               }
             `}
           >

@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // testDirectProfileRouting.js — Test simulation for /profile/:id role resolution
-// ---------------------------------------------------------------------------
+
 
 function simulateProfilePageLogic({ id, currentUser, authLoading, backendProfile }) {
   const targetId = id || "me";

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/hackathonDeduplicator.js
 // Handles MongoDB duplicate checking and upserting for aggregated hackathons
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const Hackathon = require("../models/hackathon");

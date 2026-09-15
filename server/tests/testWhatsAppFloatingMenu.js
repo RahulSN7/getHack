@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testWhatsAppFloatingMenu.js
 // Unit & Logic Test Suite for WhatsApp-Style Floating Action Menu Coordinates
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

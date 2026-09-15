@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // client/src/services/aiService.js — Frontend Service for getHack AI
 // Communicates with Express backend /api/ai endpoints.
-// ---------------------------------------------------------------------------
+
 
 const API_BASE = "/api/ai";
 

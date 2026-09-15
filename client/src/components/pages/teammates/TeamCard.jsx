@@ -1,16 +1,16 @@
-// ---------------------------------------------------------------------------
+
 // TeamCard — team listing card for "Join a Team" tab
 // Follows the same card design conventions as HackathonCard.jsx
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../../constants/themeTokens";
 import { resolveTeamLeader, getTeamActionState } from "../../../utils/teamMemberResolver";
 
-// ---------------------------------------------------------------------------
+
 // Status badge rendering
-// ---------------------------------------------------------------------------
+
 
 function StatusBadge({ currentSize, maxSize }) {
   const spotsLeft = Math.max(0, maxSize - currentSize);
@@ -31,9 +31,9 @@ function StatusBadge({ currentSize, maxSize }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // TeamCard Component
-// ---------------------------------------------------------------------------
+
 
 function TeamCard({
   team,
@@ -84,10 +84,10 @@ function TeamCard({
     Array.isArray(techStack) && techStack.length > 0
       ? techStack
       : Array.isArray(team.technologies) && team.technologies.length > 0
-      ? team.technologies
-      : Array.isArray(team.tech)
-      ? team.tech
-      : [];
+        ? team.technologies
+        : Array.isArray(team.tech)
+          ? team.tech
+          : [];
 
   return (
     <article

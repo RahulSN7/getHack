@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep9PersistenceDeleteClearAndSync.js
 // Automated Test Suite for Step 9: Notification History, Persistence, Delete/Clear & Security
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const http = require("http");

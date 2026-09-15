@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testUnreadCountPersistOnChannelSwitch.js
 // Integration Test Suite for Unread Count Persistence across Channel Switching
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 
@@ -13,9 +13,9 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
   const rawMessages = channel.state?.messages || [];
   const visibleMessages = clearTime
     ? rawMessages.filter((m) => {
-        const t = new Date(m.created_at || m.createdAt).getTime();
-        return !isNaN(t) && t > clearTime;
-      })
+      const t = new Date(m.created_at || m.createdAt).getTime();
+      return !isNaN(t) && t > clearTime;
+    })
     : rawMessages;
 
   if (clearTime && visibleMessages.length === 0) return 0;

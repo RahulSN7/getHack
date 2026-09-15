@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // organizerData.js — Data source for Organizer Experience
 // Connected with existing getHack hackathons, teammates, and teams data.
-// ---------------------------------------------------------------------------
+
 
 export const ORGANIZER_PROFILE = {
   id: "org-tech-community-india",

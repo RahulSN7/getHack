@@ -1,12 +1,12 @@
-// ---------------------------------------------------------------------------
+
 // HackathonGrid — responsive card grid + empty state
-// ---------------------------------------------------------------------------
+
 
 import HackathonCard from "./HackathonCard";
 
-// ---------------------------------------------------------------------------
+
 // Empty State
-// ---------------------------------------------------------------------------
+
 
 function EmptyState({ hasFilters, onClear }) {
   return (
@@ -71,9 +71,9 @@ function EmptyState({ hasFilters, onClear }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // HackathonGrid
-// ---------------------------------------------------------------------------
+
 
 function HackathonGrid({ hackathons, hasFilters, onClearFilters }) {
   if (hackathons.length === 0) {

@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testSynchronizedTeamRequestState.js
 // Integration test verifying synchronized Join Request state between Join Team & Team Details
 // Tests backend single source of truth across create, fetch, refresh, cancel, and accept flows
-// ---------------------------------------------------------------------------
+
 
 const path = require("path");
 const dns = require("dns");
@@ -13,7 +13,7 @@ try {
     dns.setDefaultResultOrder("ipv4first");
   }
   dns.setServers(["1.1.1.1", "8.8.8.8", "8.8.4.4"]);
-} catch {}
+} catch { }
 
 const mongoose = require("mongoose");
 const Team = require("../models/team");

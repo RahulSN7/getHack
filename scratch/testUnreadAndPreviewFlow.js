@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // scratch/testUnreadAndPreviewFlow.js
 // Verification script for chat unread counts and conversation item previews
-// ---------------------------------------------------------------------------
+
 
 function formatLastMessagePreview(messages, channelData) {
   const lastMessage = Array.isArray(messages) && messages.length > 0 ? messages[messages.length - 1] : null;

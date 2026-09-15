@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // client/src/utils/hackathonFormatters.js
 // Defensive formatter helpers to ensure structured MongoDB objects and HTML-containing
 // strings are cleanly converted to human-readable strings for React rendering.
-// ---------------------------------------------------------------------------
+
 
 /**
  * Strip HTML tags and unescape common HTML entities without using dangerouslySetInnerHTML

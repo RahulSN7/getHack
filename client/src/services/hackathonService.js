@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // hackathonService.js — Centralized API Service for Hackathons
 // Communicates with Express backend /api/hackathons via Vite proxy.
-// ---------------------------------------------------------------------------
+
 
 const API_BASE = "/api/hackathons";
 

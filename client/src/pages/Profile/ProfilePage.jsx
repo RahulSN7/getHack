@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // ProfilePage.jsx — Dynamic Profile Dispatcher Component for /profile & /profile/:id
 // Dynamically resolves profile owner's role and renders either Participant or Organizer UI.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";

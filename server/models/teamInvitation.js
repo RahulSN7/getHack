@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/teamInvitation.js — Mongoose Team Invitation Model for getHack
 // Stores team invitations sent directly via Stream Chat conversations
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

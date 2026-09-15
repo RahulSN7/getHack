@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/hackathonSyncService.js
 // Orchestrates multi-platform hackathon synchronization
-// ---------------------------------------------------------------------------
+
 
 const devpostAdapter = require("../adapters/devpostAdapter");
 const devfolioAdapter = require("../adapters/devfolioAdapter");

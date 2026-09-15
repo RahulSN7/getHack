@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testCompleteTeamsArchitecture.js
 // Integration test suite for Complete Teams Architecture
 // Tests team creation, team join requests, accept/reject/cancel, my teams, edit team, and leave team
-// ---------------------------------------------------------------------------
+
 
 const path = require("path");
 const dns = require("dns");
@@ -13,7 +13,7 @@ try {
     dns.setDefaultResultOrder("ipv4first");
   }
   dns.setServers(["1.1.1.1", "8.8.8.8", "8.8.4.4"]);
-} catch {}
+} catch { }
 
 const mongoose = require("mongoose");
 const Team = require("../models/team");

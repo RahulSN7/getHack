@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // client/src/components/pages/landing/FindTeammates.jsx
 // Dynamic Find Teammates section for Landing Page — backed by MongoDB API
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/team.js — Mongoose Team Model for getHack
 // Stores hackathon teams, creator/leader references, and member lists
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

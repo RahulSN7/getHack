@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/getMyProfile.js — get_my_profile Agent Tool
 // Securely retrieves the authenticated user's GetHack profile details.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const User = require("../models/user");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // userService.js — API Service for User Profiles & Network Connections
 // Single point of interaction for participant profiles, completion, and requests
-// ---------------------------------------------------------------------------
+
 
 const API_BASE_URL = "/api";
 
@@ -18,9 +18,9 @@ async function request(endpoint, options = {}) {
       ...(isFormData
         ? {}
         : {
-            "Content-Type":
-              "application/json",
-          }),
+          "Content-Type":
+            "application/json",
+        }),
 
       ...(options.headers || {}),
     },
@@ -39,7 +39,7 @@ async function request(endpoint, options = {}) {
   if (!response.ok) {
     const error = new Error(
       data.message ||
-        "An unexpected error occurred."
+      "An unexpected error occurred."
     );
 
     error.status =

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // StartNewChatModal.jsx — Modal for starting a new 1-to-1 chat with a connection
 // Fetches established getHack connections dynamically via userService.getNetworkRequests
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect, useRef } from "react";
 import { userService } from "../../../services/userService";

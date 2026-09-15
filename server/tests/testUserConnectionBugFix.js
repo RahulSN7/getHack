@@ -8,10 +8,10 @@ const {
 async function runTest() {
   console.log("=== STARTING GET HACK AI USER CONNECTION BUG FIX UNIT TESTS ===");
 
-  // -------------------------------------------------------------
-  // TEST 1: Extract Name "song" from Various Natural Language Phrases
-  // -------------------------------------------------------------
-  console.log("\n--- TEST 1: AI Name Extraction ---");
+  -----------
+    // TEST 1: Extract Name "song" from Various Natural Language Phrases
+    -----------
+      console.log("\n--- TEST 1: AI Name Extraction ---");
   const testPhrases = [
     "connect me with song",
     "I want to connect with song",
@@ -36,10 +36,10 @@ async function runTest() {
   });
   console.log("✅ TEST 1 PASSED: Name extraction correctly extracts target name without filler words.");
 
-  // -------------------------------------------------------------
-  // TEST 2: User Name Search Matching (Case-Insensitive, Tokens, Handles, Email, ID)
-  // -------------------------------------------------------------
-  console.log("\n--- TEST 2: findMatchingUsersByName ---");
+  -----------
+    // TEST 2: User Name Search Matching (Case-Insensitive, Tokens, Handles, Email, ID)
+    -----------
+      console.log("\n--- TEST 2: findMatchingUsersByName ---");
   const candidatePool = [
     {
       userId: "user_song_1",
@@ -67,10 +67,10 @@ async function runTest() {
   });
   console.log("✅ TEST 2 PASSED: Matching logic resolves 'song', 'Song', 'SONG', handle, email, and ID to Song Gupta.");
 
-  // -------------------------------------------------------------
-  // TEST 3: Full AI Connection Flow - Initial Turn & Direct Search Trigger
-  // -------------------------------------------------------------
-  console.log("\n--- TEST 3: Full AI Flow Turn 1 (Tool Call Emission) ---");
+  -----------
+    // TEST 3: Full AI Connection Flow - Initial Turn & Direct Search Trigger
+    -----------
+      console.log("\n--- TEST 3: Full AI Flow Turn 1 (Tool Call Emission) ---");
   const context = {
     userProfile: { id: "user_me", name: "Current User", skills: ["JavaScript"] },
   };
@@ -123,10 +123,10 @@ async function runTest() {
   assert.strictEqual(turn3Resp.toolCalls[0].args.targetUserId, "user_song_1");
   console.log("✅ TEST 3 (Turn 3) PASSED: User confirmation triggers send_connection_request API.");
 
-  // -------------------------------------------------------------
-  // TEST 4: Case-Insensitive Prompt ("I want to connect with SONG")
-  // -------------------------------------------------------------
-  console.log("\n--- TEST 4: Case-Insensitive Prompt ('SONG') ---");
+  -----------
+    // TEST 4: Case-Insensitive Prompt ("I want to connect with SONG")
+    -----------
+      console.log("\n--- TEST 4: Case-Insensitive Prompt ('SONG') ---");
   const caseMessages = [
     { role: "user", content: "I want to connect with SONG" },
     { role: "assistant", content: "", toolCalls: [{ name: "find_teammates", args: { query: "SONG" } }] },
@@ -145,10 +145,10 @@ async function runTest() {
   assert.strictEqual(caseResp.pendingAction?.targetName, "Song Gupta");
   console.log("✅ TEST 4 PASSED: 'SONG' resolves to Song Gupta.");
 
-  // -------------------------------------------------------------
-  // TEST 5: Non-Existent User ("connect me with NonExistentUser123")
-  // -------------------------------------------------------------
-  console.log("\n--- TEST 5: Non-Existent User ---");
+  -----------
+    // TEST 5: Non-Existent User ("connect me with NonExistentUser123")
+    -----------
+      console.log("\n--- TEST 5: Non-Existent User ---");
   const notFoundMessages = [
     { role: "user", content: "connect me with NonExistentUser123" },
     { role: "assistant", content: "", toolCalls: [{ name: "find_teammates", args: { query: "NonExistentUser123" } }] },
@@ -168,10 +168,10 @@ async function runTest() {
   assert(notFoundResp.text.includes("I couldn't find a getHack user named NonExistentUser123"));
   console.log("✅ TEST 5 PASSED: Correct 'user not found' message returned only after searching database.");
 
-  // -------------------------------------------------------------
-  // TEST 6: Multiple Matches Disambiguation
-  // -------------------------------------------------------------
-  console.log("\n--- TEST 6: Disambiguation for Multiple Matches ---");
+  -----------
+    // TEST 6: Multiple Matches Disambiguation
+    -----------
+      console.log("\n--- TEST 6: Disambiguation for Multiple Matches ---");
   const multiCandidatePool = [
     {
       userId: "user_song_1",

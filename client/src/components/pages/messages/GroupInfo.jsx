@@ -1,9 +1,9 @@
-// ---------------------------------------------------------------------------
+
 // GroupInfo.jsx — Detailed Group Information & Management Page (/group/:groupId)
 // Displays group avatar, name, dynamic member count, description editing, member search,
 // admin identification, admin avatar editing, admin group name editing, Add Members flow,
 // and admin Member Removal with confirmation modal and backend authorization.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";

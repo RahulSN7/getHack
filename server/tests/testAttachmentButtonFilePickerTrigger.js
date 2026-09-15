@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testAttachmentButtonFilePickerTrigger.js
 // Integration Test Suite for Attachment Button & Emoji Click-Outside Interaction
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

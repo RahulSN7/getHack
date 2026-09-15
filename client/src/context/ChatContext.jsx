@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // ChatContext.jsx — Stream Chat Client Context Provider
 // Initializes and manages the Stream Chat client connection for the
 // authenticated getHack user. Exposes chatClient and connection state.
-// ---------------------------------------------------------------------------
+
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { StreamChat } from "stream-chat";
@@ -47,7 +47,7 @@ export function ChatProvider({ children }) {
     // 2. If unauthenticated or no valid user, disconnect existing client & reset state
     if (!isAuthenticated || !user) {
       if (clientRef.current) {
-        clientRef.current.disconnectUser().catch(() => {});
+        clientRef.current.disconnectUser().catch(() => { });
         clientRef.current = null;
       }
       connectedUserIdRef.current = null;
@@ -98,7 +98,7 @@ export function ChatProvider({ children }) {
 
         // If client is connected to a different user, disconnect first
         if (client.userID && client.userID !== currentUserIdStr) {
-          await client.disconnectUser().catch(() => {});
+          await client.disconnectUser().catch(() => { });
         }
 
         // Create and track the single connection promise for this user

@@ -1,16 +1,16 @@
-// ---------------------------------------------------------------------------
+
 // server/services/streamService.js
 // Stream Chat Server-Side Integration
-// ---------------------------------------------------------------------------
+
 
 const path = require("path");
 const { StreamChat } = require(path.join(__dirname, "../node_modules/stream-chat/dist/cjs/index.node.js"));
 
 let serverClient = null;
 
-// ---------------------------------------------------------------------------
+
 // Get Stream server client
-// ---------------------------------------------------------------------------
+
 function getStreamClient() {
   if (!serverClient) {
     const apiKey =
@@ -35,9 +35,9 @@ function getStreamClient() {
   return serverClient;
 }
 
-// ---------------------------------------------------------------------------
+
 // Generate user token
-// ---------------------------------------------------------------------------
+
 function generateStreamToken(userId) {
   if (!userId) {
     throw new Error(
@@ -52,9 +52,9 @@ function generateStreamToken(userId) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Format getHack user for Stream
-// ---------------------------------------------------------------------------
+
 function formatStreamUser(user) {
   if (!user) {
     throw new Error(
@@ -88,9 +88,9 @@ function formatStreamUser(user) {
   };
 }
 
-// ---------------------------------------------------------------------------
+
 // Upsert one user
-// ---------------------------------------------------------------------------
+
 async function upsertStreamUser(user) {
   if (!user) {
     return null;
@@ -118,9 +118,9 @@ async function upsertStreamUser(user) {
   return streamUser.id;
 }
 
-// ---------------------------------------------------------------------------
+
 // Upsert multiple users
-// ---------------------------------------------------------------------------
+
 async function upsertStreamUsers(users) {
   if (
     !Array.isArray(users) ||
@@ -164,9 +164,9 @@ async function upsertStreamUsers(users) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Sync all MongoDB users
-// ---------------------------------------------------------------------------
+
 async function syncAllUsersToStream() {
   try {
     const User = require(

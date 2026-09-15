@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/connection.js — Mongoose Connection Request Model for getHack
 // Stores connection requests between participants with optional notes
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

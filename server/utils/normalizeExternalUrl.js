@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/utils/normalizeExternalUrl.js
 // Utility for validating and normalizing external hackathon platform URLs
 // Handles absolute URLs, relative URLs, protocol-relative URLs, and malformed prefixes
-// ---------------------------------------------------------------------------
+
 
 /**
  * Normalize external website URLs safely

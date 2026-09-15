@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // scratch/testFullChatFlow.js
 // End-to-end backend test for chat favourites & close functionality
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {
@@ -9,7 +9,7 @@ try {
     dns.setDefaultResultOrder("ipv4first");
   }
   dns.setServers(["1.1.1.1", "8.8.8.8", "8.8.4.4"]);
-} catch (err) {}
+} catch (err) { }
 
 require("../server/node_modules/dotenv").config({ path: "f:/Projects/getHack/server/.env" });
 const mongoose = require("../server/node_modules/mongoose");

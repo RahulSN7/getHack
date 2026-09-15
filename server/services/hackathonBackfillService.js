@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/services/hackathonBackfillService.js
 // Safe index synchronization and backfill migration utility for hackathon TTL expiration.
 // Computes expiresAt (registrationDeadline + 24h) and ensures MongoDB TTL index is active.
-// ---------------------------------------------------------------------------
+
 
 const Hackathon = require("../models/hackathon");
 
@@ -11,9 +11,9 @@ const Hackathon = require("../models/hackathon");
  */
 async function backfillHackathonExpiration() {
   try {
-    // -----------------------------------------------------------------------
+  
     // 1. Verify & Sync MongoDB TTL Index
-    // -----------------------------------------------------------------------
+   
     try {
       const existingIndexes = await Hackathon.collection.indexes();
       const expiresAtIndex = existingIndexes.find(
@@ -39,9 +39,9 @@ async function backfillHackathonExpiration() {
       console.warn("[MongoDB TTL Index Notice] Index sync note:", indexErr.message);
     }
 
-    // -----------------------------------------------------------------------
+   
     // 2. Backfill / Recalculate expiresAt for database records
-    // -----------------------------------------------------------------------
+   
     const allHackathons = await Hackathon.find({});
     let updatedCount = 0;
     let expiredCount = 0;

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // scratch/testDateSeparator.js
 // Verification of Date Separator Grouping Logic & Formatters
-// ---------------------------------------------------------------------------
+
 
 function formatDateSeparator(dateStr) {
   if (!dateStr) return "";
@@ -60,9 +60,9 @@ function groupMessages(messages) {
   return grouped;
 }
 
-// ---------------------------------------------------------------------------
+
 // Test Scenarios
-// ---------------------------------------------------------------------------
+
 console.log("Running Date Separator Unit Tests...\n");
 
 const now = new Date();

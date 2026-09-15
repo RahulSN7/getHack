@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // Messages.jsx — WhatsApp-Style Two-Panel Messaging Page
 // Left: conversation list | Right: active chat
 // Uses Stream Chat SDK for real-time messaging.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams, useParams } from "react-router-dom";
@@ -21,9 +21,9 @@ function getChannelLatestTimestamp(channel, clearedAt) {
   const rawMessages = channel.state?.messages || [];
   const visibleMessages = clearTime
     ? rawMessages.filter((m) => {
-        const t = new Date(m.created_at || m.createdAt).getTime();
-        return !isNaN(t) && t > clearTime;
-      })
+      const t = new Date(m.created_at || m.createdAt).getTime();
+      return !isNaN(t) && t > clearTime;
+    })
     : rawMessages;
 
   if (visibleMessages.length > 0) {
@@ -53,9 +53,9 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
   const rawMessages = channel.state?.messages || [];
   const visibleMessages = clearTime
     ? rawMessages.filter((m) => {
-        const t = new Date(m.created_at || m.createdAt).getTime();
-        return !isNaN(t) && t > clearTime;
-      })
+      const t = new Date(m.created_at || m.createdAt).getTime();
+      return !isNaN(t) && t > clearTime;
+    })
     : rawMessages;
 
   if (clearTime && visibleMessages.length === 0) return 0;
@@ -133,7 +133,7 @@ function Messages() {
           setChatStates(res.states);
         }
       } catch (err) {
-         console.error("Failed to load chat states:", err);
+        console.error("Failed to load chat states:", err);
       }
     }
 
@@ -143,373 +143,372 @@ function Messages() {
     };
   }, [ready, currentUserId]);
 
-  // -------------------------------------------------------------------------
+  
   // Load channels and automatically open selected connection.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!chatClient || !ready || !currentUserId) {
-      return;
-    }
-
-    let isMounted = true;
-
-    async function loadAndSelect() {
-      setLoadingChannels(true);
-      setChannelError(null);
-
-      try {
-        let targetChannel = null;
-
-        // Fetch accepted connections from getHack database to enforce connection authorization
-        let acceptedConnIdsSet = new Set();
-        try {
-          const netRes = await userService.getNetworkRequests();
-          if (netRes && Array.isArray(netRes.connections)) {
-            netRes.connections.forEach((conn) => {
-              const partnerId = conn.userId || conn.id || conn._id;
-              if (partnerId) acceptedConnIdsSet.add(String(partnerId));
-            });
-          }
-        } catch (netErr) {
-          console.warn("Failed to fetch accepted connections for chat filtering:", netErr);
-        }
-
-        // ===================================================================
-        // 1. Synchronize target user with Stream BEFORE channel creation.
-        // ===================================================================
-        if (
-          targetUserIdParam &&
-          String(targetUserIdParam) !== String(currentUserId)
-        ) {
-          const targetId = String(targetUserIdParam);
-
-          // Verify target user is in accepted connections for 1-to-1 chats
-          if (acceptedConnIdsSet.size > 0 && !acceptedConnIdsSet.has(targetId)) {
-            console.warn("Target user is not connected. Aborting 1-to-1 channel creation.");
-            showToast("You are no longer connected with this user.");
-            if (isMounted) {
-              setActiveChannel(null);
-              setMobileShowChat(false);
-              navigate("/messages", { replace: true });
-            }
-          } else {
-            console.log("----------------------------------------------");
-            console.log("PREPARING DIRECT MESSAGE");
-            console.log("CURRENT USER ID:", String(currentUserId));
-            console.log("TARGET USER ID:", targetId);
-            console.log("----------------------------------------------");
-
-            try {
-              const syncResult =
-                await chatService.ensureTargetUser(targetId);
-
-              console.log("----------------------------------------------");
-              console.log("STREAM USER SYNC SUCCESS");
-              console.log(syncResult);
-              console.log("----------------------------------------------");
-            } catch (error) {
-              console.error("STREAM USER SYNC FAILED", error);
-              showToast(error.message || "You are no longer connected with this user.");
-              if (isMounted) {
-                setActiveChannel(null);
-                setMobileShowChat(false);
-                navigate("/messages", { replace: true });
-              }
-            }
-          }
-        }
-
-        // ===================================================================
-        // 2. Query existing messaging channels.
-        // ===================================================================
-        const filter = {
-          type: "messaging",
-          members: {
-            $in: [String(currentUserId)],
-          },
-        };
-
-        const sort = [{ last_message_at: -1 }];
-
-        const options = {
-          state: true,
-          watch: true,
-          presence: true,
-          limit: 30,
-        };
-
-        const queriedChannels = await chatClient.queryChannels(
-          filter,
-          sort,
-          options
-        );
-
-        // ===================================================================
-        // 2b. Fetch persistent groups from MongoDB backend.
-        // ===================================================================
-        let dbGroups = [];
-        try {
-          const groupRes = await chatService.getGroups();
-          if (groupRes?.success && Array.isArray(groupRes.groups)) {
-            dbGroups = groupRes.groups;
-          }
-        } catch (dbGroupErr) {
-          console.error("Failed to load MongoDB groups:", dbGroupErr);
-        }
-
-        const dbGroupChannels = [];
-        for (const g of dbGroups) {
-          if (!g.streamChannelId) continue;
-          try {
-            const memberIds = Array.isArray(g.members)
-              ? g.members.map((m) => String(m._id || m.id || m))
-              : [String(currentUserId)];
-
-            const groupChan = chatClient.channel("messaging", g.streamChannelId, {
-              name: g.name,
-              image: g.avatar || undefined,
-              avatar: g.avatar || undefined,
-              isGroup: true,
-              members: memberIds,
-              created_by_id: String(g.creator?._id || g.creator?.id || g.creator || currentUserId),
-            });
-            await groupChan.watch();
-            groupChan.data = {
-              ...(groupChan.data || {}),
-              name: g.name,
-              image: g.avatar || undefined,
-              avatar: g.avatar || undefined,
-              isGroup: true,
-              isRemovedFromGroup: false,
-              memberCount: Array.isArray(g.members) ? g.members.length : memberIds.length,
-              mongoGroupId: g._id?.toString() || g.id || g.streamChannelId,
-            };
-            dbGroupChannels.push(groupChan);
-          } catch (watchErr) {
-            console.error("Error watching persistent group channel:", g.streamChannelId, watchErr);
-          }
-        }
-
-        // ===================================================================
-        // 2c. Fetch groups from which the user was removed (read-only access).
-        // ===================================================================
-        let removedDbGroups = [];
-        try {
-          const removedRes = await chatService.getRemovedGroups();
-          if (removedRes?.success && Array.isArray(removedRes.groups)) {
-            removedDbGroups = removedRes.groups;
-          }
-        } catch (removedErr) {
-          console.error("Failed to load removed groups:", removedErr);
-        }
-
-        const removedGroupChannels = [];
-        for (const rg of removedDbGroups) {
-          if (!rg.streamChannelId) continue;
-          if (dbGroupChannels.some((c) => c.id === rg.streamChannelId)) continue;
-
-          try {
-            const groupChan = chatClient.channel("messaging", rg.streamChannelId, {
-              name: rg.name,
-              image: rg.avatar || undefined,
-              avatar: rg.avatar || undefined,
-              isGroup: true,
-            });
-
-            try {
-              await groupChan.watch();
-            } catch (_watchErr) {
-              // Expected
-            }
-
-            groupChan.data = {
-              ...(groupChan.data || {}),
-              name: rg.name,
-              image: rg.avatar || undefined,
-              avatar: rg.avatar || undefined,
-              isGroup: true,
-              isRemovedFromGroup: true,
-              memberCount: Array.isArray(rg.members) ? rg.members.length : 0,
-              mongoGroupId: rg._id?.toString() || rg.id || rg.streamChannelId,
-            };
-            removedGroupChannels.push(groupChan);
-          } catch (chanErr) {
-            console.error("Error creating removed group channel ref:", rg.streamChannelId, chanErr);
-          }
-        }
-
-        // ===================================================================
-        // 3. Find existing channel OR create a new one.
-        // ===================================================================
-        if (
-          targetUserIdParam &&
-          String(targetUserIdParam) !== String(currentUserId)
-        ) {
-          const targetId = String(targetUserIdParam);
-          if (acceptedConnIdsSet.size === 0 || acceptedConnIdsSet.has(targetId)) {
-            const existing = queriedChannels.find((channel) => {
-              const memberIds = Object.keys(channel.state?.members || {});
-              return memberIds.includes(targetId) && !channel.data?.isGroup;
-            });
-
-            if (existing) {
-              console.log("EXISTING CHAT FOUND:", existing.cid);
-              targetChannel = existing;
-              await targetChannel.watch();
-            } else {
-              console.log("CREATING NEW DIRECT CHAT");
-
-              targetChannel = chatClient.channel("messaging", {
-                members: [
-                  String(currentUserId),
-                  targetId,
-                ],
-              });
-
-              await targetChannel.watch();
-            }
-
-            try {
-              const members = Object.values(
-                targetChannel.state?.members || {}
-              );
-
-              const otherMember = members.find(
-                (member) =>
-                  String(member.user_id || member.user?.id) !==
-                  String(currentUserId)
-              );
-
-              const otherUser = otherMember?.user || {};
-
-              if (!otherUser.name || otherUser.name === targetId) {
-                const profileRes =
-                  await userService.getParticipantProfile(targetId);
-
-                if (profileRes?.user) {
-                  const u = profileRes.user;
-
-                  targetChannel.data = {
-                    ...(targetChannel.data || {}),
-                    targetName: u.name,
-                    targetAvatar:
-                      u.avatar ||
-                      u.profile?.avatar ||
-                      "",
-                  };
-                }
-              }
-            } catch (profileError) {
-              console.warn(
-                "Could not load target getHack profile:",
-                profileError
-              );
-            }
-          }
-        }
-
-        if (!isMounted) {
+      useEffect(() => {
+        if (!chatClient || !ready || !currentUserId) {
           return;
         }
 
-        // ===================================================================
-        // 5. Build final left-side chat list with Connection Enforcement.
-        // ===================================================================
-        const combinedList = [];
-        const addedCids = new Set();
+        let isMounted = true;
 
-        // Selected conversation always appears first if valid.
-        if (targetChannel) {
-          combinedList.push(targetChannel);
-          addedCids.add(targetChannel.cid);
-        }
+        async function loadAndSelect() {
+          setLoadingChannels(true);
+          setChannelError(null);
 
-        // Add persistent MongoDB groups first (always preserved).
-        dbGroupChannels.forEach((groupChan) => {
-          if (!addedCids.has(groupChan.cid)) {
-            combinedList.push(groupChan);
-            addedCids.add(groupChan.cid);
-          }
-        });
+          try {
+            let targetChannel = null;
 
-        // Add queried channels (Group chats ALWAYS preserved, 1-to-1 direct chats filtered by accepted connections).
-        queriedChannels.forEach((channel) => {
-          const memberIds = Object.keys(channel.state?.members || {});
-          const isGroup = Boolean(
-            channel.data?.isGroup ||
-            channel.data?.name ||
-            channel.type === "team" ||
-            channel.type === "group" ||
-            channel.data?.teamId ||
-            memberIds.length > 2
-          );
-          const hasMessages =
-            channel.state?.messages?.length > 0 ||
-            channel.data?.last_message_at;
+            // Fetch accepted connections from getHack database to enforce connection authorization
+            let acceptedConnIdsSet = new Set();
+            try {
+              const netRes = await userService.getNetworkRequests();
+              if (netRes && Array.isArray(netRes.connections)) {
+                netRes.connections.forEach((conn) => {
+                  const partnerId = conn.userId || conn.id || conn._id;
+                  if (partnerId) acceptedConnIdsSet.add(String(partnerId));
+                });
+              }
+            } catch (netErr) {
+              console.warn("Failed to fetch accepted connections for chat filtering:", netErr);
+            }
 
-          if ((hasMessages || isGroup) && !addedCids.has(channel.cid)) {
-            if (isGroup) {
-              // Group/team chats are ALWAYS kept
-              combinedList.push(channel);
-              addedCids.add(channel.cid);
-            } else {
-              // 1-to-1 direct chats: keep if recipient is in accepted connections or fallback
-              const otherId = memberIds.find((id) => String(id) !== String(currentUserId));
-              if (otherId && (acceptedConnIdsSet.size === 0 || acceptedConnIdsSet.has(String(otherId)))) {
-                combinedList.push(channel);
-                addedCids.add(channel.cid);
+           
+            // 1. Synchronize target user with Stream BEFORE channel creation.
+           
+            if (
+              targetUserIdParam &&
+              String(targetUserIdParam) !== String(currentUserId)
+            ) {
+              const targetId = String(targetUserIdParam);
+
+              // Verify target user is in accepted connections for 1-to-1 chats
+              if (acceptedConnIdsSet.size > 0 && !acceptedConnIdsSet.has(targetId)) {
+                console.warn("Target user is not connected. Aborting 1-to-1 channel creation.");
+                showToast("You are no longer connected with this user.");
+                if (isMounted) {
+                  setActiveChannel(null);
+                  setMobileShowChat(false);
+                  navigate("/messages", { replace: true });
+                }
+              } else {
+               
+                console.log("PREPARING DIRECT MESSAGE");
+                console.log("CURRENT USER ID:", String(currentUserId));
+                console.log("TARGET USER ID:", targetId);
+               
+
+                try {
+                  const syncResult =
+                    await chatService.ensureTargetUser(targetId);
+
+                 
+                  console.log("STREAM USER SYNC SUCCESS");
+                  console.log(syncResult);
+                  
+                } catch (error) {
+                  console.error("STREAM USER SYNC FAILED", error);
+                  showToast(error.message || "You are no longer connected with this user.");
+                  if (isMounted) {
+                    setActiveChannel(null);
+                    setMobileShowChat(false);
+                    navigate("/messages", { replace: true });
+                  }
+                }
               }
             }
+
+           
+            // 2. Query existing messaging channels.
+           
+            const filter = {
+              type: "messaging",
+              members: {
+                $in: [String(currentUserId)],
+              },
+            };
+
+            const sort = [{ last_message_at: -1 }];
+
+            const options = {
+              state: true,
+              watch: true,
+              presence: true,
+              limit: 30,
+            };
+
+            const queriedChannels = await chatClient.queryChannels(
+              filter,
+              sort,
+              options
+            );
+
+           
+            // 2b. Fetch persistent groups from MongoDB backend.
+            
+            let dbGroups = [];
+            try {
+              const groupRes = await chatService.getGroups();
+              if (groupRes?.success && Array.isArray(groupRes.groups)) {
+                dbGroups = groupRes.groups;
+              }
+            } catch (dbGroupErr) {
+              console.error("Failed to load MongoDB groups:", dbGroupErr);
+            }
+
+            const dbGroupChannels = [];
+            for (const g of dbGroups) {
+              if (!g.streamChannelId) continue;
+              try {
+                const memberIds = Array.isArray(g.members)
+                  ? g.members.map((m) => String(m._id || m.id || m))
+                  : [String(currentUserId)];
+
+                const groupChan = chatClient.channel("messaging", g.streamChannelId, {
+                  name: g.name,
+                  image: g.avatar || undefined,
+                  avatar: g.avatar || undefined,
+                  isGroup: true,
+                  members: memberIds,
+                  created_by_id: String(g.creator?._id || g.creator?.id || g.creator || currentUserId),
+                });
+                await groupChan.watch();
+                groupChan.data = {
+                  ...(groupChan.data || {}),
+                  name: g.name,
+                  image: g.avatar || undefined,
+                  avatar: g.avatar || undefined,
+                  isGroup: true,
+                  isRemovedFromGroup: false,
+                  memberCount: Array.isArray(g.members) ? g.members.length : memberIds.length,
+                  mongoGroupId: g._id?.toString() || g.id || g.streamChannelId,
+                };
+                dbGroupChannels.push(groupChan);
+              } catch (watchErr) {
+                console.error("Error watching persistent group channel:", g.streamChannelId, watchErr);
+              }
+            }
+
+           
+            // 2c. Fetch groups from which the user was removed (read-only access).
+          
+            let removedDbGroups = [];
+            try {
+              const removedRes = await chatService.getRemovedGroups();
+              if (removedRes?.success && Array.isArray(removedRes.groups)) {
+                removedDbGroups = removedRes.groups;
+              }
+            } catch (removedErr) {
+              console.error("Failed to load removed groups:", removedErr);
+            }
+
+            const removedGroupChannels = [];
+            for (const rg of removedDbGroups) {
+              if (!rg.streamChannelId) continue;
+              if (dbGroupChannels.some((c) => c.id === rg.streamChannelId)) continue;
+
+              try {
+                const groupChan = chatClient.channel("messaging", rg.streamChannelId, {
+                  name: rg.name,
+                  image: rg.avatar || undefined,
+                  avatar: rg.avatar || undefined,
+                  isGroup: true,
+                });
+
+                try {
+                  await groupChan.watch();
+                } catch (_watchErr) {
+                  // Expected
+                }
+
+                groupChan.data = {
+                  ...(groupChan.data || {}),
+                  name: rg.name,
+                  image: rg.avatar || undefined,
+                  avatar: rg.avatar || undefined,
+                  isGroup: true,
+                  isRemovedFromGroup: true,
+                  memberCount: Array.isArray(rg.members) ? rg.members.length : 0,
+                  mongoGroupId: rg._id?.toString() || rg.id || rg.streamChannelId,
+                };
+                removedGroupChannels.push(groupChan);
+              } catch (chanErr) {
+                console.error("Error creating removed group channel ref:", rg.streamChannelId, chanErr);
+              }
+            }
+
+           
+            // 3. Find existing channel OR create a new one.
+            
+            if (
+              targetUserIdParam &&
+              String(targetUserIdParam) !== String(currentUserId)
+            ) {
+              const targetId = String(targetUserIdParam);
+              if (acceptedConnIdsSet.size === 0 || acceptedConnIdsSet.has(targetId)) {
+                const existing = queriedChannels.find((channel) => {
+                  const memberIds = Object.keys(channel.state?.members || {});
+                  return memberIds.includes(targetId) && !channel.data?.isGroup;
+                });
+
+                if (existing) {
+                  console.log("EXISTING CHAT FOUND:", existing.cid);
+                  targetChannel = existing;
+                  await targetChannel.watch();
+                } else {
+                  console.log("CREATING NEW DIRECT CHAT");
+
+                  targetChannel = chatClient.channel("messaging", {
+                    members: [
+                      String(currentUserId),
+                      targetId,
+                    ],
+                  });
+
+                  await targetChannel.watch();
+                }
+
+                try {
+                  const members = Object.values(
+                    targetChannel.state?.members || {}
+                  );
+
+                  const otherMember = members.find(
+                    (member) =>
+                      String(member.user_id || member.user?.id) !==
+                      String(currentUserId)
+                  );
+
+                  const otherUser = otherMember?.user || {};
+
+                  if (!otherUser.name || otherUser.name === targetId) {
+                    const profileRes =
+                      await userService.getParticipantProfile(targetId);
+
+                    if (profileRes?.user) {
+                      const u = profileRes.user;
+
+                      targetChannel.data = {
+                        ...(targetChannel.data || {}),
+                        targetName: u.name,
+                        targetAvatar:
+                          u.avatar ||
+                          u.profile?.avatar ||
+                          "",
+                      };
+                    }
+                  }
+                } catch (profileError) {
+                  console.warn(
+                    "Could not load target getHack profile:",
+                    profileError
+                  );
+                }
+              }
+            }
+
+            if (!isMounted) {
+              return;
+            }
+
+            
+            // 5. Build final left-side chat list with Connection Enforcement.
+      
+            const combinedList = [];
+            const addedCids = new Set();
+
+            // Selected conversation always appears first if valid.
+            if (targetChannel) {
+              combinedList.push(targetChannel);
+              addedCids.add(targetChannel.cid);
+            }
+
+            // Add persistent MongoDB groups first (always preserved).
+            dbGroupChannels.forEach((groupChan) => {
+              if (!addedCids.has(groupChan.cid)) {
+                combinedList.push(groupChan);
+                addedCids.add(groupChan.cid);
+              }
+            });
+
+            // Add queried channels (Group chats ALWAYS preserved, 1-to-1 direct chats filtered by accepted connections).
+            queriedChannels.forEach((channel) => {
+              const memberIds = Object.keys(channel.state?.members || {});
+              const isGroup = Boolean(
+                channel.data?.isGroup ||
+                channel.data?.name ||
+                channel.type === "team" ||
+                channel.type === "group" ||
+                channel.data?.teamId ||
+                memberIds.length > 2
+              );
+              const hasMessages =
+                channel.state?.messages?.length > 0 ||
+                channel.data?.last_message_at;
+
+              if ((hasMessages || isGroup) && !addedCids.has(channel.cid)) {
+                if (isGroup) {
+                  // Group/team chats are ALWAYS kept
+                  combinedList.push(channel);
+                  addedCids.add(channel.cid);
+                } else {
+                  // 1-to-1 direct chats: keep if recipient is in accepted connections or fallback
+                  const otherId = memberIds.find((id) => String(id) !== String(currentUserId));
+                  if (otherId && (acceptedConnIdsSet.size === 0 || acceptedConnIdsSet.has(String(otherId)))) {
+                    combinedList.push(channel);
+                    addedCids.add(channel.cid);
+                  }
+                }
+              }
+            });
+
+            // Add removed groups (read-only).
+            removedGroupChannels.forEach((groupChan) => {
+              if (!addedCids.has(groupChan.cid)) {
+                combinedList.push(groupChan);
+                addedCids.add(groupChan.cid);
+              }
+            });
+
+            setChannels(sortChannelsByLatest(combinedList, chatStatesRef.current));
+
+            
+            // 6. Automatically open selected conversation on the right if authorized.
+          
+            if (targetChannel) {
+              setActiveChannel(targetChannel);
+              setMobileShowChat(true);
+            }
+          } catch (error) {
+            console.error(
+              "FAILED TO LOAD/SELECT CHAT:",
+              error
+            );
+
+            if (isMounted) {
+              setChannelError(
+                error.message ||
+                "Failed to load conversations."
+              );
+            }
+          } finally {
+            if (isMounted) {
+              setLoadingChannels(false);
+            }
           }
-        });
-
-        // Add removed groups (read-only).
-        removedGroupChannels.forEach((groupChan) => {
-          if (!addedCids.has(groupChan.cid)) {
-            combinedList.push(groupChan);
-            addedCids.add(groupChan.cid);
-          }
-        });
-
-        setChannels(sortChannelsByLatest(combinedList, chatStatesRef.current));
-
-        // ===================================================================
-        // 6. Automatically open selected conversation on the right if authorized.
-        // ===================================================================
-        if (targetChannel) {
-          setActiveChannel(targetChannel);
-          setMobileShowChat(true);
         }
-      } catch (error) {
-        console.error(
-          "FAILED TO LOAD/SELECT CHAT:",
-          error
-        );
 
-        if (isMounted) {
-          setChannelError(
-            error.message ||
-            "Failed to load conversations."
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingChannels(false);
-        }
-      }
-    }
+        loadAndSelect();
 
-    loadAndSelect();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    chatClient,
-    ready,
-    currentUserId,
-    targetUserIdParam,
-  ]);
+        return () => {
+          isMounted = false;
+        };
+      }, [
+        chatClient,
+        ready,
+        currentUserId,
+        targetUserIdParam,
+      ]);
 
   const activeChannelRef = useRef(activeChannel);
   useEffect(() => {
@@ -542,23 +541,23 @@ function Messages() {
               prev.map((c) =>
                 c.cid === activeChannel.cid
                   ? Object.assign(Object.create(Object.getPrototypeOf(c)), c, {
-                      state: {
-                        ...c.state,
-                        unreadCount: 0,
-                        read: {
-                          ...(c.state?.read || {}),
-                          [String(currentUserId)]: {
-                            last_read: readTime,
-                            user: { id: String(currentUserId) },
-                          },
+                    state: {
+                      ...c.state,
+                      unreadCount: 0,
+                      read: {
+                        ...(c.state?.read || {}),
+                        [String(currentUserId)]: {
+                          last_read: readTime,
+                          user: { id: String(currentUserId) },
                         },
                       },
-                    })
+                    },
+                  })
                   : c
               )
             );
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
   }, [activeChannel, currentUserId]);
@@ -568,206 +567,206 @@ function Messages() {
     chatStatesRef.current = chatStates;
   }, [chatStates]);
 
-  // -------------------------------------------------------------------------
+
   // Listen for channel updates, incoming messages, and read events.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!chatClient) {
-      return;
-    }
 
-    const handleChannelEvent = (event) => {
-      const cid = event.cid || event.channel_id;
-
-      // Auto-mark as read if incoming message is for currently open active channel
-      if (
-        (event.type === "message.new" || event.type === "notification.message_new") &&
-        activeChannelRef.current?.cid === cid
-      ) {
-        const chan = event.channel || activeChannelRef.current;
-        if (chan && typeof chan.markRead === "function") {
-          chan.markRead().catch(() => {});
-        }
-      }
-
-      // Auto-reopen if channel was closed and receives a new message
-      if (cid && chatStatesRef.current[cid]?.isClosed) {
-        chatService.reopenChat(cid).catch(() => {});
-        if (event.channel && typeof event.channel.show === "function") {
-          event.channel.show().catch(() => {});
-        }
-        setChatStates((prev) => ({
-          ...prev,
-          [cid]: {
-            ...(prev[cid] || {}),
-            isClosed: false,
-          },
-        }));
-      }
-
-      setChannels((previousChannels) => {
-        let updatedList = [...previousChannels];
-        let targetChan = updatedList.find((ch) => ch.cid === cid);
-
-        if (!targetChan && event.channel) {
-          targetChan = event.channel;
-          updatedList.push(targetChan);
+      useEffect(() => {
+        if (!chatClient) {
+          return;
         }
 
-        if (targetChan) {
-          if (!targetChan.state) targetChan.state = { messages: [], unreadCount: 0 };
-          if (!targetChan.state.messages) targetChan.state.messages = [];
+        const handleChannelEvent = (event) => {
+          const cid = event.cid || event.channel_id;
 
-          if ((event.type === "message.read" || event.type === "notification.mark_read") && event.user?.id) {
-            console.log("[CHAT DEBUG] message.read event:", cid, event.user.id);
-            if (!targetChan.state.read) targetChan.state.read = {};
-            targetChan.state.read[String(event.user.id)] = {
-              last_read: event.created_at || new Date().toISOString(),
-              user: event.user,
-            };
-            if (String(event.user.id) === String(currentUserId)) {
-              targetChan.state.unreadCount = 0;
+          // Auto-mark as read if incoming message is for currently open active channel
+          if (
+            (event.type === "message.new" || event.type === "notification.message_new") &&
+            activeChannelRef.current?.cid === cid
+          ) {
+            const chan = event.channel || activeChannelRef.current;
+            if (chan && typeof chan.markRead === "function") {
+              chan.markRead().catch(() => { });
             }
           }
 
-          if (event.message) {
-            const msg = event.message;
-            const idx = targetChan.state.messages.findIndex((m) => m.id === msg.id);
+          // Auto-reopen if channel was closed and receives a new message
+          if (cid && chatStatesRef.current[cid]?.isClosed) {
+            chatService.reopenChat(cid).catch(() => { });
+            if (event.channel && typeof event.channel.show === "function") {
+              event.channel.show().catch(() => { });
+            }
+            setChatStates((prev) => ({
+              ...prev,
+              [cid]: {
+                ...(prev[cid] || {}),
+                isClosed: false,
+              },
+            }));
+          }
 
-            if (event.type === "message.deleted" || msg.type === "deleted" || msg.deleted_at) {
-              if (idx !== -1) {
-                targetChan.state.messages[idx] = {
-                  ...targetChan.state.messages[idx],
-                  ...msg,
-                  deleted_at: msg.deleted_at || new Date().toISOString(),
-                  type: "deleted",
+          setChannels((previousChannels) => {
+            let updatedList = [...previousChannels];
+            let targetChan = updatedList.find((ch) => ch.cid === cid);
+
+            if (!targetChan && event.channel) {
+              targetChan = event.channel;
+              updatedList.push(targetChan);
+            }
+
+            if (targetChan) {
+              if (!targetChan.state) targetChan.state = { messages: [], unreadCount: 0 };
+              if (!targetChan.state.messages) targetChan.state.messages = [];
+
+              if ((event.type === "message.read" || event.type === "notification.mark_read") && event.user?.id) {
+                console.log("[CHAT DEBUG] message.read event:", cid, event.user.id);
+                if (!targetChan.state.read) targetChan.state.read = {};
+                targetChan.state.read[String(event.user.id)] = {
+                  last_read: event.created_at || new Date().toISOString(),
+                  user: event.user,
+                };
+                if (String(event.user.id) === String(currentUserId)) {
+                  targetChan.state.unreadCount = 0;
+                }
+              }
+
+              if (event.message) {
+                const msg = event.message;
+                const idx = targetChan.state.messages.findIndex((m) => m.id === msg.id);
+
+                if (event.type === "message.deleted" || msg.type === "deleted" || msg.deleted_at) {
+                  if (idx !== -1) {
+                    targetChan.state.messages[idx] = {
+                      ...targetChan.state.messages[idx],
+                      ...msg,
+                      deleted_at: msg.deleted_at || new Date().toISOString(),
+                      type: "deleted",
+                    };
+                  }
+                } else if (idx !== -1) {
+                  targetChan.state.messages[idx] = {
+                    ...targetChan.state.messages[idx],
+                    ...msg,
+                  };
+                } else if (event.type === "message.new" || event.type === "notification.message_new") {
+                  targetChan.state.messages.push(msg);
+                }
+
+                targetChan.state.last_message_at = msg.created_at || new Date().toISOString();
+              }
+
+              if (activeChannelRef.current?.cid === cid && targetChan.state) {
+                targetChan.state.unreadCount = 0;
+                if (!targetChan.state.read) targetChan.state.read = {};
+                targetChan.state.read[String(currentUserId)] = {
+                  last_read: new Date().toISOString(),
+                  user: { id: String(currentUserId) },
                 };
               }
-            } else if (idx !== -1) {
-              targetChan.state.messages[idx] = {
-                ...targetChan.state.messages[idx],
-                ...msg,
-              };
-            } else if (event.type === "message.new" || event.type === "notification.message_new") {
-              targetChan.state.messages.push(msg);
+
+              const clonedChan = Object.assign(Object.create(Object.getPrototypeOf(targetChan)), targetChan, {
+                state: {
+                  ...targetChan.state,
+                  messages: [...targetChan.state.messages],
+                  read: { ...(targetChan.state.read || {}) },
+                },
+              });
+
+              const listIdx = updatedList.findIndex((ch) => ch.cid === cid);
+              if (listIdx !== -1) {
+                updatedList[listIdx] = clonedChan;
+              } else {
+                updatedList.push(clonedChan);
+              }
             }
 
-            targetChan.state.last_message_at = msg.created_at || new Date().toISOString();
-          }
-
-          if (activeChannelRef.current?.cid === cid && targetChan.state) {
-            targetChan.state.unreadCount = 0;
-            if (!targetChan.state.read) targetChan.state.read = {};
-            targetChan.state.read[String(currentUserId)] = {
-              last_read: new Date().toISOString(),
-              user: { id: String(currentUserId) },
-            };
-          }
-
-          const clonedChan = Object.assign(Object.create(Object.getPrototypeOf(targetChan)), targetChan, {
-            state: {
-              ...targetChan.state,
-              messages: [...targetChan.state.messages],
-              read: { ...(targetChan.state.read || {}) },
-            },
+            console.log("[CHAT DEBUG] chat list rebuilt:", cid, targetChan?.state?.unreadCount);
+            return sortChannelsByLatest(updatedList, chatStatesRef.current);
           });
+        };
 
-          const listIdx = updatedList.findIndex((ch) => ch.cid === cid);
-          if (listIdx !== -1) {
-            updatedList[listIdx] = clonedChan;
-          } else {
-            updatedList.push(clonedChan);
+        const handleChannelDeletedEvent = (event) => {
+          const cid = event.cid || event.channel?.cid;
+          if (!cid) return;
+
+          console.log("[Stream Chat] Channel deleted event received:", cid);
+
+          setChannels((prev) => prev.filter((ch) => ch.cid !== cid));
+
+          if (activeChannelRef.current?.cid === cid) {
+            setActiveChannel(null);
+            setMobileShowChat(false);
           }
-        }
+        };
 
-        console.log("[CHAT DEBUG] chat list rebuilt:", cid, targetChan?.state?.unreadCount);
-        return sortChannelsByLatest(updatedList, chatStatesRef.current);
-      });
-    };
+        chatClient.on("message.new", handleChannelEvent);
+        chatClient.on("notification.message_new", handleChannelEvent);
+        chatClient.on("message.updated", handleChannelEvent);
+        chatClient.on("message.deleted", handleChannelEvent);
+        chatClient.on("message.read", handleChannelEvent);
+        chatClient.on("notification.mark_read", handleChannelEvent);
+        chatClient.on("channel.updated", handleChannelEvent);
+        chatClient.on("channel.truncated", handleChannelEvent);
+        chatClient.on("channel.deleted", handleChannelDeletedEvent);
+        chatClient.on("notification.channel_deleted", handleChannelDeletedEvent);
 
-    const handleChannelDeletedEvent = (event) => {
-      const cid = event.cid || event.channel?.cid;
-      if (!cid) return;
+        return () => {
+          chatClient.off("message.new", handleChannelEvent);
+          chatClient.off("notification.message_new", handleChannelEvent);
+          chatClient.off("message.updated", handleChannelEvent);
+          chatClient.off("message.deleted", handleChannelEvent);
+          chatClient.off("message.read", handleChannelEvent);
+          chatClient.off("notification.mark_read", handleChannelEvent);
+          chatClient.off("channel.updated", handleChannelEvent);
+          chatClient.off("channel.truncated", handleChannelEvent);
+          chatClient.off("channel.deleted", handleChannelDeletedEvent);
+          chatClient.off("notification.channel_deleted", handleChannelDeletedEvent);
+        };
+      }, [chatClient]);
 
-      console.log("[Stream Chat] Channel deleted event received:", cid);
-
-      setChannels((prev) => prev.filter((ch) => ch.cid !== cid));
-
-      if (activeChannelRef.current?.cid === cid) {
-        setActiveChannel(null);
-        setMobileShowChat(false);
-      }
-    };
-
-    chatClient.on("message.new", handleChannelEvent);
-    chatClient.on("notification.message_new", handleChannelEvent);
-    chatClient.on("message.updated", handleChannelEvent);
-    chatClient.on("message.deleted", handleChannelEvent);
-    chatClient.on("message.read", handleChannelEvent);
-    chatClient.on("notification.mark_read", handleChannelEvent);
-    chatClient.on("channel.updated", handleChannelEvent);
-    chatClient.on("channel.truncated", handleChannelEvent);
-    chatClient.on("channel.deleted", handleChannelDeletedEvent);
-    chatClient.on("notification.channel_deleted", handleChannelDeletedEvent);
-
-    return () => {
-      chatClient.off("message.new", handleChannelEvent);
-      chatClient.off("notification.message_new", handleChannelEvent);
-      chatClient.off("message.updated", handleChannelEvent);
-      chatClient.off("message.deleted", handleChannelEvent);
-      chatClient.off("message.read", handleChannelEvent);
-      chatClient.off("notification.mark_read", handleChannelEvent);
-      chatClient.off("channel.updated", handleChannelEvent);
-      chatClient.off("channel.truncated", handleChannelEvent);
-      chatClient.off("channel.deleted", handleChannelDeletedEvent);
-      chatClient.off("notification.channel_deleted", handleChannelDeletedEvent);
-    };
-  }, [chatClient]);
-
-  // -------------------------------------------------------------------------
+  
   // Handlers for Favourites, Close, and Reopen.
-  // -------------------------------------------------------------------------
+  
   const handleToggleFavourite = useCallback(
-    async (targetChan) => {
-      const chan = targetChan || activeChannel;
-      if (!chan) return;
-      const cid = chan.cid;
+      async (targetChan) => {
+        const chan = targetChan || activeChannel;
+        if (!chan) return;
+        const cid = chan.cid;
 
-      const members = Object.values(chan.state?.members || {});
-      const other = members.find(
-        (m) => String(m.user_id || m.user?.id) !== String(currentUserId)
-      );
-      const targetUserId = other?.user_id || other?.user?.id || "";
+        const members = Object.values(chan.state?.members || {});
+        const other = members.find(
+          (m) => String(m.user_id || m.user?.id) !== String(currentUserId)
+        );
+        const targetUserId = other?.user_id || other?.user?.id || "";
 
-      const currentFav = !!chatStates[cid]?.isFavourite;
-      const newFav = !currentFav;
+        const currentFav = !!chatStates[cid]?.isFavourite;
+        const newFav = !currentFav;
 
-      setChatStates((prev) => ({
-        ...prev,
-        [cid]: {
-          ...(prev[cid] || {}),
-          isFavourite: newFav,
-        },
-      }));
-
-      showToast(newFav ? "Chat added to favourites" : "Chat removed from favourites");
-
-      try {
-        await chatService.toggleFavourite(cid, newFav, targetUserId);
-      } catch (err) {
-        console.error("Failed to toggle favourite:", err);
         setChatStates((prev) => ({
           ...prev,
           [cid]: {
             ...(prev[cid] || {}),
-            isFavourite: currentFav,
+            isFavourite: newFav,
           },
         }));
-        showToast("Failed to update favourite status");
-      }
-    },
-    [activeChannel, chatStates, currentUserId]
-  );
+
+        showToast(newFav ? "Chat added to favourites" : "Chat removed from favourites");
+
+        try {
+          await chatService.toggleFavourite(cid, newFav, targetUserId);
+        } catch (err) {
+          console.error("Failed to toggle favourite:", err);
+          setChatStates((prev) => ({
+            ...prev,
+            [cid]: {
+              ...(prev[cid] || {}),
+              isFavourite: currentFav,
+            },
+          }));
+          showToast("Failed to update favourite status");
+        }
+      },
+      [activeChannel, chatStates, currentUserId]
+    );
 
   const handleCloseChat = useCallback(
     async (targetChan) => {
@@ -908,23 +907,23 @@ function Messages() {
             prev.map((c) =>
               c.cid === chan.cid
                 ? Object.assign(Object.create(Object.getPrototypeOf(c)), c, {
-                    state: {
-                      ...c.state,
-                      unreadCount: 0,
-                      read: {
-                        ...(c.state?.read || {}),
-                        [String(currentUserId)]: {
-                          last_read: readTime,
-                          user: { id: String(currentUserId) },
-                        },
+                  state: {
+                    ...c.state,
+                    unreadCount: 0,
+                    read: {
+                      ...(c.state?.read || {}),
+                      [String(currentUserId)]: {
+                        last_read: readTime,
+                        user: { id: String(currentUserId) },
                       },
                     },
-                  })
+                  },
+                })
                 : c
             )
           );
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [currentUserId]);
 
@@ -952,7 +951,7 @@ function Messages() {
     channels.forEach((ch) => {
       const unread = getChannelUnreadCount(ch, currentUserId, false, chatStates[ch.cid]?.clearedAt);
       if (unread > 0 && typeof ch.markRead === "function") {
-        ch.markRead().catch(() => {});
+        ch.markRead().catch(() => { });
         if (ch.state) {
           ch.state.unreadCount = 0;
           if (!ch.state.read) ch.state.read = {};
@@ -1100,130 +1099,130 @@ function Messages() {
 
 
 
-  // -------------------------------------------------------------------------
+ 
   // Search & Filter conversations.
-  // -------------------------------------------------------------------------
+ 
   const filteredChannels = useMemo(() => {
-    let list = sortChannelsByLatest(channels, chatStates);
+      let list = sortChannelsByLatest(channels, chatStates);
 
-    // Filter by active tab (All, Unread, Favourites, Groups)
-    if (activeFilter === "favourites") {
-      list = list.filter((ch) => !!chatStates[ch.cid]?.isFavourite);
-    } else if (activeFilter === "unread") {
-      list = list.filter((ch) => getChannelUnreadCount(ch, currentUserId, activeChannel?.cid === ch.cid, chatStates[ch.cid]?.clearedAt) > 0);
-    } else if (activeFilter === "groups") {
-      list = list.filter((ch) => {
-        const members = Object.values(ch.state?.members || {});
-        return Boolean(
-          ch.data?.isGroup ||
-          ch.data?.name ||
-          members.length > 2 ||
-          ch.type === "team"
+      // Filter by active tab (All, Unread, Favourites, Groups)
+      if (activeFilter === "favourites") {
+        list = list.filter((ch) => !!chatStates[ch.cid]?.isFavourite);
+      } else if (activeFilter === "unread") {
+        list = list.filter((ch) => getChannelUnreadCount(ch, currentUserId, activeChannel?.cid === ch.cid, chatStates[ch.cid]?.clearedAt) > 0);
+      } else if (activeFilter === "groups") {
+        list = list.filter((ch) => {
+          const members = Object.values(ch.state?.members || {});
+          return Boolean(
+            ch.data?.isGroup ||
+            ch.data?.name ||
+            members.length > 2 ||
+            ch.type === "team"
+          );
+        });
+      }
+
+      if (!searchQuery.trim()) {
+        return list;
+      }
+
+      const query = searchQuery.toLowerCase();
+
+      return list.filter((channel) => {
+        const members = Object.values(
+          channel.state?.members || {}
         );
+
+        const other = members.find(
+          (member) =>
+            String(
+              member.user_id || member.user?.id
+            ) !== String(currentUserId)
+        );
+
+        const otherName =
+          other?.user?.name ||
+          channel.data?.targetName ||
+          channel.data?.name ||
+          "";
+
+        return otherName
+          .toLowerCase()
+          .includes(query);
       });
-    }
-
-    if (!searchQuery.trim()) {
-      return list;
-    }
-
-    const query = searchQuery.toLowerCase();
-
-    return list.filter((channel) => {
-      const members = Object.values(
-        channel.state?.members || {}
-      );
-
-      const other = members.find(
-        (member) =>
-          String(
-            member.user_id || member.user?.id
-          ) !== String(currentUserId)
-      );
-
-      const otherName =
-        other?.user?.name ||
-        channel.data?.targetName ||
-        channel.data?.name ||
-        "";
-
-      return otherName
-        .toLowerCase()
-        .includes(query);
-    });
-  }, [
-    channels,
-    searchQuery,
-    activeFilter,
-    chatStates,
-    currentUserId,
-    activeChannel,
-  ]);
+    }, [
+      channels,
+      searchQuery,
+      activeFilter,
+      chatStates,
+      currentUserId,
+      activeChannel,
+    ]);
 
 
 
-  // -------------------------------------------------------------------------
+ 
   // Remove / Hide channel for current user.
-  // -------------------------------------------------------------------------
+
   const handleRemoveChannel = useCallback(
-    async (channelToRemove) => {
-      if (!channelToRemove) {
-        return;
-      }
-
-      try {
-        // Hide channel in Stream Chat for current authenticated user
-        await channelToRemove.hide();
-
-        // Filter channel out of local state
-        setChannels((previousChannels) =>
-          previousChannels.filter(
-            (channel) => channel.cid !== channelToRemove.cid
-          )
-        );
-
-        // If active channel was removed, reset active state & navigate to /messages
-        if (activeChannel?.cid === channelToRemove.cid) {
-          setActiveChannel(null);
-          setMobileShowChat(false);
-          navigate("/messages", { replace: true });
+      async (channelToRemove) => {
+        if (!channelToRemove) {
+          return;
         }
-      } catch (error) {
-        console.error("Failed to hide channel:", error);
-      }
-    },
-    [activeChannel, navigate]
-  );
 
-  // -------------------------------------------------------------------------
+        try {
+          // Hide channel in Stream Chat for current authenticated user
+          await channelToRemove.hide();
+
+          // Filter channel out of local state
+          setChannels((previousChannels) =>
+            previousChannels.filter(
+              (channel) => channel.cid !== channelToRemove.cid
+            )
+          );
+
+          // If active channel was removed, reset active state & navigate to /messages
+          if (activeChannel?.cid === channelToRemove.cid) {
+            setActiveChannel(null);
+            setMobileShowChat(false);
+            navigate("/messages", { replace: true });
+          }
+        } catch (error) {
+          console.error("Failed to hide channel:", error);
+        }
+      },
+      [activeChannel, navigate]
+    );
+
+ 
   // Handle Group Deleted (for current user only).
-  // -------------------------------------------------------------------------
+  
   const handleGroupDeleted = useCallback(
-    (groupId) => {
-      setChannels((prevChannels) =>
-        prevChannels.filter((c) => {
-          const cGroupId = c.data?.mongoGroupId || c.id || c.cid?.replace(/^messaging:/, "");
-          return cGroupId !== groupId && c.id !== groupId && c.cid !== `messaging:${groupId}`;
-        })
-      );
-      setActiveChannel(null);
-      setMobileShowChat(false);
-      navigate("/messages", { replace: true });
-    },
-    [navigate]
-  );
+      (groupId) => {
+        setChannels((prevChannels) =>
+          prevChannels.filter((c) => {
+            const cGroupId = c.data?.mongoGroupId || c.id || c.cid?.replace(/^messaging:/, "");
+            return cGroupId !== groupId && c.id !== groupId && c.cid !== `messaging:${groupId}`;
+          })
+        );
+        setActiveChannel(null);
+        setMobileShowChat(false);
+        navigate("/messages", { replace: true });
+      },
+      [navigate]
+    );
 
-  // -------------------------------------------------------------------------
+ 
   // Mobile back.
-  // -------------------------------------------------------------------------
+  
   const handleBack = useCallback(() => {
-    setMobileShowChat(false);
-    setActiveChannel(null);
-  }, []);
+      setMobileShowChat(false);
+      setActiveChannel(null);
+    }, []);
 
-  // -------------------------------------------------------------------------
+ 
   // Loading.
-  // -------------------------------------------------------------------------
+ 
   if (!ready && !chatError) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-slate-50 dark:bg-neutral-950">
@@ -1252,9 +1251,9 @@ function Messages() {
     );
   }
 
-  // -------------------------------------------------------------------------
+  
   // Chat connection error.
-  // -------------------------------------------------------------------------
+ 
   if (chatError) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-slate-50 dark:bg-neutral-950">
@@ -1311,9 +1310,9 @@ function Messages() {
     );
   }
 
-  // -------------------------------------------------------------------------
+  
   // Main Messages UI.
-  // -------------------------------------------------------------------------
+  
   return (
     <div className="relative h-[calc(100vh-64px)] flex bg-slate-50 dark:bg-neutral-950 overflow-hidden">
       {/* ── Toast Notification ── */}
@@ -1325,9 +1324,9 @@ function Messages() {
         </div>
       )}
 
-      {/* ================================================================
+      {/* 
           LEFT PANEL — CHAT LIST
-         ================================================================ */}
+         */}
       <div
         className={`
           w-full md:w-80 lg:w-96 shrink-0
@@ -1478,44 +1477,40 @@ function Messages() {
             <button
               type="button"
               onClick={() => setActiveFilter("all")}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
-                activeFilter === "all"
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                  : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              }`}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${activeFilter === "all"
+                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
+                : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                }`}
             >
               All
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter("unread")}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
-                activeFilter === "unread"
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                  : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              }`}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${activeFilter === "unread"
+                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
+                : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                }`}
             >
               Unread
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter("favourites")}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
-                activeFilter === "favourites"
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                  : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              }`}
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${activeFilter === "favourites"
+                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
+                : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                }`}
             >
               Favourites
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter("groups")}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
-                activeFilter === "groups"
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
-                  : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              }`}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 ${activeFilter === "groups"
+                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-2xs"
+                : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                }`}
             >
               Groups
             </button>
@@ -1790,9 +1785,9 @@ function Messages() {
         </div>
       </div>
 
-      {/* ================================================================
+      {/* 
           RIGHT PANEL — CHAT
-         ================================================================ */}
+        */}
       <div
         className={`
           flex-1 flex flex-col

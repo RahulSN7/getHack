@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // LoginPage.jsx — Production Email OTP Authentication Login Page
 // 2-Step OTP Verification Flow with zero password fields & local Day/Night theme.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -39,23 +39,10 @@ function LoginPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Google Sign-In Handler
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setGeneralError("");
     setIsGoogleLoading(true);
-
-    if (window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.prompt(async (notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            window.location.href = "/api/auth/google";
-          }
-        });
-      } catch {
-        window.location.href = "/api/auth/google";
-      }
-    } else {
-      window.location.href = "/api/auth/google";
-    }
+    window.location.href = "/api/auth/google";
   };
 
   // Read redirect error parameters from URL query string if Google OAuth fails
@@ -171,13 +158,7 @@ function LoginPage() {
       const searchParams = new URLSearchParams(window.location.search);
       const redirectUrl = searchParams.get("redirect");
 
-      if (loggedUser?.role === "organizer") {
-        navigate("/organizer");
-      } else if (redirectUrl) {
-        navigate(redirectUrl);
-      } else {
-        navigate("/hackathons");
-      }
+      navigate("/");
     } catch (err) {
       setIsLoading(false);
       setGeneralError(err.message || "Incorrect verification code. Please try again.");
@@ -267,8 +248,8 @@ function LoginPage() {
         {generalError && (
           <div
             className={`rounded-xl border p-3.5 text-xs font-semibold ${isCardDark
-                ? "border-red-900/60 bg-red-950/60 text-red-300"
-                : "border-red-200/80 bg-red-50 text-red-600"
+              ? "border-red-900/60 bg-red-950/60 text-red-300"
+              : "border-red-200/80 bg-red-50 text-red-600"
               }`}
           >
             {generalError}

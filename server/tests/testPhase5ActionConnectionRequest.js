@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testPhase5ActionConnectionRequest.js
 // Integration test suite for Phase 5: Action-Taking Agent (Send Connection Request)
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {

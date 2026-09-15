@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // SignupPage.jsx — Production Email OTP Registration Page
 // 2-Step OTP Verification Flow with zero password fields & local Day/Night theme.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -41,25 +41,11 @@ function SignupPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Google Sign-In Handler
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setGeneralError("");
     setIsGoogleLoading(true);
-
     const targetUrl = `/api/auth/google?role=${encodeURIComponent(role.toLowerCase())}`;
-
-    if (window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.prompt(async (notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            window.location.href = targetUrl;
-          }
-        });
-      } catch {
-        window.location.href = targetUrl;
-      }
-    } else {
-      window.location.href = targetUrl;
-    }
+    window.location.href = targetUrl;
   };
 
   // Read redirect error parameters from URL query string if Google OAuth fails
@@ -184,11 +170,7 @@ function SignupPage() {
       });
       setIsLoading(false);
 
-      if (newUser?.role === "organizer") {
-        navigate("/organizer");
-      } else {
-        navigate("/hackathons");
-      }
+      navigate("/");
     } catch (err) {
       setIsLoading(false);
       setGeneralError(err.message || "Incorrect verification code. Please try again.");
@@ -280,8 +262,8 @@ function SignupPage() {
         {generalError && (
           <div
             className={`rounded-xl border p-3.5 text-xs font-semibold ${isCardDark
-                ? "border-red-900/60 bg-red-950/60 text-red-300"
-                : "border-red-200/80 bg-red-50 text-red-600"
+              ? "border-red-900/60 bg-red-950/60 text-red-300"
+              : "border-red-200/80 bg-red-50 text-red-600"
               }`}
           >
             {generalError}
@@ -358,20 +340,20 @@ function SignupPage() {
                 </label>
                 <div
                   className={`grid grid-cols-2 rounded-xl border p-1 ${isCardDark
-                      ? "border-neutral-800 bg-neutral-950"
-                      : "border-neutral-200 bg-neutral-100"
+                    ? "border-neutral-800 bg-neutral-950"
+                    : "border-neutral-200 bg-neutral-100"
                     }`}
                 >
                   <button
                     type="button"
                     onClick={() => setRole("Participant")}
                     className={`rounded-lg py-2 text-xs font-semibold transition-all ${role === "Participant"
-                        ? isCardDark
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "bg-white text-neutral-900 shadow-xs"
-                        : isCardDark
-                          ? "text-neutral-400 hover:text-neutral-200"
-                          : "text-neutral-600 hover:text-neutral-900"
+                      ? isCardDark
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-white text-neutral-900 shadow-xs"
+                      : isCardDark
+                        ? "text-neutral-400 hover:text-neutral-200"
+                        : "text-neutral-600 hover:text-neutral-900"
                       }`}
                   >
                     Participant
@@ -380,12 +362,12 @@ function SignupPage() {
                     type="button"
                     onClick={() => setRole("Organizer")}
                     className={`rounded-lg py-2 text-xs font-semibold transition-all ${role === "Organizer"
-                        ? isCardDark
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "bg-white text-neutral-900 shadow-xs"
-                        : isCardDark
-                          ? "text-neutral-400 hover:text-neutral-200"
-                          : "text-neutral-600 hover:text-neutral-900"
+                      ? isCardDark
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-white text-neutral-900 shadow-xs"
+                      : isCardDark
+                        ? "text-neutral-400 hover:text-neutral-200"
+                        : "text-neutral-600 hover:text-neutral-900"
                       }`}
                   >
                     Organizer

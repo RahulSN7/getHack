@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep8ShortcutNavigation.js
 // Automated Test Suite for Step 8: Notification Navigation Shortcuts & CTA Removal
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const http = require("http");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testOtpSignupFlow.js
 // Automated Integration Test Suite for GetHack OTP Signup & Verification
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {
@@ -74,7 +74,7 @@ async function runTests() {
   // ── TEST 1: Participant Signup Flow ──
   console.log("\n[Test 1] Participant OTP Signup Flow...");
   const pEmail = "otptest_participant@gmail.com";
-  
+
   const rawOtp1 = "123456";
   const salt1 = await bcrypt.genSalt(10);
   const otpHash1 = await bcrypt.hash(rawOtp1, salt1);
@@ -122,7 +122,7 @@ async function runTests() {
   // ── TEST 2: Organizer Signup Flow ──
   console.log("\n[Test 2] Organizer OTP Signup Flow...");
   const oEmail = "otptest_organizer@gmail.com";
-  
+
   const rawOtp2 = "654321";
   const salt2 = await bcrypt.genSalt(10);
   const otpHash2 = await bcrypt.hash(rawOtp2, salt2);
@@ -230,7 +230,7 @@ async function runTests() {
   // ── TEST 5: Resend OTP & Old OTP Invalidation ──
   console.log("\n[Test 5] Resend OTP & Old OTP Invalidation...");
   const rEmail = "otptest_resend@gmail.com";
-  
+
   // 1st OTP
   const rawOtpOld = "111111";
   const saltOld = await bcrypt.genSalt(10);

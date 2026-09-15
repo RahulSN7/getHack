@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testPhase2SearchHackathonsTool.js
 // Integration test suite for Phase 2: search_hackathons tool & Agent integration
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {

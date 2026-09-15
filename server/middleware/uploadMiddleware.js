@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/middleware/uploadMiddleware.js — Multer Configuration for Uploads
 // Provides 'upload' for user profile photos (5MB max) and 'chatUpload' for chat files (20MB max)
-// ---------------------------------------------------------------------------
+
 
 const multer = require("multer");
 const path = require("path");

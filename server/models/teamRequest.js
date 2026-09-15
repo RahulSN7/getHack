@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/teamRequest.js — Mongoose Team Request Model for getHack
 // Stores person-to-team join requests, leader references, and request state
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

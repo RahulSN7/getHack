@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // CreateTeamPage.jsx — Redesigned 5-Section Create Team Form (/create-team)
 // Form starts 100% empty with zero demo/prefilled data; uses real user profile data
 // Includes fully functional Invite Connections modal with team capacity protection
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -222,18 +222,18 @@ export default function CreateTeamPage() {
 
   const formFieldsChanged = originalTeamFields
     ? (
-        teamName.trim() !== originalTeamFields.teamName ||
-        description.trim() !== originalTeamFields.description ||
-        hackathonName.trim() !== originalTeamFields.hackathonName ||
-        hackathonLink.trim() !== originalTeamFields.hackathonLink ||
-        startDate !== originalTeamFields.startDate ||
-        endDate !== originalTeamFields.endDate ||
-        mode !== originalTeamFields.mode ||
-        lookingForDescription.trim() !== originalTeamFields.lookingForDescription ||
-        Number(maxSize) !== Number(originalTeamFields.maxSize) ||
-        JSON.stringify(rolesNeeded) !== JSON.stringify(originalTeamFields.rolesNeeded) ||
-        JSON.stringify(techStack) !== JSON.stringify(originalTeamFields.techStack)
-      )
+      teamName.trim() !== originalTeamFields.teamName ||
+      description.trim() !== originalTeamFields.description ||
+      hackathonName.trim() !== originalTeamFields.hackathonName ||
+      hackathonLink.trim() !== originalTeamFields.hackathonLink ||
+      startDate !== originalTeamFields.startDate ||
+      endDate !== originalTeamFields.endDate ||
+      mode !== originalTeamFields.mode ||
+      lookingForDescription.trim() !== originalTeamFields.lookingForDescription ||
+      Number(maxSize) !== Number(originalTeamFields.maxSize) ||
+      JSON.stringify(rolesNeeded) !== JSON.stringify(originalTeamFields.rolesNeeded) ||
+      JSON.stringify(techStack) !== JSON.stringify(originalTeamFields.techStack)
+    )
     : false;
 
   const hasUnsavedChanges = isEditMode && (membersChanged || formFieldsChanged);
@@ -832,8 +832,8 @@ export default function CreateTeamPage() {
                           </p>
                           <span
                             className={`rounded px-2 py-0.5 text-[10px] font-bold ${member.isOwner
-                                ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
-                                : "bg-neutral-200/60 text-neutral-700 dark:bg-neutral-700/60 dark:text-neutral-300"
+                              ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
+                              : "bg-neutral-200/60 text-neutral-700 dark:bg-neutral-700/60 dark:text-neutral-300"
                               }`}
                           >
                             {member.isOwner ? "Team Owner" : member.role || "Member"}

@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // TeamInvitationCard.jsx — Dedicated Interactive Card Component for Team Invitations in Chat
 // Renders inside Stream Chat message list as a hackathon team invitation card.
 // Calculates status and CTAs PER LOGGED-IN USER dynamically.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";

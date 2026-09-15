@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // CreateTeamModal.jsx — Modal component for creating a new hackathon team
 // Follows getHack form & modal design system
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { HACKATHONS } from "../../../data/hackathons";

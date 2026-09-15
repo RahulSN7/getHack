@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/adapters/unstopAdapter.js
 // Adapter for fetching live hackathons from Unstop (formerly Dare2Compete)
-// ---------------------------------------------------------------------------
+
 
 const normalizeExternalUrl = require("../utils/normalizeExternalUrl");
 
@@ -13,7 +13,7 @@ const PLATFORM_NAME = "unstop";
  */
 async function fetchHackathons() {
   const url = "https://unstop.com/api/public/opportunity/search-result?opportunity=hackathons&per_page=30&oppstatus=open";
-  
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -32,7 +32,7 @@ async function fetchHackathons() {
     return items.map((item) => {
       const candidateUrl = item.seo_url || item.public_url || item.url || item.opportunity_url || (item.slug ? `/p/${item.slug}` : null);
       const publicUrl = normalizeExternalUrl(candidateUrl, "https://unstop.com") || "https://unstop.com/hackathons";
-      
+
       let prize = 0;
       if (item.prize_pool) {
         const num = String(item.prize_pool).replace(/[^0-9]/g, "");

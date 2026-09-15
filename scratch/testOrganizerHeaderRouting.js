@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // testOrganizerHeaderRouting.js — Verification script for global header selection
-// ---------------------------------------------------------------------------
+
 
 function simulateHeaderSelection({ user, authLoading }) {
   if (user?.role && String(user.role).toLowerCase().trim() === "organizer") {

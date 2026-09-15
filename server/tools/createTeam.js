@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/createTeam.js — Tool for Creating a New Team for a Hackathon
-// ---------------------------------------------------------------------------
+
 
 const Team = require("../models/team");
 const User = require("../models/user");

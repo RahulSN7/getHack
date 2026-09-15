@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/adapters/devfolioAdapter.js
 // Adapter for fetching live hackathons from Devfolio
-// ---------------------------------------------------------------------------
+
 
 const PLATFORM_NAME = "devfolio";
 
@@ -56,7 +56,7 @@ async function fetchHackathons() {
   return rawItems.map((item) => {
     const slug = item.slug || item.id || "";
     const externalUrl = item.web_page_url || (slug ? `https://${slug}.devfolio.co` : "https://devfolio.co/hackathons");
-    
+
     return {
       platform: PLATFORM_NAME,
       externalId: String(item.id || slug || Math.random()),

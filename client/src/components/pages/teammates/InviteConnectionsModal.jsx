@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // InviteConnectionsModal.jsx — Unified Modal for inviting network connections & group chats to a team
 // Respects team capacity, unified selection list, search, and real API endpoints
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";

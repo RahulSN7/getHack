@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // ProtectedRoute.jsx — Route Guard for Authenticated Users
 // Redirects unauthenticated users to /login.
-// ---------------------------------------------------------------------------
+
 
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";

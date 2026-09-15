@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/aiRoutes.js — Express Router for GetHack AI
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

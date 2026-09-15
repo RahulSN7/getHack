@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // TeamDetailsPage.jsx — Full Page View for a Single Team (/team/:id)
 // Displays complete team details, real member profiles and avatars, required skills, and request flow
 // Includes Invite Connections modal for team owners
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";

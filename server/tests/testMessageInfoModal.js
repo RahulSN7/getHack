@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testMessageInfoModal.js
 // Integration Test Suite for Message Info Option Reusing MessageStatus Popover
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

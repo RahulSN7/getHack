@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // useAuth.js — Custom hook to consume AuthContext
 // Separated to satisfy react-refresh/only-export-components rule.
-// ---------------------------------------------------------------------------
+
 
 import { useContext } from "react";
 import { AuthContext } from "./AuthContext";

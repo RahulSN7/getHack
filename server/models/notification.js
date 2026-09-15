@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/notification.js — Mongoose Notification Model for getHack
 // Stores user notifications with controlled types, entity references & metadata
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

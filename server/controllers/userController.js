@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/userController.js — User & Organizer Profile Controllers
-// ---------------------------------------------------------------------------
+
 
 
 
@@ -12,9 +12,9 @@ const Hackathon = require("../models/hackathon");
 const Connection = require("../models/connection");
 const { isProfileComplete } = require("../utils/profileValidation");
 
-// ============================================================
+// ==========
 // DATE FORMATTER
-// ============================================================
+// ==========
 
 function formatMonthYear(date) {
   if (!date) return "N/A";
@@ -35,9 +35,9 @@ function formatMonthYear(date) {
   }
 }
 
-// ============================================================
+// ==========
 // GET OWN PROFILE
-// ============================================================
+// ==========
 
 const getOwnProfile = async (req, res) => {
   try {
@@ -67,9 +67,9 @@ const getOwnProfile = async (req, res) => {
   }
 };
 
-// ============================================================
+// ==========
 // UPDATE PARTICIPANT PROFILE
-// ============================================================
+// ==========
 
 const updateOwnParticipantProfile = async (req, res) => {
   try {
@@ -125,9 +125,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       removePhoto,
     } = body;
 
-    // ========================================================
+    // ======
     // NORMALIZE REQUIRED FIELDS
-    // ========================================================
+    // ======
 
     const cleanName =
       name !== undefined
@@ -164,9 +164,9 @@ const updateOwnParticipantProfile = async (req, res) => {
         ? String(availability).trim()
         : String(currentProfile.availability || "").trim();
 
-    // ========================================================
+    // ======
     // REQUIRED FIELD VALIDATION
-    // ========================================================
+    // ======
 
     const validationErrors = {};
 
@@ -222,9 +222,9 @@ const updateOwnParticipantProfile = async (req, res) => {
         "Bio cannot exceed 300 characters.";
     }
 
-    // ========================================================
+    // ======
     // SKILLS
-    // ========================================================
+    // ======
 
     let parsedSkills = skills;
 
@@ -262,9 +262,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       cleanSkills = cleanSkills.slice(0, 15);
     }
 
-    // ========================================================
+    // ======
     // EDUCATION
-    // ========================================================
+    // ======
 
     let cleanEducation = {};
 
@@ -322,9 +322,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       graduationYear: educationYear,
     };
 
-    // ========================================================
+    // ======
     // INTERESTS
-    // ========================================================
+    // ======
 
     let parsedInterests = interests;
 
@@ -358,9 +358,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       validationErrors.interests = "Please select at least one interest.";
     }
 
-    // ========================================================
+    // ======
     // URL SANITIZER & LINKS VALIDATION
-    // ========================================================
+    // ======
 
     const sanitizeUrl = (value) => {
       if (!value || typeof value !== "string") {
@@ -404,9 +404,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       });
     }
 
-    // ========================================================
+    // ======
     // AVATAR HANDLING
-    // ========================================================
+    // ======
 
     const oldAvatar = currentProfile.avatar || "";
 
@@ -421,9 +421,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       newAvatar = "";
     }
 
-    // ========================================================
+    // ======
     // UPDATE USER
-    // ========================================================
+    // ======
 
     user.name = cleanName;
 
@@ -499,9 +499,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       });
     }
 
-    // ========================================================
+    // ======
     // SAVE DATABASE
-    // ========================================================
+    // ======
 
     try {
       user.markModified("profile");
@@ -515,9 +515,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       throw saveError;
     }
 
-    // ========================================================
+    // ======
     // DELETE OLD AVATAR AFTER SUCCESSFUL SAVE
-    // ========================================================
+    // ======
 
     if (
       req.file &&
@@ -546,9 +546,9 @@ const updateOwnParticipantProfile = async (req, res) => {
       });
     }
 
-    // ========================================================
+    // ======
     // RETURN UPDATED USER
-    // ========================================================
+    // ======
 
     return res.status(200).json({
       success: true,
@@ -570,9 +570,9 @@ const updateOwnParticipantProfile = async (req, res) => {
   }
 };
 
-// ============================================================
+// ==========
 // GET PARTICIPANT PROFILE
-// ============================================================
+// ==========
 
 const getParticipantProfile = async (req, res) => {
   try {
@@ -661,9 +661,9 @@ const getParticipantProfile = async (req, res) => {
   }
 };
 
-// ============================================================
+// ==========
 // ORGANIZER PROFILE
-// ============================================================
+// ==========
 
 const getOrganizerProfile = async (req, res) => {
   try {
@@ -857,9 +857,9 @@ const getOrganizerProfile = async (req, res) => {
   }
 };
 
-// ============================================================
+// ==========
 // UPDATE ORGANIZER PROFILE
-// ============================================================
+// ==========
 
 const updateOwnOrganizerProfile = async (
   req,
@@ -1036,7 +1036,7 @@ const updateOwnOrganizerProfile = async (
     ) {
       const oldFilename = path.basename(oldAvatar);
       const oldFilePath = path.join(__dirname, "../public/uploads", oldFilename);
-      fs.unlink(oldFilePath, () => {});
+      fs.unlink(oldFilePath, () => { });
     }
 
     return res.status(200).json({
@@ -1059,9 +1059,9 @@ const updateOwnOrganizerProfile = async (
 
 const { getEligibleTeammateCandidates } = require("../services/teammateService");
 
-// ============================================================
+// ==========
 // GET ALL PARTICIPANTS (For Find Teammates discovery)
-// ============================================================
+// ==========
 
 const getAllParticipants = async (req, res) => {
   try {
@@ -1099,9 +1099,9 @@ const getAllParticipants = async (req, res) => {
   }
 };
 
-// ============================================================
+// ==========
 // UNIFIED PROFILE LOOKUP BY ID / HANDLE
-// ============================================================
+// ==========
 
 const getProfileById = async (req, res) => {
   try {
@@ -1149,9 +1149,9 @@ const getProfileById = async (req, res) => {
   }
 };
 
-// ============================================================
+// ==========
 // EXPORT
-// ============================================================
+// ==========
 
 module.exports = {
   getOwnProfile,

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testCancelConnectionRequest.js
 // Unit Test Suite for Cancel Connection Request Backend Logic & Authorization
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 
@@ -24,9 +24,9 @@ console.log("\n==============================================");
 console.log("Running getHack Cancel Connection Request Tests");
 console.log("==============================================\n");
 
-// ---------------------------------------------------------------------------
+
 // Test 1: Successful cancellation verification
-// ---------------------------------------------------------------------------
+
 console.log("[Test 1: Successful Cancellation Scoping]");
 runTest("Only pending connection request belonging to sender is eligible for cancellation", () => {
   const senderId = "67a1b2c3d4e5f6a7b8c9d0e1";
@@ -50,9 +50,9 @@ runTest("Only pending connection request belonging to sender is eligible for can
   assert.strictEqual(queryFilter.status, "pending");
 });
 
-// ---------------------------------------------------------------------------
+
 // Test 2: Unauthorized cancellation prevention
-// ---------------------------------------------------------------------------
+
 console.log("\n[Test 2: Unauthorized Cancellation Prevention]");
 runTest("Receiver or third-party user cannot cancel sender's request", () => {
   const senderId = "67a1b2c3d4e5f6a7b8c9d0e1";
@@ -74,9 +74,9 @@ runTest("Receiver or third-party user cannot cancel sender's request", () => {
   assert.strictEqual(isSenderOwner(attackerId), false);
 });
 
-// ---------------------------------------------------------------------------
+
 // Test 3: Already accepted request cancellation prevention
-// ---------------------------------------------------------------------------
+
 console.log("\n[Test 3: Already Accepted Request Protection]");
 runTest("Accepted request cannot be cancelled", () => {
   const request = {
@@ -90,9 +90,9 @@ runTest("Accepted request cannot be cancelled", () => {
   assert.strictEqual(isCancellable, false);
 });
 
-// ---------------------------------------------------------------------------
+
 // Test 4: Invalid ObjectId format handling
-// ---------------------------------------------------------------------------
+
 console.log("\n[Test 4: Invalid Request ID Format Validation]");
 runTest("Malformed request ID string is rejected before query execution", () => {
   const invalidId = "invalid-mongodb-id-123";
@@ -101,9 +101,9 @@ runTest("Malformed request ID string is rejected before query execution", () => 
   assert.strictEqual(isValidObjectId, false);
 });
 
-// ---------------------------------------------------------------------------
+
 // Test 5: Double click / Repeated cancellation safety
-// ---------------------------------------------------------------------------
+
 console.log("\n[Test 5: Repeated Cancellation Safety]");
 runTest("Deleting non-existent or already cancelled request returns 404 cleanly", () => {
   const existingRequests = [];

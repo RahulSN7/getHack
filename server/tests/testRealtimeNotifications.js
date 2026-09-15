@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testRealtimeNotifications.js
 // Unit & Integration Test Suite for Step 4 Real-Time Notifications
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const http = require("http");

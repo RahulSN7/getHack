@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testTeammatesDataParity.js
 // Automated Integration Test Suite for Find Teammates Data Parity (Page vs AI)
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {

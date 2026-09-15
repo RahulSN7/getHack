@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testDraftSaveManageTeam.js
 // Integration Test Suite for Manage Team Draft & Save Architecture
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 const path = require("path");
@@ -12,7 +12,7 @@ try {
     dns.setDefaultResultOrder("ipv4first");
   }
   dns.setServers(["1.1.1.1", "8.8.8.8", "8.8.4.4"]);
-} catch {}
+} catch { }
 
 const assert = require("node:assert");
 const mongoose = require("mongoose");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/dataCorrectionPipeline.js
 // Clean, transparent Data Normalization & Validation Pipeline
-// ---------------------------------------------------------------------------
+
 
 const { validateRegistrationUrl } = require("./detectors/urlValidator");
 const normalizeExternalUrl = require("../utils/normalizeExternalUrl");
@@ -54,13 +54,13 @@ function processPipeline(rawHackathon = {}) {
 
   const defaultDomain =
     platform === "unstop" ? "https://unstop.com"
-    : platform === "devpost" ? "https://devpost.com"
-    : platform === "devfolio" ? "https://devfolio.co"
-    : platform === "dorahacks" ? "https://dorahacks.io"
-    : platform === "kaggle" ? "https://www.kaggle.com"
-    : platform === "hack2skill" ? "https://hack2skill.com"
-    : platform === "mlh" ? "https://mlh.io"
-    : "https://unstop.com";
+      : platform === "devpost" ? "https://devpost.com"
+        : platform === "devfolio" ? "https://devfolio.co"
+          : platform === "dorahacks" ? "https://dorahacks.io"
+            : platform === "kaggle" ? "https://www.kaggle.com"
+              : platform === "hack2skill" ? "https://hack2skill.com"
+                : platform === "mlh" ? "https://mlh.io"
+                  : "https://unstop.com";
 
   // Validate Registration URL
   const rawUrl = rawHackathon.registrationUrl || rawHackathon.externalUrl || "";

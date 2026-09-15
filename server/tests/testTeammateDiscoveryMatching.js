@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testTeammateDiscoveryMatching.js
 // Test Suite for Teammate Discovery & Skill/Hackathon Matching
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {
@@ -28,7 +28,7 @@ async function runTests() {
   console.log("=== GET HACK AI TEAMMATE DISCOVERY TEST SUITE ===\n");
 
   const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/gethack";
-  
+
   let attempts = 0;
   while (attempts < 3) {
     try {
@@ -111,19 +111,19 @@ async function runTests() {
   console.log("\n--- TEST A: Generic Teammate Discovery ('Find teammates for me.') ---");
   const messagesA = [{ role: "user", content: "Find teammates for me." }];
   const responseA1 = await callLLM(messagesA, context);
-  
+
   if (responseA1.toolCalls && responseA1.toolCalls.length > 0) {
     const toolCall = responseA1.toolCalls.find((tc) => tc.name === "find_teammates");
     console.log(`Tool called: ${toolCall?.name}, args: ${JSON.stringify(toolCall?.args)}`);
     const toolResult = await findTeammates(toolCall?.args || {}, context);
-    
+
     messagesA.push({ role: "assistant", content: `Called find_teammates` });
     messagesA.push({ role: "tool", name: "find_teammates", content: JSON.stringify(toolResult) });
 
     const responseA2 = await callLLM(messagesA, context);
     console.log(`Response text preview: "${responseA2.text.slice(0, 120)}..."`);
     console.log(`Recommendations count: ${responseA2.recommendations?.teammates?.length || 0}`);
-    
+
     if (responseA2.recommendations?.teammates?.length === toolResult.teammates.length) {
       console.log("✅ TEST A PASSED: All eligible candidates returned in recommendations without truncation!");
     } else {

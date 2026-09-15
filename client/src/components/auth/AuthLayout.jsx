@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // AuthLayout.jsx — Standalone Layout for Authentication Routes
 // Renders page-level "Back to landing page" navigation link & brand logo.
-// ---------------------------------------------------------------------------
+
 
 import { Link, Outlet } from "react-router-dom";
 import Logo from "../common/Logo";

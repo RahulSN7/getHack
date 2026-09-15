@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep5ActionTriggersAndRealtimeSync.js
 // Comprehensive End-to-End Acceptance Test Suite for Step 5
 // Verifies Action Controllers -> MongoDB Creation -> Real-Time Emission -> Recipient Sync
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const http = require("http");

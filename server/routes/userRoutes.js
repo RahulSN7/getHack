@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/userRoutes.js — Express Router for User & Organizer Profiles
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

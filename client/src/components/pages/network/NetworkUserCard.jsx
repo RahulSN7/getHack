@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // NetworkUserCard.jsx — Redesigned Shared Card Component for My Network
 // Matches exact getHack dark theme & reference design specifications
 // Shared design system with TeammateCard.jsx
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -11,11 +11,11 @@ function UserAvatar({ avatar, name }) {
   const [imgError, setImgError] = useState(false);
   const initials = name
     ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
     : "GH";
 
   return (
@@ -88,8 +88,8 @@ export default function NetworkUserCard({
   const skillsList = Array.isArray(rawSkills)
     ? rawSkills
     : typeof rawSkills === "string"
-    ? rawSkills.split(",").map((s) => s.trim()).filter(Boolean)
-    : [];
+      ? rawSkills.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
 
   const MAX_SKILLS = 3;
   const visibleSkills = skillsList.slice(0, MAX_SKILLS);

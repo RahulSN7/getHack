@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/notificationService.js — Core Notification Business Service
 // Encapsulates notification creation, self-notification prevention, and deduplication
-// ---------------------------------------------------------------------------
+
 
 const Notification = require("../models/notification");
 const { emitNotificationToUser } = require("./socketService");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // Network — My Network Page Component (/network)
 // Professional community hub for managing connections, incoming requests, and sent requests
-// ---------------------------------------------------------------------------
+
 
 import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -9,9 +9,9 @@ import NetworkFilters from "./NetworkFilters";
 import NetworkUserCard from "./NetworkUserCard";
 import { userService } from "../../../services/userService";
 
-// ---------------------------------------------------------------------------
+
 // Days ago parser helper
-// ---------------------------------------------------------------------------
+
 
 function getDaysAgo(dateStr) {
   if (!dateStr) return 999;
@@ -28,10 +28,10 @@ function getDaysAgo(dateStr) {
   return val;
 }
 
-// ---------------------------------------------------------------------------
+
 // Search matching helper for user objects
 // Matches name, username, id, role, skills, location
-// ---------------------------------------------------------------------------
+
 
 function matchesUserSearch(user, query) {
   if (!query.trim() || !user) return true;
@@ -47,9 +47,9 @@ function matchesUserSearch(user, query) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Main Network Component
-// ---------------------------------------------------------------------------
+
 
 function Network() {
   const navigate = useNavigate();
@@ -95,24 +95,24 @@ function Network() {
         const incomingList = Array.isArray(data.incoming)
           ? data.incoming
           : Array.isArray(data.requests)
-          ? data.requests
-          : Array.isArray(data.data?.incoming)
-          ? data.data.incoming
-          : [];
+            ? data.requests
+            : Array.isArray(data.data?.incoming)
+              ? data.data.incoming
+              : [];
 
         const outgoingList = Array.isArray(data.outgoing)
           ? data.outgoing
           : Array.isArray(data.sent)
-          ? data.sent
-          : Array.isArray(data.data?.outgoing)
-          ? data.data.outgoing
-          : [];
+            ? data.sent
+            : Array.isArray(data.data?.outgoing)
+              ? data.data.outgoing
+              : [];
 
         const connectionsList = Array.isArray(data.connections)
           ? data.connections
           : Array.isArray(data.data?.connections)
-          ? data.data.connections
-          : [];
+            ? data.data.connections
+            : [];
 
         setConnections(connectionsList);
         setRequests(
@@ -510,10 +510,9 @@ function Network() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      activeTab === "connections"
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${activeTab === "connections"
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -529,10 +528,9 @@ function Network() {
                       px-1
                       text-[10px]
                       font-bold
-                      ${
-                        activeTab === "connections"
-                          ? "bg-indigo-500 text-white"
-                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      ${activeTab === "connections"
+                        ? "bg-indigo-500 text-white"
+                        : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
                       }
                     `}
                   >
@@ -554,10 +552,9 @@ function Network() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      activeTab === "requests"
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${activeTab === "requests"
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -573,10 +570,9 @@ function Network() {
                       px-1
                       text-[10px]
                       font-bold
-                      ${
-                        activeTab === "requests"
-                          ? "bg-indigo-500 text-white"
-                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      ${activeTab === "requests"
+                        ? "bg-indigo-500 text-white"
+                        : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
                       }
                     `}
                   >
@@ -598,10 +594,9 @@ function Network() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      activeTab === "sent"
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${activeTab === "sent"
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -617,10 +612,9 @@ function Network() {
                       px-1
                       text-[10px]
                       font-bold
-                      ${
-                        activeTab === "sent"
-                          ? "bg-indigo-500 text-white"
-                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      ${activeTab === "sent"
+                        ? "bg-indigo-500 text-white"
+                        : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
                       }
                     `}
                   >
@@ -656,20 +650,20 @@ function Network() {
               {activeTab === "connections"
                 ? displayedConnections.length
                 : activeTab === "requests"
-                ? displayedRequests.length
-                : displayedSent.length}
+                  ? displayedRequests.length
+                  : displayedSent.length}
             </span>{" "}
             {activeTab === "connections"
               ? displayedConnections.length === 1
                 ? "connection"
                 : "connections"
               : activeTab === "requests"
-              ? displayedRequests.length === 1
-                ? "request"
-                : "requests"
-              : displayedSent.length === 1
-              ? "sent request"
-              : "sent requests"}
+                ? displayedRequests.length === 1
+                  ? "request"
+                  : "requests"
+                : displayedSent.length === 1
+                  ? "sent request"
+                  : "sent requests"}
           </p>
 
           <div className="flex items-center gap-2">
@@ -683,8 +677,8 @@ function Network() {
                   activeTab === "connections"
                     ? connSort
                     : activeTab === "requests"
-                    ? requestSort
-                    : sentSort
+                      ? requestSort
+                      : sentSort
                 }
                 onChange={(e) => {
                   if (activeTab === "connections") setConnSort(e.target.value);

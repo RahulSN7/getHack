@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/invitationController.js — Controller for Team Invitations via Chat
 // Handles sending invitations into Stream Chat 1-on-1 conversations and recipient responses
-// ---------------------------------------------------------------------------
+
 
 const TeamInvitation = require("../models/teamInvitation");
 const Team = require("../models/team");
@@ -11,9 +11,9 @@ const mongoose = require("mongoose");
 const { getStreamClient, upsertStreamUsers } = require("../services/streamService");
 const { createNotification } = require("../services/notificationService");
 
-// ---------------------------------------------------------------------------
+
 // POST /api/invitations/send — Send Team Invitation directly through Stream Chat
-// ---------------------------------------------------------------------------
+
 const sendInvitation = async (req, res) => {
   try {
     const { teamId, receiverId } = req.body;
@@ -161,7 +161,7 @@ const sendInvitation = async (req, res) => {
       console.log("[Invite] Stream message send result:", messageRes.message?.id || "OK");
     } catch (streamErr) {
       console.error("[Stream Chat Error]: Failed to deliver invitation message:", streamErr);
-      await TeamInvitation.findByIdAndDelete(invitation._id).catch(() => {});
+      await TeamInvitation.findByIdAndDelete(invitation._id).catch(() => { });
       return res.status(500).json({
         message: `Failed to deliver invitation message via Stream Chat: ${streamErr.message}`,
       });
@@ -215,9 +215,9 @@ const sendInvitation = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PATCH /api/invitations/:id/respond — Accept or Reject Team Invitation
-// ---------------------------------------------------------------------------
+
 const respondToInvitation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -371,9 +371,9 @@ const respondToInvitation = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/invitations/:id — Get Invitation Details by ID
-// ---------------------------------------------------------------------------
+
 const getInvitation = async (req, res) => {
   try {
     const { id } = req.params;
@@ -403,9 +403,9 @@ const getInvitation = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/invitations/send-group — Send Team Invitation directly to Group Chat
-// ---------------------------------------------------------------------------
+
 const sendGroupInvitation = async (req, res) => {
   try {
     const { teamId, groupId } = req.body;

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // teamService.js — Centralized Team API Service
 // Communicates with Express backend /api/teams endpoints
-// ---------------------------------------------------------------------------
+
 
 const API_BASE = "/api/teams";
 

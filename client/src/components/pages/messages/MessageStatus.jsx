@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // MessageStatus.jsx — WhatsApp-Style Message Status & Read Receipts
 // Displays Sending (◷), Sent (✓), Delivered (✓✓ neutral), Read (✓✓ indigo), Failed (⚠)
 // Powered by Stream Chat message state and channel read events.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -176,12 +176,12 @@ export default function MessageStatus({ msg, channel, currentUserId, onRetry, fo
           status === "sending"
             ? "Sending..."
             : status === "sent"
-            ? "Sent to server"
-            : status === "delivered"
-            ? "Delivered to recipient"
-            : status === "read"
-            ? "Read by recipient"
-            : "Failed to send (Click to retry)"
+              ? "Sent to server"
+              : status === "delivered"
+                ? "Delivered to recipient"
+                : status === "read"
+                  ? "Read by recipient"
+                  : "Failed to send (Click to retry)"
         }
       >
         {status === "sending" ? (

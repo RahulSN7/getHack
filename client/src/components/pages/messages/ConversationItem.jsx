@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // ConversationItem.jsx — Individual Conversation Row
 // WhatsApp-style conversation row with avatar, name, last message, time, unread
 // Avatar click → profile | Row click → open chat
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -68,9 +68,9 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
   const rawMessages = channel.state?.messages || [];
   const visibleMessages = clearTime
     ? rawMessages.filter((m) => {
-        const t = new Date(m.created_at || m.createdAt).getTime();
-        return !isNaN(t) && t > clearTime;
-      })
+      const t = new Date(m.created_at || m.createdAt).getTime();
+      return !isNaN(t) && t > clearTime;
+    })
     : rawMessages;
 
   const lastMessage = visibleMessages.length > 0 ? visibleMessages[visibleMessages.length - 1] : null;
@@ -130,41 +130,41 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
     ? lastMessage.created_at
     : (clearTime && visibleMessages.length === 0 ? "" : (channel.state?.last_message_at || channel.data?.last_message_at || ""));
 
-function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
-  if (!channel) return 0;
-  if (isActive) return 0;
+  function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
+    if (!channel) return 0;
+    if (isActive) return 0;
 
-  const clearTime = clearedAt ? new Date(clearedAt).getTime() : 0;
-  const rawMessages = channel.state?.messages || [];
-  const visibleMessages = clearTime
-    ? rawMessages.filter((m) => {
+    const clearTime = clearedAt ? new Date(clearedAt).getTime() : 0;
+    const rawMessages = channel.state?.messages || [];
+    const visibleMessages = clearTime
+      ? rawMessages.filter((m) => {
         const t = new Date(m.created_at || m.createdAt).getTime();
         return !isNaN(t) && t > clearTime;
       })
-    : rawMessages;
+      : rawMessages;
 
-  if (clearTime && visibleMessages.length === 0) return 0;
+    if (clearTime && visibleMessages.length === 0) return 0;
 
-  const userReadState = channel.state?.read?.[String(currentUserId)];
-  if (userReadState?.last_read) {
-    const lastReadTime = new Date(userReadState.last_read).getTime();
-    if (!isNaN(lastReadTime)) {
-      const unreadIncoming = visibleMessages.filter((m) => {
-        const msgSenderId = String(m.user?.id || m.user_id || "");
-        if (msgSenderId === String(currentUserId)) return false;
-        const msgTime = new Date(m.created_at || m.createdAt).getTime();
-        return !isNaN(msgTime) && msgTime > lastReadTime;
-      });
-      return unreadIncoming.length;
+    const userReadState = channel.state?.read?.[String(currentUserId)];
+    if (userReadState?.last_read) {
+      const lastReadTime = new Date(userReadState.last_read).getTime();
+      if (!isNaN(lastReadTime)) {
+        const unreadIncoming = visibleMessages.filter((m) => {
+          const msgSenderId = String(m.user?.id || m.user_id || "");
+          if (msgSenderId === String(currentUserId)) return false;
+          const msgTime = new Date(m.created_at || m.createdAt).getTime();
+          return !isNaN(msgTime) && msgTime > lastReadTime;
+        });
+        return unreadIncoming.length;
+      }
     }
-  }
 
-  if (typeof channel.state?.unreadCount === "number" && channel.state.unreadCount === 0) {
-    return 0;
-  }
+    if (typeof channel.state?.unreadCount === "number" && channel.state.unreadCount === 0) {
+      return 0;
+    }
 
-  return channel.countUnread?.() || channel.state?.unreadCount || 0;
-}
+    return channel.countUnread?.() || channel.state?.unreadCount || 0;
+  }
 
   const unreadCount = getChannelUnreadCount(channel, currentUserId, isActive, clearedAt);
 
@@ -230,8 +230,8 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
           <div className="flex items-center gap-1.5 min-w-0">
             <span
               className={`text-sm truncate ${unreadCount > 0
-                  ? "font-bold text-neutral-900 dark:text-white"
-                  : "font-semibold text-neutral-800 dark:text-neutral-200"
+                ? "font-bold text-neutral-900 dark:text-white"
+                : "font-semibold text-neutral-800 dark:text-neutral-200"
                 }`}
             >
               {name}
@@ -245,8 +245,8 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
 
           <span
             className={`shrink-0 text-[11px] ${unreadCount > 0
-                ? "font-semibold text-indigo-600 dark:text-indigo-400"
-                : "text-neutral-400 dark:text-neutral-500"
+              ? "font-semibold text-indigo-600 dark:text-indigo-400"
+              : "text-neutral-400 dark:text-neutral-500"
               }`}
           >
             {formatTime(lastMessageTime)}
@@ -256,8 +256,8 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
         <div className="flex items-center justify-between gap-2 mt-0.5">
           <p
             className={`text-xs truncate ${unreadCount > 0
-                ? "font-medium text-neutral-700 dark:text-neutral-300"
-                : "text-neutral-500 dark:text-neutral-400"
+              ? "font-medium text-neutral-700 dark:text-neutral-300"
+              : "text-neutral-500 dark:text-neutral-400"
               }`}
           >
             {lastMessageText || "No messages yet"}

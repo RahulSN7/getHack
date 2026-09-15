@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testHackathonFollowUp.js
 // Unit/Integration Test Suite for GetHack A1 Hackathon Follow-Up Queries
-// ---------------------------------------------------------------------------
+
 
 const assert = require("assert");
 const { callLLM } = require("../services/aiService");
@@ -69,10 +69,10 @@ async function runTests() {
   let testPassed = 0;
   let testTotal = 7;
 
-  // -------------------------------------------------------------------------
-  // TEST 1: Initial Hackathon Search Turn
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 1: User asks 'Suggest me hackathons' ---");
+  -----------------------
+    // TEST 1: Initial Hackathon Search Turn
+    -----------------------
+      console.log("\n--- TEST 1: User asks 'Suggest me hackathons' ---");
   const turn1UserMsg = { role: "user", content: "Suggest me hackathons" };
   const turn1Res = await callLLM([turn1UserMsg], context);
 
@@ -96,10 +96,10 @@ async function runTests() {
   console.log("✅ TEST 1 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 2: Follow-up 'Which one is best?'
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 2: User asks 'Which one is best?' ---");
+  -----------------------
+    // TEST 2: Follow-up 'Which one is best?'
+    -----------------------
+      console.log("\n--- TEST 2: User asks 'Which one is best?' ---");
   const turn2UserMsg = { role: "user", content: "Which one is best?" };
   const messagesTurn2 = [turn1UserMsg, turn1AssistantMsg, turn2UserMsg];
 
@@ -119,10 +119,10 @@ async function runTests() {
     recommendations: turn2Res.recommendations,
   };
 
-  // -------------------------------------------------------------------------
-  // TEST 3: Follow-up 'Why?'
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 3: User asks 'Why?' ---");
+  -----------------------
+    // TEST 3: Follow-up 'Why?'
+    -----------------------
+      console.log("\n--- TEST 3: User asks 'Why?' ---");
   const turn3UserMsg = { role: "user", content: "Why?" };
   const messagesTurn3 = [turn1UserMsg, turn1AssistantMsg, turn2UserMsg, turn2AssistantMsg, turn3UserMsg];
 
@@ -134,10 +134,10 @@ async function runTests() {
   console.log("✅ TEST 3 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 4: Fresh Conversation - 'Which hackathon is best for me?' (No previous context)
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 4: Fresh conversation - 'Which hackathon is best for me?' ---");
+  -----------------------
+    // TEST 4: Fresh Conversation - 'Which hackathon is best for me?' (No previous context)
+    -----------------------
+      console.log("\n--- TEST 4: Fresh conversation - 'Which hackathon is best for me?' ---");
   const freshUserMsg = { role: "user", content: "Which hackathon is best for me?" };
 
   const freshRes = await callLLM([freshUserMsg], context);
@@ -147,10 +147,10 @@ async function runTests() {
   console.log("✅ TEST 4 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 5: 'Which one is best for Python?' follow-up
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 5: Follow-up 'Which one is best for Python?' ---");
+  -----------------------
+    // TEST 5: 'Which one is best for Python?' follow-up
+    -----------------------
+      console.log("\n--- TEST 5: Follow-up 'Which one is best for Python?' ---");
   const turn5UserMsg = { role: "user", content: "Which one is best for Python?" };
   const messagesTurn5 = [turn1UserMsg, turn1AssistantMsg, turn5UserMsg];
 
@@ -163,10 +163,10 @@ async function runTests() {
   console.log("✅ TEST 5 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 6: 'Which one has the earliest deadline?' follow-up
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 6: Follow-up 'Which one has the earliest deadline?' ---");
+  -----------------------
+    // TEST 6: 'Which one has the earliest deadline?' follow-up
+    -----------------------
+      console.log("\n--- TEST 6: Follow-up 'Which one has the earliest deadline?' ---");
   const turn6UserMsg = { role: "user", content: "Which one has the earliest deadline?" };
   const messagesTurn6 = [turn1UserMsg, turn1AssistantMsg, turn6UserMsg];
 
@@ -179,10 +179,10 @@ async function runTests() {
   console.log("✅ TEST 6 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 7: Positional Reference 'Tell me about the second one.'
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 7: Follow-up 'Tell me about the second one.' ---");
+  -----------------------
+    // TEST 7: Positional Reference 'Tell me about the second one.'
+    -----------------------
+      console.log("\n--- TEST 7: Follow-up 'Tell me about the second one.' ---");
   const turn7UserMsg = { role: "user", content: "Tell me about the second one." };
   const messagesTurn7 = [turn1UserMsg, turn1AssistantMsg, turn7UserMsg];
 

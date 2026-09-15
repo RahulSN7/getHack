@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // SelectedHackathonPage.jsx — Selected Hackathon Context Layout & Sub-Tabs
 // Standardized container layout matching getHack design language.
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -131,10 +131,9 @@ function SelectedHackathonPage() {
                   font-semibold
                   transition-colors
                   whitespace-nowrap
-                  ${
-                    activeTab === tab.id
-                      ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                      : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                  ${activeTab === tab.id
+                    ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                    : "border-transparent text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
                   }
                 `}
               >

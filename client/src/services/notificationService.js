@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // client/src/services/notificationService.js — Notification API Client Service
 // Communicates with Express backend notification endpoints using session cookie
-// ---------------------------------------------------------------------------
+
 
 const API_BASE = "/api/notifications";
 

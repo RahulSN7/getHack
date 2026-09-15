@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/utils/profileValidation.js
 // Centralized profile completion validation helper for getHack backend
-// ---------------------------------------------------------------------------
+
 
 function isProfileComplete(user) {
   if (!user) return false;

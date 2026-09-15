@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep6AllNotificationTypes.js
 // Test suite for Step 6: Verifies real-time notifications for all 8 user action types
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const http = require("http");

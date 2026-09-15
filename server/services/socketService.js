@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/socketService.js — Socket.IO Real-Time Service for getHack
 // Encapsulates Socket.IO server initialization, JWT auth, user room routing & notification events
-// ---------------------------------------------------------------------------
+
 
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testRealTimeReadReceipts.js
 // Integration Test Suite for Real-Time Message Read-Receipt Synchronization
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

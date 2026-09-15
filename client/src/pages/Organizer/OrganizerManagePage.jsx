@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // OrganizerManagePage.jsx — Organizer Hackathon Management Portal
 // Standardized container layout matching getHack design language.
-// ---------------------------------------------------------------------------
+
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -89,10 +89,9 @@ function OrganizerManagePage() {
               font-semibold
               transition-all
               duration-150
-              ${
-                activeTab === tab.key
-                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
-                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              ${activeTab === tab.key
+                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-950"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
               }
             `}
           >
@@ -148,9 +147,9 @@ function OrganizerManagePage() {
                           </div>
                         </div>
                       </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`
+                      <td className="px-6 py-4">
+                        <span
+                          className={`
                           inline-flex
                           items-center
                           rounded-md
@@ -160,27 +159,26 @@ function OrganizerManagePage() {
                           font-bold
                           uppercase
                           tracking-wide
-                          ${
-                            h.status === "Active"
+                          ${h.status === "Active"
                               ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
                               : h.status === "Draft"
-                              ? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
-                              : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                          }
+                                ? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
+                                : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                            }
                         `}
-                      >
-                        {h.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-neutral-600 dark:text-neutral-300 font-medium">
-                      {h.hackathonDate}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          to={`/hackathons/${h.id}`}
-                          target="_blank"
-                          className="
+                        >
+                          {h.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-neutral-600 dark:text-neutral-300 font-medium">
+                        {h.hackathonDate}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/hackathons/${h.id}`}
+                            target="_blank"
+                            className="
                             rounded-lg
                             border
                             border-neutral-200
@@ -195,12 +193,12 @@ function OrganizerManagePage() {
                             dark:text-neutral-400
                             dark:hover:bg-neutral-800
                           "
-                        >
-                          View
-                        </Link>
-                        <Link
-                          to={`/organizer/hackathons/${h.id}`}
-                          className="
+                          >
+                            View
+                          </Link>
+                          <Link
+                            to={`/organizer/hackathons/${h.id}`}
+                            className="
                             rounded-lg
                             bg-neutral-950
                             px-3
@@ -214,13 +212,13 @@ function OrganizerManagePage() {
                             dark:text-neutral-950
                             dark:hover:bg-neutral-200
                           "
-                        >
-                          Manage
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          >
+                            Manage
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

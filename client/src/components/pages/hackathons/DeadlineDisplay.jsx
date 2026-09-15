@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // DeadlineDisplay — smart deadline & live countdown component
 // Updates automatically based on remaining time with optimized timers.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useState } from "react";
 import { getDeadlineInfo } from "../../../utils/deadlineUtils";

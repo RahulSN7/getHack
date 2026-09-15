@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/routes/invitationRoutes.js — Express Router for Team Invitations
 // Defines endpoints for sending and responding to team invitations via Stream Chat
-// ---------------------------------------------------------------------------
+
 
 const express = require("express");
 const router = express.Router();

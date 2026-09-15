@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testBestTeammateRecommendationFlow.js
 // Unit & Integration Test Suite for GetHack A1 "Best Teammate" Recommendation Flow
-// ---------------------------------------------------------------------------
+
 
 const assert = require("assert");
 const { callLLM } = require("../services/aiService");
@@ -84,10 +84,10 @@ async function runTests() {
   let testPassed = 0;
   let testTotal = 6;
 
-  // -------------------------------------------------------------------------
-  // TEST 1: Normal Search ("Find teammates for AI hackathon") -> UP TO 5 CARDS
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 1: Normal Search 'Find teammates for AI hackathon' ---");
+  -----------------------
+    // TEST 1: Normal Search ("Find teammates for AI hackathon") -> UP TO 5 CARDS
+    -----------------------
+      console.log("\n--- TEST 1: Normal Search 'Find teammates for AI hackathon' ---");
   const t1UserMsg = { role: "user", content: "Find teammates for AI hackathon" };
   const t1Res = await callLLM([t1UserMsg], context);
 
@@ -101,10 +101,10 @@ async function runTests() {
   console.log("✅ TEST 1 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 2: Direct Best Teammate Request ("Which one best teammates for AI hackathon") -> EXACTLY 1 CARD
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 2: Direct Best Request 'Which one best teammates for AI hackathon' ---");
+  -----------------------
+    // TEST 2: Direct Best Teammate Request ("Which one best teammates for AI hackathon") -> EXACTLY 1 CARD
+    -----------------------
+      console.log("\n--- TEST 2: Direct Best Request 'Which one best teammates for AI hackathon' ---");
   const t2UserMsg = { role: "user", content: "Which one best teammates for AI hackathon" };
   const t2ToolMsg = { role: "tool", name: "find_teammates", content: JSON.stringify({ count: 6, candidatesAfterFilters: 6, teammates: sampleTeammates }) };
   const t2FinalRes = await callLLM([t2UserMsg, { role: "assistant", content: "Finding best teammate..." }, t2ToolMsg], context);
@@ -117,10 +117,10 @@ async function runTests() {
   console.log("✅ TEST 2 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 3: Best from Existing Results (Turn 1: 5 cards -> Turn 2: "Which one is best?") -> EXACTLY 1 CARD
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 3: Best from Existing Results (Turn 2 'Which one is best?') ---");
+  -----------------------
+    // TEST 3: Best from Existing Results (Turn 1: 5 cards -> Turn 2: "Which one is best?") -> EXACTLY 1 CARD
+    -----------------------
+      console.log("\n--- TEST 3: Best from Existing Results (Turn 2 'Which one is best?') ---");
   const turn1AssistantMsg = { role: "assistant", content: "I found 5 teammates:", recommendations: { teammates: sampleTeammates.slice(0, 5) } };
   const t3UserMsg = { role: "user", content: "Which one is best?" };
 
@@ -133,10 +133,10 @@ async function runTests() {
   console.log("✅ TEST 3 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 4: Skill-Specific Best ("Which teammate is best for Python?") -> EXACTLY 1 CARD
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 4: Skill-Specific Best 'Which teammate is best for Python?' ---");
+  -----------------------
+    // TEST 4: Skill-Specific Best ("Which teammate is best for Python?") -> EXACTLY 1 CARD
+    -----------------------
+      console.log("\n--- TEST 4: Skill-Specific Best 'Which teammate is best for Python?' ---");
   const t4UserMsg = { role: "user", content: "Which teammate is best for Python?" };
   const t4ToolMsg = { role: "tool", name: "find_teammates", content: JSON.stringify({ count: 6, candidatesAfterFilters: 6, teammates: sampleTeammates }) };
   const t4FinalRes = await callLLM([t4UserMsg, { role: "assistant", content: "Finding candidate..." }, t4ToolMsg], context);
@@ -148,10 +148,10 @@ async function runTests() {
   console.log("✅ TEST 4 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 5: Complementary Teammate Best ("Who is the best teammate to complement my MERN skills?") -> EXACTLY 1 CARD
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 5: Complementary Best 'Who is the best teammate to complement my MERN skills?' ---");
+  -----------------------
+    // TEST 5: Complementary Teammate Best ("Who is the best teammate to complement my MERN skills?") -> EXACTLY 1 CARD
+    -----------------------
+      console.log("\n--- TEST 5: Complementary Best 'Who is the best teammate to complement my MERN skills?' ---");
   const t5UserMsg = { role: "user", content: "Who is the best teammate to complement my MERN skills?" };
   const t5ToolMsg = { role: "tool", name: "find_teammates", content: JSON.stringify({ count: 6, candidatesAfterFilters: 6, teammates: sampleTeammates }) };
   const t5FinalRes = await callLLM([t5UserMsg, { role: "assistant", content: "Searching..." }, t5ToolMsg], context);
@@ -162,10 +162,10 @@ async function runTests() {
   console.log("✅ TEST 5 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 6: Follow-Up Questions ("Why is this teammate best?", "What skills...", "Can I connect?")
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 6: Follow-up Questions on Selected Teammate ---");
+  -----------------------
+    // TEST 6: Follow-Up Questions ("Why is this teammate best?", "What skills...", "Can I connect?")
+    -----------------------
+      console.log("\n--- TEST 6: Follow-up Questions on Selected Teammate ---");
   const turn1RecMsg = { role: "assistant", content: "I recommend Py Dev as the best match.", recommendations: { teammates: [sampleTeammates[0]] } };
 
   // 6a: Why question
@@ -189,10 +189,10 @@ async function runTests() {
   console.log("6c Connect Prompt:", connectRes.text);
   console.log("✅ TEST 6 PASSED");
   testPassed++;
-  // -------------------------------------------------------------------------
-  // TEST 7: Direct Lowercase Prompt "best teammate for ai hackathon" -> EXACTLY 1 CARD
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 7: Direct Lowercase 'best teammate for ai hackathon' ---");
+  -----------------------
+    // TEST 7: Direct Lowercase Prompt "best teammate for ai hackathon" -> EXACTLY 1 CARD
+    -----------------------
+      console.log("\n--- TEST 7: Direct Lowercase 'best teammate for ai hackathon' ---");
   const t7UserMsg = { role: "user", content: "best teammate for ai hackathon" };
   const t7FinalRes = await callLLM([t7UserMsg, { role: "assistant", content: "Searching..." }, t2ToolMsg], context);
 
@@ -203,10 +203,10 @@ async function runTests() {
   console.log("✅ TEST 7 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 8: Hackathon-Specific Skill Matching (UI/UX Hackathon -> UI Designer selected)
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 8: Hackathon-Specific Skill Matching (UI/UX Design Sprint) ---");
+  -----------------------
+    // TEST 8: Hackathon-Specific Skill Matching (UI/UX Hackathon -> UI Designer selected)
+    -----------------------
+      console.log("\n--- TEST 8: Hackathon-Specific Skill Matching (UI/UX Design Sprint) ---");
   const uiHackathonContext = {
     ...context,
     hackathon: {
@@ -226,10 +226,10 @@ async function runTests() {
   console.log("✅ TEST 8 PASSED");
   testPassed++;
 
-  // -------------------------------------------------------------------------
-  // TEST 9: Exact prompt 'Which teammate best for AI hackathon' and natural variations
-  // -------------------------------------------------------------------------
-  console.log("\n--- TEST 9: Natural Language Variations for 'Which teammate best for AI hackathon' ---");
+  -----------------------
+    // TEST 9: Exact prompt 'Which teammate best for AI hackathon' and natural variations
+    -----------------------
+      console.log("\n--- TEST 9: Natural Language Variations for 'Which teammate best for AI hackathon' ---");
   const testPhrases = [
     "Which teammate best for AI hackathon",
     "Which teammate is best for AI hackathon?",
@@ -247,7 +247,7 @@ async function runTests() {
   for (const phrase of testPhrases) {
     const msg = { role: "user", content: phrase };
     const res = await callLLM([msg], context);
-    
+
     // First turn must generate find_teammates tool call, NEVER search_hackathons
     assert.ok(res.toolCalls?.some((tc) => tc.name === "find_teammates"), `Phrase '${phrase}' must generate find_teammates tool call`);
     assert.ok(!res.toolCalls?.some((tc) => tc.name === "search_hackathons"), `Phrase '${phrase}' must NEVER call search_hackathons`);

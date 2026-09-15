@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testTeamInvitationDeletion.js
 // Integration Test Suite for Team Invitation Message Deletion Behavior
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

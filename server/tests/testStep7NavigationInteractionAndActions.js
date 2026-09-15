@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep7NavigationInteractionAndActions.js
 // Automated Test Suite for Step 7: Complete Notification Navigation, Interaction, & Action Buttons
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const http = require("http");

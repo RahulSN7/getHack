@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/getHackathonDetails.js — get_hackathon_details Agent Tool
 // Retrieves full details for a specific hackathon by ID, slug, or title keyword.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const Hackathon = require("../models/hackathon");

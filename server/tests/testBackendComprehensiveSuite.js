@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testBackendComprehensiveSuite.js
 // Comprehensive Pre-Deployment Backend & API Test Suite for getHack
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {
@@ -64,7 +64,7 @@ function request(path, options = {}) {
         let json = null;
         try {
           json = JSON.parse(data);
-        } catch {}
+        } catch { }
         resolve({
           status: res.statusCode,
           headers: res.headers,
@@ -90,9 +90,9 @@ function request(path, options = {}) {
 }
 
 async function runAuditSuite() {
-  console.log("\n==================================================");
+  console.log("\n");
   console.log("Starting getHack Comprehensive Pre-Deployment Backend Audit");
-  console.log("==================================================\n");
+  console.log("\n");
 
   // Verify MongoDB connection
   const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/getHack";
@@ -113,11 +113,11 @@ async function runAuditSuite() {
   let otherParticipantCookie = null;
   let otherParticipantUser = null;
 
-  // ---------------------------------------------------------------------------
+
   // AREA 1: SERVER HEALTH
-  // ---------------------------------------------------------------------------
+
   console.log("\n[1. SERVER HEALTH]");
-  
+
   await recordTest("Server Health", "/api/health", "GET", "Health check endpoint returns 200 OK & dbState connected", async () => {
     const res = await request("/api/health");
     assert.strictEqual(res.status, 200);
@@ -130,9 +130,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.status, 404);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 2: AUTHENTICATION
-  // ---------------------------------------------------------------------------
+
   console.log("\n[2. AUTHENTICATION]");
 
   await recordTest("Authentication", "/api/auth/send-otp", "POST", "Invalid email format rejected with 400 Bad Request", async () => {
@@ -256,9 +256,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.status, 200);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 3: AUTHORIZATION AND ROLES
-  // ---------------------------------------------------------------------------
+
   console.log("\n[3. AUTHORIZATION AND ROLES]");
 
   await recordTest("Authorization", "/api/hackathons/my", "GET", "Unauthenticated request to organizer endpoint returns 401 Unauthorized", async () => {
@@ -286,9 +286,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.status, 403);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 4: HACKATHON APIs
-  // ---------------------------------------------------------------------------
+
   console.log("\n[4. HACKATHON APIs]");
 
   let createdHackathonId = null;
@@ -342,9 +342,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.status, 200);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 5: USER AND PROFILE APIs
-  // ---------------------------------------------------------------------------
+
   console.log("\n[5. USER AND PROFILE APIs]");
 
   await recordTest("User Profile APIs", "/api/users/profile", "GET", "GET /api/users/profile returns authenticated user profile with 200 OK", async () => {
@@ -393,9 +393,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.status, 403);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 6: NETWORK / CONNECTION APIs
-  // ---------------------------------------------------------------------------
+
   console.log("\n[6. NETWORK / CONNECTION APIs]");
 
   let connectionRequestId = null;
@@ -467,9 +467,9 @@ async function runAuditSuite() {
     });
   }
 
-  // ---------------------------------------------------------------------------
+
   // AREA 7: TEAM APIs
-  // ---------------------------------------------------------------------------
+
   console.log("\n[7. TEAM APIs]");
 
   let createdTeamId = null;
@@ -532,9 +532,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.status, 200);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 8: CHAT APIs
-  // ---------------------------------------------------------------------------
+
   console.log("\n[8. CHAT APIs]");
 
   await recordTest("Chat APIs", "/api/chat/token", "GET", "GET /api/chat/token generates Stream Chat token for authenticated user", async () => {
@@ -567,9 +567,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.data.success, true);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 9: NOTIFICATION APIs
-  // ---------------------------------------------------------------------------
+
   console.log("\n[9. NOTIFICATION APIs]");
 
   await recordTest("Notification APIs", "/api/notifications", "GET", "GET /api/notifications returns user notification list", async () => {
@@ -594,9 +594,9 @@ async function runAuditSuite() {
     assert.strictEqual(res.status, 200);
   });
 
-  // ---------------------------------------------------------------------------
+
   // AREA 10: INPUT VALIDATION & ERROR HANDLING
-  // ---------------------------------------------------------------------------
+
   console.log("\n[10. INPUT VALIDATION & ERROR HANDLING]");
 
   await recordTest("Input Validation", "/api/teams/invalid_object_id", "GET", "Invalid ObjectId parameter returns 404 Not Found cleanly without server crash", async () => {
@@ -613,9 +613,9 @@ async function runAuditSuite() {
   await User.deleteMany({ email: { $in: [participantEmail, organizerEmail, otherParticipantEmail] } });
   await Otp.deleteMany({ email: { $in: [participantEmail, organizerEmail, otherParticipantEmail] } });
 
-  console.log("\n==================================================");
+  console.log("\n");
   console.log(`Backend Audit Summary: ${passedTests} / ${totalTests} Passed (${failedTests} Failed)`);
-  console.log("==================================================\n");
+  console.log("\n");
 
   return { totalTests, passedTests, failedTests, testResults };
 }

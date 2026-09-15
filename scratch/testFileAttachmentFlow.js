@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // scratch/testFileAttachmentFlow.js
 // End-to-end testing script for chat file attachment upload & payload creation
-// ---------------------------------------------------------------------------
+
 
 const fs = require("fs");
 const path = require("path");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/authController.js — Email OTP Authentication Controller
 // Handles OTP generation, email dispatching, OTP verification, getMe, and logout.
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns").promises;
 const crypto = require("crypto");
@@ -588,8 +588,7 @@ const googleCallback = async (req, res) => {
       console.warn("Background Stream Chat sync warning:", e.message)
     );
 
-    const redirectPath = user.role === "organizer" ? "/organizer" : "/hackathons";
-    return res.redirect(`${CLIENT_URL}${redirectPath}`);
+    return res.redirect(`${CLIENT_URL}/`);
   } catch (error) {
     console.error("googleCallback error:", error);
     return res.redirect(`${CLIENT_URL}/login?error=Google authentication failed.`);

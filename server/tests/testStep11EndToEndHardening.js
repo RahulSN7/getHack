@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep11EndToEndHardening.js
 // Master End-to-End Hardening & Production-Readiness Test Suite for getHack Notifications
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const http = require("http");

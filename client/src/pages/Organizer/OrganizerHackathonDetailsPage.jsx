@@ -1,9 +1,9 @@
-// ---------------------------------------------------------------------------
+
 // OrganizerHackathonDetailsPage.jsx — Dedicated Organizer Hackathon View
 // Route: /organizer/hackathons/:id
 // Reuses exact getHack participant details UI design language + Organizer actions.
 // Enforces strict ownership check via GET /api/hackathons/organizer/:id.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -267,7 +267,7 @@ function OrganizerHackathonDetailsPage() {
 
                   {location && (
                     <span className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                      <svg className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <svg className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                       <span>{location}</span>
                     </span>
                   )}
@@ -412,7 +412,7 @@ function OrganizerHackathonDetailsPage() {
                   <h2 className="text-xs font-bold uppercase tracking-wider">
                     PRIZE POOL
                   </h2>
-                  <svg className="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                  <svg className="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
                 </div>
                 <p className="mt-2 text-2xl font-extrabold text-neutral-900 dark:text-white">
                   {prize}

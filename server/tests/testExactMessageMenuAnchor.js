@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testExactMessageMenuAnchor.js
 // Integration Test Suite for Exact Message Menu Anchor & Direct Rect Capture
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

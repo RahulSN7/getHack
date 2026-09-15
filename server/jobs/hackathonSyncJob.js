@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/jobs/hackathonSyncJob.js
 // Background Job Scheduler for multi-platform hackathon synchronization
 // Initial interval: Every 6 hours
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const { syncAllHackathons } = require("../services/hackathonSyncService");

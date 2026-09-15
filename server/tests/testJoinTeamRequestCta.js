@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testJoinTeamRequestCta.js
 // Integration test suite verifying "Request to Join" API execution and button states
-// ---------------------------------------------------------------------------
+
 
 const path = require("path");
 const dns = require("dns");
@@ -12,7 +12,7 @@ try {
     dns.setDefaultResultOrder("ipv4first");
   }
   dns.setServers(["1.1.1.1", "8.8.8.8", "8.8.4.4"]);
-} catch {}
+} catch { }
 
 const mongoose = require("mongoose");
 const Team = require("../models/team");

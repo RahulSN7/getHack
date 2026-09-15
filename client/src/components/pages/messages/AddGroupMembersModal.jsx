@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // AddGroupMembersModal.jsx — Modal to add eligible connections to an existing group
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect, useRef } from "react";
 import { userService } from "../../../services/userService";
@@ -201,8 +201,8 @@ export default function AddGroupMembersModal({
                 {searchQuery
                   ? "No matching connections found."
                   : eligibleConnections.length === 0
-                  ? "All your connections are already members of this group."
-                  : "No eligible connections."}
+                    ? "All your connections are already members of this group."
+                    : "No eligible connections."}
               </div>
             ) : (
               <div className="space-y-1">
@@ -220,19 +220,17 @@ export default function AddGroupMembersModal({
                     <div
                       key={connUserId}
                       onClick={() => toggleSelect(connUserId)}
-                      className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors ${
-                        isSelected
+                      className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors ${isSelected
                           ? "bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60"
                           : "hover:bg-neutral-50 dark:hover:bg-neutral-800/50 border border-transparent"
-                      }`}
+                        }`}
                     >
                       {/* Custom Checkbox */}
                       <div
-                        className={`h-4 w-4 rounded flex items-center justify-center border transition-colors ${
-                          isSelected
+                        className={`h-4 w-4 rounded flex items-center justify-center border transition-colors ${isSelected
                             ? "bg-indigo-600 border-indigo-600 text-white dark:bg-indigo-500 dark:border-indigo-500"
                             : "border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800"
-                        }`}
+                          }`}
                       >
                         {isSelected && (
                           <svg className="h-3 w-3 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="3">

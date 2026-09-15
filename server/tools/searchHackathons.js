@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/searchHackathons.js — search_hackathons Agent Tool
 // Executes searches on the real GetHack Hackathon MongoDB database.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const Hackathon = require("../models/hackathon");

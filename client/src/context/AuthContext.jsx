@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // AuthContext.jsx — Single Source of Truth for Authentication State
 // Restores session from backend GET /api/auth/me on startup.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useState } from "react";
 import { authService } from "../services/authService";
@@ -122,7 +122,7 @@ export function AuthProvider({ children }) {
         };
         try {
           localStorage.setItem("gethack_user", JSON.stringify(next));
-        } catch {}
+        } catch { }
         return next;
       });
     }

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/emailService.js — Gmail SMTP Transactional Email Service
 // Configured with Nodemailer & Gmail App Password from environment variables.
-// ---------------------------------------------------------------------------
+
 
 const nodemailer = require("nodemailer");
 

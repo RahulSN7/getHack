@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testPerUserClearChatHistory.js
 // Integration Test Suite for Per-User Clear Chat History Feature
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

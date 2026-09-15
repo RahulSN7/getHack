@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/hackathonStatusService.js
 // Status calculation based on current date vs registration/event dates
-// ---------------------------------------------------------------------------
+
 
 /**
  * Calculate status string for a hackathon record or date payload
@@ -10,7 +10,7 @@
  */
 function calculateStatus(hackathon) {
   const now = new Date();
-  
+
   const regStart = hackathon.registration?.startDate || hackathon.registrationOpens;
   const regDeadline = hackathon.registration?.deadline || hackathon.registrationDeadline;
   const eventStart = hackathon.event?.startDate || hackathon.startDate;

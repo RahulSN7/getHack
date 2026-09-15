@@ -1,9 +1,9 @@
-// ---------------------------------------------------------------------------
+
 // HackathonDetailsPage — detailed view for a single hackathon (/hackathons/:id)
 // Polished startup event/product information page with clean typography,
 // balanced two-column layout, unified right sidebar rail, mode-specific details,
 // themes, eligibility, complete timeline with end date, single prize pool, and zero duplicate data.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -149,9 +149,9 @@ function HackathonDetailsPage() {
     );
   }
 
-  // ---------------------------------------------------------------------------
+
   // 404 Not Found State
-  // ---------------------------------------------------------------------------
+
   if (!hackathon) {
     return (
       <div className="min-h-screen bg-slate-50 px-6 py-20 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
@@ -332,7 +332,7 @@ function HackathonDetailsPage() {
                     </span>
                   )}
 
-                 
+
                 </div>
               </div>
             </div>
@@ -359,10 +359,9 @@ function HackathonDetailsPage() {
                 focus-visible:outline
                 focus-visible:outline-2
                 focus-visible:outline-indigo-500
-                ${
-                  saved
-                    ? `${accentBgSoft} ${accentText} border-transparent`
-                    : "border-neutral-200 bg-neutral-50/50 text-neutral-700 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:text-white"
+                ${saved
+                  ? `${accentBgSoft} ${accentText} border-transparent`
+                  : "border-neutral-200 bg-neutral-50/50 text-neutral-700 hover:border-neutral-300 hover:text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300 dark:hover:border-neutral-700 dark:hover:text-white"
                 }
               `}
             >
@@ -491,7 +490,7 @@ function HackathonDetailsPage() {
                   <h2 className="text-xs font-bold uppercase tracking-wider">
                     PRIZE POOL
                   </h2>
-                  <svg className="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                  <svg className="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>
                 </div>
                 <p className="mt-2 text-2xl font-extrabold text-neutral-900 dark:text-white">
                   {prize}
@@ -569,7 +568,7 @@ function HackathonDetailsPage() {
                               className="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
                             >
                               <span>View location</span>
-                              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
                             </a>
                           </div>
                         )}

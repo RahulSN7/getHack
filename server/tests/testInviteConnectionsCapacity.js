@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testInviteConnectionsCapacity.js
 // Automated test suite for Invite Connections modal available spots calculation & backend validation
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

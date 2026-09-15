@@ -1,4 +1,4 @@
-// ---------------------------------------------------------------------------
+
 // Teammates — Find Teammates hub page with dual-mode tabs
 //
 // Tab 1: "Find Members" — browse individual profiles
@@ -6,7 +6,7 @@
 //
 // Pipeline: data → search → filters → sort → grid
 // Same architecture as Hackathons.jsx
-// ---------------------------------------------------------------------------
+
 
 import { useMemo, useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -24,9 +24,9 @@ import TeamDetailsModal from "./TeamDetailsModal";
 import CreateTeamModal from "./CreateTeamModal";
 import { resolveTeamMembers, resolveTeamLeader } from "../../../utils/teamMemberResolver";
 
-// ---------------------------------------------------------------------------
+
 // Role matching helper (maps filter IDs to role strings)
-// ---------------------------------------------------------------------------
+
 
 const ROLE_KEYWORDS = {
   frontend: ["frontend"],
@@ -47,9 +47,9 @@ function matchesRole(roleStr, filterId) {
   return keywords.some((kw) => lowerRole.includes(kw));
 }
 
-// ---------------------------------------------------------------------------
+
 // Search: Find Members
-// ---------------------------------------------------------------------------
+
 
 function searchMembers(members, query) {
   if (!query.trim()) return members;
@@ -64,9 +64,9 @@ function searchMembers(members, query) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Filters: Find Members
-// ---------------------------------------------------------------------------
+
 
 function normalizeAvailability(val) {
   if (!val || typeof val !== "string") return "not-available";
@@ -102,9 +102,9 @@ function filterMembers(members, { roleFilter, experienceFilter, availabilityFilt
   return result;
 }
 
-// ---------------------------------------------------------------------------
+
 // Search: Join a Team
-// ---------------------------------------------------------------------------
+
 
 function searchTeams(teams, query) {
   if (!query.trim()) return teams;
@@ -119,9 +119,9 @@ function searchTeams(teams, query) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Filters: Join a Team
-// ---------------------------------------------------------------------------
+
 
 function filterTeams(teams, currentUser) {
   const currentUserId = currentUser?.id || currentUser?._id;
@@ -192,9 +192,9 @@ function filterTeams(teams, currentUser) {
   });
 }
 
-// ---------------------------------------------------------------------------
+
 // Sort helpers
-// ---------------------------------------------------------------------------
+
 
 function sortMembers(members, sortBy) {
   const sorted = [...members];
@@ -233,9 +233,9 @@ function sortTeams(teams, sortBy) {
   }
 }
 
-// ---------------------------------------------------------------------------
+
 // Sort dropdown options
-// ---------------------------------------------------------------------------
+
 
 const MEMBER_SORT_OPTIONS = [
   { id: "default", label: "Default" },
@@ -252,9 +252,9 @@ const TEAM_SORT_OPTIONS = [
   { id: "spots", label: "Most Open Spots" },
 ];
 
-// ---------------------------------------------------------------------------
+
 // Empty state component
-// ---------------------------------------------------------------------------
+
 
 function EmptyState({ activeTab, hasFilters, onClear, message }) {
   if (activeTab === "teams" && !hasFilters) {
@@ -321,9 +321,9 @@ function EmptyState({ activeTab, hasFilters, onClear, message }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Error state component
-// ---------------------------------------------------------------------------
+
 
 function ErrorState({ onRetry, message }) {
   return (
@@ -354,9 +354,9 @@ function ErrorState({ onRetry, message }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // My Teams View Component
-// ---------------------------------------------------------------------------
+
 
 function MyTeamsView({ currentUser, onShowToast }) {
   const [myTeams, setMyTeams] = useState([]);
@@ -507,9 +507,9 @@ function MyTeamsView({ currentUser, onShowToast }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Team Requests View Component (Incoming & Sent Sub-tabs)
-// ---------------------------------------------------------------------------
+
 
 function RequestUserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
@@ -763,9 +763,9 @@ function TeamRequestsView({ onShowToast, onRequestStateChange }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+
 // Page Component
-// ---------------------------------------------------------------------------
+
 
 function Teammates() {
   const { user: currentUser, isAuthenticated } = useAuth();

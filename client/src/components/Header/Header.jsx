@@ -189,9 +189,9 @@ function Header() {
   const { theme, toggleTheme } = useTheme();
   const darkMode = theme === "dark";
 
-  // --------------------------------------------------
+
   // SCROLL STATE & DETECTION FOR GLASSMORPHISM NAVBAR
-  // --------------------------------------------------
+
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -211,9 +211,9 @@ function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // --------------------------------------------------
+
   // NOTIFICATION & OTHER STATES (from global context)
-  // --------------------------------------------------
+
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -352,9 +352,9 @@ function Header() {
     markAllNotificationsAsRead();
   };
 
-  // --------------------------------------------------
+
   // FUNCTIONS
-  // --------------------------------------------------
+
 
 
   const toggleNotifications = () => {
@@ -365,9 +365,9 @@ function Header() {
     setMobileMenuOpen((previous) => !previous);
   };
 
-  // --------------------------------------------------
+
   // NAV LINK STYLES (reusable)
-  // --------------------------------------------------
+
 
   const navLinkClass = `
     rounded-lg
@@ -408,9 +408,9 @@ function Header() {
 
   return (
     <>
-      {/* ==================================================
+      {/* 
           HEADER
-          ================================================== */}
+           */}
 
       <header
         className={`
@@ -425,10 +425,9 @@ function Header() {
           transition-all
           duration-300
           ease-out
-          ${
-            scrolled && !mobileMenuOpen
-              ? "pt-3.5 sm:pt-4 px-3.5 sm:px-6 lg:px-8"
-              : "pt-0 px-0"
+          ${scrolled && !mobileMenuOpen
+            ? "pt-3.5 sm:pt-4 px-3.5 sm:px-6 lg:px-8"
+            : "pt-0 px-0"
           }
         `}
       >
@@ -440,9 +439,8 @@ function Header() {
             duration-300
             ease-out
             overflow-visible
-            ${
-              scrolled && !mobileMenuOpen
-                ? `
+            ${scrolled && !mobileMenuOpen
+              ? `
                   max-w-6xl
                   rounded-full
                   border
@@ -455,13 +453,12 @@ function Header() {
                   dark:bg-neutral-950/80
                   dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]
                 `
-                : `
+              : `
                   max-w-7xl
                   rounded-none
                   border-b
-                  ${
-                    scrolled || mobileMenuOpen
-                      ? `
+                  ${scrolled || mobileMenuOpen
+                ? `
                         border-neutral-200/60
                         bg-white/80
                         backdrop-blur-md
@@ -470,13 +467,13 @@ function Header() {
                         dark:bg-neutral-950/80
                         dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
                       `
-                      : `
+                : `
                         border-transparent
                         bg-transparent
                         shadow-none
                         backdrop-blur-none
                       `
-                  }
+              }
                 `
             }
           `}
@@ -494,129 +491,125 @@ function Header() {
               ${scrolled && !mobileMenuOpen ? "px-4 sm:px-6" : "px-5 sm:px-6 lg:px-8"}
             `}
           >
-          {/* ==================================================
+            {/* 
               LOGO
-              ================================================== */}
+               */}
 
-          <Link
-            to="/"
-            className="
+            <Link
+              to="/"
+              className="
               group
               flex
               shrink-0
               items-center
             "
-          >
-            <Logo className="h-7 w-auto" />
-          </Link>
+            >
+              <Logo className="h-7 w-auto" />
+            </Link>
 
-          {/* ==================================================
+            {/* 
               DESKTOP NAVIGATION
-              ================================================== */}
+               */}
 
-          <nav className="ml-8 hidden h-14 items-center gap-1 md:flex">
-            <NavLink
-              to="/hackathons"
-              className={`relative flex h-full items-center px-3 text-sm font-medium ${
-                isHackathonsActive
+            <nav className="ml-8 hidden h-14 items-center gap-1 md:flex">
+              <NavLink
+                to="/hackathons"
+                className={`relative flex h-full items-center px-3 text-sm font-medium ${isHackathonsActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              <span>Hackathons</span>
-              {isHackathonsActive && (
-                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
-              )}
-            </NavLink>
+                  }`}
+              >
+                <span>Hackathons</span>
+                {isHackathonsActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+                )}
+              </NavLink>
 
-            <NavLink
-              to="/teammates"
-              className={`relative flex h-full items-center px-3 text-sm font-medium ${
-                isTeammatesActive
+              <NavLink
+                to="/teammates"
+                className={`relative flex h-full items-center px-3 text-sm font-medium ${isTeammatesActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              <span>Find Teammates</span>
-              {isTeammatesActive && (
-                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
-              )}
-            </NavLink>
+                  }`}
+              >
+                <span>Find Teammates</span>
+                {isTeammatesActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+                )}
+              </NavLink>
 
-            <NavLink
-              to="/network"
-              className={`relative flex h-full items-center px-3 text-sm font-medium ${
-                isNetworkActive
+              <NavLink
+                to="/network"
+                className={`relative flex h-full items-center px-3 text-sm font-medium ${isNetworkActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              <span>My Network</span>
-              {isNetworkActive && (
-                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
-              )}
-            </NavLink>
+                  }`}
+              >
+                <span>My Network</span>
+                {isNetworkActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+                )}
+              </NavLink>
 
-            <NavLink
-              to="/messages"
-              className={`relative flex h-full items-center px-3 text-sm font-medium ${
-                isMessagesActive
+              <NavLink
+                to="/messages"
+                className={`relative flex h-full items-center px-3 text-sm font-medium ${isMessagesActive
                   ? "font-semibold text-neutral-950 dark:text-white"
                   : "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
-              }`}
-            >
-              <span>Messages</span>
-              {isMessagesActive && (
-                <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
-              )}
-            </NavLink>
-          </nav>
+                  }`}
+              >
+                <span>Messages</span>
+                {isMessagesActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-150" />
+                )}
+              </NavLink>
+            </nav>
 
-          {/* ==================================================
+            {/* 
               RIGHT SIDE
-              ================================================== */}
+               */}
 
-          <div
-            className="
+            <div
+              className="
               ml-auto
               flex
               items-center
               gap-0.5
             "
-          >
-            {/* ==================================================
-                NOTIFICATIONS
-                ================================================== */}
-
-            <div
-              ref={notificationRef}
-              className="relative"
             >
-              <button
-                type="button"
-                onClick={toggleNotifications}
-                aria-label="Notifications"
-                className={iconBtnClass}
+              {/* 
+                NOTIFICATIONS
+                 */}
+
+              <div
+                ref={notificationRef}
+                className="relative"
               >
-                {/* Bell icon */}
-
-                <svg
-                  className="h-[18px] w-[18px]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <button
+                  type="button"
+                  onClick={toggleNotifications}
+                  aria-label="Notifications"
+                  className={iconBtnClass}
                 >
-                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
+                  {/* Bell icon */}
 
-                {/* 9. UNREAD COUNT BADGE (Connected to real backend count) */}
-                {isAuthenticated && unreadCount > 0 && (
-                  <span
-                    className={`
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+
+                  {/* 9. UNREAD COUNT BADGE (Connected to real backend count) */}
+                  {isAuthenticated && unreadCount > 0 && (
+                    <span
+                      className={`
                       absolute
                       right-0.5
                       top-0.5
@@ -638,26 +631,26 @@ function Header() {
 
                       ring-2
                       ${scrolled
-                        ? "ring-white/80 dark:ring-neutral-950/75"
-                        : "ring-slate-50 dark:ring-neutral-950"
-                      }
+                          ? "ring-white/80 dark:ring-neutral-950/75"
+                          : "ring-slate-50 dark:ring-neutral-950"
+                        }
 
                       transition-[box-shadow]
                       duration-300
                     `}
-                  >
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </button>
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </button>
 
-              {/* ==================================================
+                {/* 
                   NOTIFICATION DROPDOWN
-                  ================================================== */}
+                   */}
 
-              {notificationOpen && (
-                <div
-                  className={`
+                {notificationOpen && (
+                  <div
+                    className={`
                     fixed
                     ${scrolled ? "top-[74px]" : "top-16"}
                     left-3.5
@@ -689,11 +682,11 @@ function Header() {
                     sm:max-w-[300px]
                     sm:max-h-[410px]
                   `}
-                >
-                  {/* Header */}
+                  >
+                    {/* Header */}
 
-                  <div
-                    className="
+                    <div
+                      className="
                       flex
                       items-center
                       justify-between
@@ -703,94 +696,94 @@ function Header() {
                       border-neutral-100
                       dark:border-neutral-800/80
                     "
-                  >
-                    <div>
-                      <h3
-                        className="
+                    >
+                      <div>
+                        <h3
+                          className="
                           text-sm
                           font-semibold
                           text-neutral-900
 
                           dark:text-white
                         "
-                      >
-                        Notifications
-                      </h3>
+                        >
+                          Notifications
+                        </h3>
 
-                      <p
-                        className="
+                        <p
+                          className="
                           mt-0.5
                           text-xs
                           text-neutral-500
 
                           dark:text-neutral-400
                         "
-                      >
-                        {unreadCount} unread update{unreadCount === 1 ? "" : "s"}
-                      </p>
-                    </div>
+                        >
+                          {unreadCount} unread update{unreadCount === 1 ? "" : "s"}
+                        </p>
+                      </div>
 
-                    <div className="flex items-center gap-2">
-                      {unreadCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleMarkAllRead}
-                          className="
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAllRead}
+                            className="
                             text-xs
                             font-medium
                             text-indigo-500
                             hover:text-indigo-600
                             transition-colors
                           "
-                        >
-                          Mark all read
-                        </button>
-                      )}
+                          >
+                            Mark all read
+                          </button>
+                        )}
 
-                      {notifications.length > 0 && (
-                        !confirmClear ? (
-                          <button
-                            type="button"
-                            onClick={() => setConfirmClear(true)}
-                            className="
+                        {notifications.length > 0 && (
+                          !confirmClear ? (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmClear(true)}
+                              className="
                               text-xs
                               font-medium
                               text-neutral-400
                               hover:text-rose-500
                               transition-colors
                             "
-                          >
-                            Clear all
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await clearAllNotifications();
-                                } catch (err) {
-                                  console.error("Clear all failed:", err);
-                                } finally {
-                                  setConfirmClear(false);
-                                }
-                              }}
-                              className="text-xs font-semibold text-rose-500 hover:underline"
                             >
-                              Clear
+                              Clear all
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmClear(false)}
-                              className="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        )
-                      )}
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    await clearAllNotifications();
+                                  } catch (err) {
+                                    console.error("Clear all failed:", err);
+                                  } finally {
+                                    setConfirmClear(false);
+                                  }
+                                }}
+                                className="text-xs font-semibold text-rose-500 hover:underline"
+                              >
+                                Clear
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmClear(false)}
+                                className="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
 
                     {/* Notification Items Container */}
 
@@ -872,11 +865,11 @@ function Header() {
                               const senderName = n.sender?.name;
                               const initials = senderName
                                 ? senderName
-                                    .split(" ")
-                                    .map((name) => name[0])
-                                    .join("")
-                                    .toUpperCase()
-                                    .slice(0, 2)
+                                  .split(" ")
+                                  .map((name) => name[0])
+                                  .join("")
+                                  .toUpperCase()
+                                  .slice(0, 2)
                                 : null;
 
                               return (
@@ -1017,80 +1010,79 @@ function Header() {
                 )}
               </div>
 
-            {/* ==================================================
+              {/* 
                 THEME BUTTON
-                ================================================== */}
+                 */}
 
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={
-                darkMode
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
-              className={iconBtnClass}
-            >
-              {darkMode ? (
-                /* SUN */
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={
+                  darkMode
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
+                className={iconBtnClass}
+              >
+                {darkMode ? (
+                  /* SUN */
 
-                <svg
-                  className="h-[18px] w-[18px]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                >
-                  <circle cx="12" cy="12" r="4" />
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  >
+                    <circle cx="12" cy="12" r="4" />
 
-                  <path d="M12 2v2" />
-                  <path d="M12 20v2" />
-                  <path d="M4.93 4.93l1.41 1.41" />
-                  <path d="M17.66 17.66l1.41 1.41" />
-                  <path d="M2 12h2" />
-                  <path d="M20 12h2" />
-                  <path d="M6.34 17.66l-1.41 1.41" />
-                  <path d="M19.07 4.93l-1.41 1.41" />
-                </svg>
-              ) : (
-                /* MOON */
+                    <path d="M12 2v2" />
+                    <path d="M12 20v2" />
+                    <path d="M4.93 4.93l1.41 1.41" />
+                    <path d="M17.66 17.66l1.41 1.41" />
+                    <path d="M2 12h2" />
+                    <path d="M20 12h2" />
+                    <path d="M6.34 17.66l-1.41 1.41" />
+                    <path d="M19.07 4.93l-1.41 1.41" />
+                  </svg>
+                ) : (
+                  /* MOON */
 
-                <svg
-                  className="h-[18px] w-[18px]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                >
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              )}
-            </button>
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  >
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )}
+              </button>
 
-            {/* ==================================================
+              {/* 
                 LOGIN / PROFILE BUTTON
-                ================================================== */}
+                 */}
 
-            {authLoading ? (
-              <div
-                className={`ml-1.5 h-8 shrink-0 opacity-0 pointer-events-none ${
-                  user ? "w-8 block" : "w-[72px] hidden sm:block"
-                }`}
-                aria-hidden="true"
-              />
-            ) : isAuthenticated ? (
-              <div className="relative ml-1.5" ref={profileRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfileOpen((prev) => !prev);
-                    setNotificationOpen(false);
-                  }}
-                  aria-label="User profile menu"
-                  aria-expanded={profileOpen}
-                  className="
+              {authLoading ? (
+                <div
+                  className={`ml-1.5 h-8 shrink-0 opacity-0 pointer-events-none ${user ? "w-8 block" : "w-[72px] hidden sm:block"
+                    }`}
+                  aria-hidden="true"
+                />
+              ) : isAuthenticated ? (
+                <div className="relative ml-1.5" ref={profileRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen((prev) => !prev);
+                      setNotificationOpen(false);
+                    }}
+                    aria-label="User profile menu"
+                    aria-expanded={profileOpen}
+                    className="
                     flex
                     h-8
                     items-center
@@ -1112,25 +1104,25 @@ function Header() {
                     dark:hover:bg-neutral-800
                     cursor-pointer
                   "
-                >
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
-                    {user?.profile?.avatar || user?.avatar ? (
-                      <img
-                        src={user.profile?.avatar || user.avatar}
-                        alt={user?.name || "User"}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : user?.name ? (
-                      user.name.charAt(0).toUpperCase()
-                    ) : (
-                      "U"
-                    )}
-                  </span>
-                </button>
+                  >
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
+                      {user?.profile?.avatar || user?.avatar ? (
+                        <img
+                          src={user.profile?.avatar || user.avatar}
+                          alt={user?.name || "User"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : user?.name ? (
+                        user.name.charAt(0).toUpperCase()
+                      ) : (
+                        "U"
+                      )}
+                    </span>
+                  </button>
 
-                {profileOpen && (
-                  <div
-                    className="
+                  {profileOpen && (
+                    <div
+                      className="
                       absolute
                       right-0
                       top-[calc(100%+12px)]
@@ -1148,11 +1140,11 @@ function Header() {
                       dark:shadow-neutral-950/50
                       z-50
                     "
-                  >
-                    <Link
-                      to={`/profile/${user?.id || user?._id || "me"}`}
-                      onClick={() => setProfileOpen(false)}
-                      className="
+                    >
+                      <Link
+                        to={`/profile/${user?.id || user?._id || "me"}`}
+                        onClick={() => setProfileOpen(false)}
+                        className="
                         flex
                         w-full
                         items-center
@@ -1167,23 +1159,23 @@ function Header() {
                         dark:text-neutral-300
                         dark:hover:bg-neutral-800
                       "
-                    >
-                      <svg className="h-4 w-4 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                      <span>Profile</span>
-                    </Link>
+                      >
+                        <svg className="h-4 w-4 text-neutral-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Profile</span>
+                      </Link>
 
-                    <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
+                      <div className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileOpen(false);
-                        logout();
-                      }}
-                      className="
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileOpen(false);
+                          logout();
+                        }}
+                        className="
                         flex
                         w-full
                         items-center
@@ -1200,21 +1192,21 @@ function Header() {
                         text-left
                         cursor-pointer
                       "
-                    >
-                      <svg className="h-4 w-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" y1="12" x2="9" y2="12" />
-                      </svg>
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="
+                      >
+                        <svg className="h-4 w-4 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                          <polyline points="16 17 21 12 16 7" />
+                          <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="
                   hidden
                   h-8
                   items-center
@@ -1234,64 +1226,64 @@ function Header() {
                   dark:hover:bg-neutral-200
                   sm:flex
                 "
-              >
-                Log in
-              </Link>
-            )}
+                >
+                  Log in
+                </Link>
+              )}
 
-            {/* ==================================================
+              {/* 
                 MOBILE MENU BUTTON
-                ================================================== */}
+                 */}
 
-            <button
-              type="button"
-              onClick={toggleMobileMenu}
-              aria-label="Toggle menu"
-              className={`
+              <button
+                type="button"
+                onClick={toggleMobileMenu}
+                aria-label="Toggle menu"
+                className={`
                 ${iconBtnClass}
                 md:hidden
               `}
-            >
-              {mobileMenuOpen ? (
-                /* CLOSE */
+              >
+                {mobileMenuOpen ? (
+                  /* CLOSE */
 
-                <svg
-                  className="h-[18px] w-[18px]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                </svg>
-              ) : (
-                /* MENU */
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                  </svg>
+                ) : (
+                  /* MENU */
 
-                <svg
-                  className="h-[18px] w-[18px]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <line x1="4" y1="7" x2="20" y2="7" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="17" x2="20" y2="17" />
-                </svg>
-              )}
-            </button>
+                  <svg
+                    className="h-[18px] w-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <line x1="4" y1="7" x2="20" y2="7" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="17" x2="20" y2="17" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* ==================================================
+          {/* 
             MOBILE NAVIGATION
-            ================================================== */}
+             */}
 
-        <div
-          className={`
+          <div
+            className={`
             overflow-hidden
             transition-[max-height,opacity]
             duration-300
@@ -1309,9 +1301,9 @@ function Header() {
 
             ${mobileMenuOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}
           `}
-        >
-          <nav
-            className="
+          >
+            <nav
+              className="
               mx-auto
               max-w-7xl
 
@@ -1321,9 +1313,9 @@ function Header() {
               sm:px-6
               lg:px-8
             "
-          >
-            <div
-              className="
+            >
+              <div
+                className="
                 space-y-0.5
                 border-t
                 border-neutral-200/60
@@ -1331,11 +1323,11 @@ function Header() {
 
                 dark:border-white/8
               "
-            >
-              <Link
-                to="/hackathons"
-                onClick={() => setMobileMenuOpen(false)}
-                className="
+              >
+                <Link
+                  to="/hackathons"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="
                   block
                   rounded-lg
                   px-3
@@ -1353,14 +1345,14 @@ function Header() {
                   dark:text-neutral-300
                   dark:hover:bg-white/5
                 "
-              >
-                Hackathons
-              </Link>
+                >
+                  Hackathons
+                </Link>
 
-              <Link
-                to="/teammates"
-                onClick={() => setMobileMenuOpen(false)}
-                className="
+                <Link
+                  to="/teammates"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="
                   block
                   rounded-lg
                   px-3
@@ -1378,14 +1370,14 @@ function Header() {
                   dark:text-neutral-300
                   dark:hover:bg-white/5
                 "
-              >
-                Find Teammates
-              </Link>
+                >
+                  Find Teammates
+                </Link>
 
-              <Link
-                to="/network"
-                onClick={() => setMobileMenuOpen(false)}
-                className="
+                <Link
+                  to="/network"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="
                   block
                   rounded-lg
                   px-3
@@ -1403,14 +1395,14 @@ function Header() {
                   dark:text-neutral-300
                   dark:hover:bg-white/5
                 "
-              >
-                My Network
-              </Link>
+                >
+                  My Network
+                </Link>
 
-              <Link
-                to="/messages"
-                onClick={() => setMobileMenuOpen(false)}
-                className="
+                <Link
+                  to="/messages"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="
                   block
                   rounded-lg
                   px-3
@@ -1428,23 +1420,22 @@ function Header() {
                   dark:text-neutral-300
                   dark:hover:bg-white/5
                 "
-              >
-                Messages
-              </Link>
+                >
+                  Messages
+                </Link>
 
-              {authLoading ? (
-                <div
-                  className={`mt-2 w-full opacity-0 pointer-events-none ${
-                    user ? "h-[84px]" : "h-10"
-                  }`}
-                  aria-hidden="true"
-                />
-              ) : isAuthenticated ? (
-                <>
-                  <Link
-                    to={`/profile/${user?.id || user?._id || "me"}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="
+                {authLoading ? (
+                  <div
+                    className={`mt-2 w-full opacity-0 pointer-events-none ${user ? "h-[84px]" : "h-10"
+                      }`}
+                    aria-hidden="true"
+                  />
+                ) : isAuthenticated ? (
+                  <>
+                    <Link
+                      to={`/profile/${user?.id || user?._id || "me"}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="
                       block
                       rounded-lg
                       px-3
@@ -1457,16 +1448,16 @@ function Header() {
                       dark:text-neutral-300
                       dark:hover:bg-white/5
                     "
-                  >
-                    Profile
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      logout();
-                    }}
-                    className="
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        logout();
+                      }}
+                      className="
                       w-full
                       text-left
                       mt-1
@@ -1483,15 +1474,15 @@ function Header() {
                       dark:hover:bg-white/5
                       cursor-pointer
                     "
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="
                     mt-2
                     block
                     rounded-lg
@@ -1508,15 +1499,15 @@ function Header() {
                     dark:text-neutral-950
                     dark:hover:bg-neutral-200
                   "
-                >
-                  Log in
-                </Link>
-              )}
-            </div>
-          </nav>
+                  >
+                    Log in
+                  </Link>
+                )}
+              </div>
+            </nav>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
 
       {/* Mobile Backdrop Overlay */}
       {mobileMenuOpen && (

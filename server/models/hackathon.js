@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/hackathon.js — Mongoose Hackathon Model for getHack
 // Supports both user-created hackathons and aggregated platform hackathons.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

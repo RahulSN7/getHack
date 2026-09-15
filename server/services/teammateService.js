@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/services/teammateService.js — Shared Teammate Discovery Service
 // Single source of truth for candidate teammate retrieval across Find Teammates page & AI
-// ---------------------------------------------------------------------------
+
 
 const User = require("../models/user");
 const Connection = require("../models/connection");

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/getMyNetwork.js — get_my_network Agent Tool
 // Securely retrieves the authenticated user's accepted connection network.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const Connection = require("../models/connection");

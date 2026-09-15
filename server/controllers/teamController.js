@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/teamController.js — Controller handlers for Team API
 // Manages team creation, listing, details retrieval, and team join requests
-// ---------------------------------------------------------------------------
+
 
 const Team = require("../models/team");
 const User = require("../models/user");

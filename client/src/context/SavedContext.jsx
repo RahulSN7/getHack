@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-// ---------------------------------------------------------------------------
+
 // SavedContext — manages bookmarking / saving hackathons with localStorage persistence
-// ---------------------------------------------------------------------------
+
 
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -9,7 +9,7 @@ const STORAGE_KEY = "getHack_saved_hackathons";
 
 const SavedContext = createContext({
   savedIds: [],
-  toggleSave: () => {},
+  toggleSave: () => { },
   isSaved: () => false,
   savedCount: 0,
 });

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testMessageEditHistory.js
 // Integration Test Suite for WhatsApp-Style "Edited" Message Badge & History
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 
@@ -21,8 +21,8 @@ function processMessageEdit({ msg, newText, currentUserId }) {
   const existingHistory = Array.isArray(msg.edit_history)
     ? msg.edit_history
     : Array.isArray(msg.extraData?.edit_history)
-    ? msg.extraData.edit_history
-    : [];
+      ? msg.extraData.edit_history
+      : [];
 
   const updatedHistory = [
     ...existingHistory,

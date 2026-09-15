@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/adapters/hack2SkillAdapter.js
 // Adapter for fetching live hackathons from Hack2Skill
-// ---------------------------------------------------------------------------
+
 
 const PLATFORM_NAME = "hack2skill";
 

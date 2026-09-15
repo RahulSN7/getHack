@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // server/tools/inviteToTeam.js — Tool for Inviting Connections to an Active Team
-// ---------------------------------------------------------------------------
+
 
 const Team = require("../models/team");
 const User = require("../models/user");

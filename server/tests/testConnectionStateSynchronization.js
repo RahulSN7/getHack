@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testConnectionStateSynchronization.js
 // Automated verification for Real-Time Connection Request State Synchronization
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 const dns = require("dns");
@@ -28,9 +28,9 @@ const { emitConnectionEventToUsers } = require("../services/socketService");
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || "mongodb://localhost:27017/gethack";
 
 async function runTests() {
-  console.log("\n=======================================================");
+  console.log("\n=====");
   console.log("Starting Connection Request State Synchronization Tests");
-  console.log("=======================================================\n");
+  console.log("=====\n");
 
   try {
     if (mongoose.connection.readyState === 0) {
@@ -166,9 +166,9 @@ async function runTests() {
     await User.deleteMany({ email: { $in: ["sync_user1@test.com", "sync_user2@test.com"] } });
     await Connection.deleteMany({ _id: connectionInDb._id });
 
-    console.log("\n=======================================================");
+    console.log("\n=====");
     console.log("All Connection Synchronization Tests PASSED!");
-    console.log("=======================================================\n");
+    console.log("=====\n");
     process.exit(0);
   } catch (error) {
     console.error("\n❌ Test failure:", error.message);

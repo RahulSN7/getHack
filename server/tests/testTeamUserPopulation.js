@@ -1,8 +1,8 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testTeamUserPopulation.js
 // Integration test verifying MongoDB User population for team leader & members
 // Ensures raw ObjectIds are never returned in place of User documents, and sensitive fields are excluded
-// ---------------------------------------------------------------------------
+
 
 const path = require("path");
 const dns = require("dns");
@@ -13,7 +13,7 @@ try {
     dns.setDefaultResultOrder("ipv4first");
   }
   dns.setServers(["1.1.1.1", "8.8.8.8", "8.8.4.4"]);
-} catch {}
+} catch { }
 
 const mongoose = require("mongoose");
 const Team = require("../models/team");

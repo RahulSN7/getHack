@@ -1,9 +1,9 @@
-// ---------------------------------------------------------------------------
+
 // EditProfileModal.jsx — Participant Profile Editing Modal Component
 // Supports local file picker for avatar, gender, date of birth, mandatory location,
 // field-level error messages, scroll to first error, bio length validation,
 // skill tags, education, and links.
-// ---------------------------------------------------------------------------
+
 
 import { useState, useRef, useEffect } from "react";
 import { isProfileComplete } from "../../../utils/profileValidation";
@@ -237,265 +237,265 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  setError(null);
-  setFieldErrors({});
+    setError(null);
+    setFieldErrors({});
 
-  const errors = {};
+    const errors = {};
 
-  // -----------------------------
-  // REQUIRED VALIDATION
-  // -----------------------------
+    // -----------------------------
+    // REQUIRED VALIDATION
+    // -----------------------------
 
-  if (!name.trim()) {
-    errors.name = "Full Name is required.";
-  }
+    if (!name.trim()) {
+      errors.name = "Full Name is required.";
+    }
 
-  if (!role.trim()) {
-    errors.role =
-      "Role / Headline is required.";
-  }
+    if (!role.trim()) {
+      errors.role =
+        "Role / Headline is required.";
+    }
 
-  if (!gender) {
-    errors.gender =
-      "Gender is required.";
-  }
+    if (!gender) {
+      errors.gender =
+        "Gender is required.";
+    }
 
-  if (!dateOfBirth) {
-    errors.dateOfBirth =
-      "Date of Birth is required.";
-  }
-
-  if (!location.trim()) {
-    errors.location =
-      "Location is required.";
-  }
-
-  if (!availability) {
-    errors.availability =
-      "Availability status is required.";
-  }
-
-  if (!bio.trim()) {
-    errors.bio = "Bio is required.";
-  }
-
-  if (bio.length > 300) {
-    errors.bio =
-      "Bio cannot exceed 300 characters.";
-  }
-
-  if (!skills.length) {
-    errors.skills =
-      "At least one skill is required.";
-  }
-
-  if (
-    !college.trim() &&
-    !degree.trim()
-  ) {
-    errors.education =
-      "College / University or Degree is required.";
-  }
-
-  if (!interests || interests.length === 0) {
-    errors.interests = "Please select at least one interest.";
-  }
-
-  const hasProfessionalLink =
-    Boolean(github?.trim()) ||
-    Boolean(linkedin?.trim()) ||
-    Boolean(portfolio?.trim());
-
-  if (!hasProfessionalLink) {
-    errors.links =
-      "Please provide at least one professional link (GitHub, LinkedIn, or Portfolio).";
-  }
-
-  // -----------------------------
-  // DOB VALIDATION
-  // -----------------------------
-
-  if (dateOfBirth) {
-    const dob = new Date(dateOfBirth);
-
-    if (Number.isNaN(dob.getTime())) {
+    if (!dateOfBirth) {
       errors.dateOfBirth =
-        "Invalid Date of Birth.";
+        "Date of Birth is required.";
     }
 
-    if (dob > new Date()) {
-      errors.dateOfBirth =
-        "Date of birth cannot be in the future.";
+    if (!location.trim()) {
+      errors.location =
+        "Location is required.";
     }
-  }
 
-  // -----------------------------
-  // GRADUATION YEAR VALIDATION
-  // -----------------------------
-
-  if (graduationYear && String(graduationYear).trim()) {
-    const cleanYear = String(graduationYear).trim();
-    if (!/^\d+$/.test(cleanYear)) {
-      errors.graduationYear = "Invalid graduation year";
+    if (!availability) {
+      errors.availability =
+        "Availability status is required.";
     }
-  }
 
-  // -----------------------------
-  // STOP IF INVALID
-  // -----------------------------
+    if (!bio.trim()) {
+      errors.bio = "Bio is required.";
+    }
 
-  if (Object.keys(errors).length > 0) {
-    setFieldErrors(errors);
+    if (bio.length > 300) {
+      errors.bio =
+        "Bio cannot exceed 300 characters.";
+    }
 
-    setError(
-      "Please complete all required profile information."
-    );
+    if (!skills.length) {
+      errors.skills =
+        "At least one skill is required.";
+    }
 
-    requestAnimationFrame(() => {
-      modalTopRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+    if (
+      !college.trim() &&
+      !degree.trim()
+    ) {
+      errors.education =
+        "College / University or Degree is required.";
+    }
+
+    if (!interests || interests.length === 0) {
+      errors.interests = "Please select at least one interest.";
+    }
+
+    const hasProfessionalLink =
+      Boolean(github?.trim()) ||
+      Boolean(linkedin?.trim()) ||
+      Boolean(portfolio?.trim());
+
+    if (!hasProfessionalLink) {
+      errors.links =
+        "Please provide at least one professional link (GitHub, LinkedIn, or Portfolio).";
+    }
+
+    // -----------------------------
+    // DOB VALIDATION
+    // -----------------------------
+
+    if (dateOfBirth) {
+      const dob = new Date(dateOfBirth);
+
+      if (Number.isNaN(dob.getTime())) {
+        errors.dateOfBirth =
+          "Invalid Date of Birth.";
+      }
+
+      if (dob > new Date()) {
+        errors.dateOfBirth =
+          "Date of birth cannot be in the future.";
+      }
+    }
+
+    // -----------------------------
+    // GRADUATION YEAR VALIDATION
+    // -----------------------------
+
+    if (graduationYear && String(graduationYear).trim()) {
+      const cleanYear = String(graduationYear).trim();
+      if (!/^\d+$/.test(cleanYear)) {
+        errors.graduationYear = "Invalid graduation year";
+      }
+    }
+
+    // -----------------------------
+    // STOP IF INVALID
+    // -----------------------------
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+
+      setError(
+        "Please complete all required profile information."
+      );
+
+      requestAnimationFrame(() => {
+        modalTopRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       });
-    });
 
-    return;
-  }
+      return;
+    }
 
-  // -----------------------------
-  // SAVE
-  // -----------------------------
+    // -----------------------------
+    // SAVE
+    // -----------------------------
 
-  try {
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    const formData = new FormData();
+      const formData = new FormData();
 
-    formData.append(
-      "name",
-      name.trim()
-    );
-
-    formData.append(
-      "role",
-      role.trim()
-    );
-
-    formData.append(
-      "gender",
-      gender
-    );
-
-    formData.append(
-      "dateOfBirth",
-      dateOfBirth
-    );
-
-    formData.append(
-      "location",
-      location.trim()
-    );
-
-    formData.append(
-      "availability",
-      availability
-    );
-
-    formData.append(
-      "bio",
-      bio.trim()
-    );
-
-    formData.append(
-      "skills",
-      JSON.stringify(skills)
-    );
-
-    formData.append(
-      "education",
-      JSON.stringify({
-        college: college.trim(),
-        degree: degree.trim(),
-        fieldOfStudy:
-          fieldOfStudy.trim(),
-        graduationYear:
-          graduationYear.trim(),
-      })
-    );
-
-    formData.append(
-      "experienceLevel",
-      experienceLevel
-    );
-
-    formData.append(
-      "experienceDetails",
-      experienceDetails.trim()
-    );
-
-    formData.append(
-      "interests",
-      JSON.stringify(interests)
-    );
-
-    formData.append(
-      "github",
-      github.trim()
-    );
-
-    formData.append(
-      "linkedin",
-      linkedin.trim()
-    );
-
-    formData.append(
-      "portfolio",
-      portfolio.trim()
-    );
-
-    if (photoFile) {
       formData.append(
-        "profilePhoto",
-        photoFile
+        "name",
+        name.trim()
       );
-    }
 
-    if (removePhoto) {
       formData.append(
-        "removePhoto",
-        "true"
+        "role",
+        role.trim()
       );
+
+      formData.append(
+        "gender",
+        gender
+      );
+
+      formData.append(
+        "dateOfBirth",
+        dateOfBirth
+      );
+
+      formData.append(
+        "location",
+        location.trim()
+      );
+
+      formData.append(
+        "availability",
+        availability
+      );
+
+      formData.append(
+        "bio",
+        bio.trim()
+      );
+
+      formData.append(
+        "skills",
+        JSON.stringify(skills)
+      );
+
+      formData.append(
+        "education",
+        JSON.stringify({
+          college: college.trim(),
+          degree: degree.trim(),
+          fieldOfStudy:
+            fieldOfStudy.trim(),
+          graduationYear:
+            graduationYear.trim(),
+        })
+      );
+
+      formData.append(
+        "experienceLevel",
+        experienceLevel
+      );
+
+      formData.append(
+        "experienceDetails",
+        experienceDetails.trim()
+      );
+
+      formData.append(
+        "interests",
+        JSON.stringify(interests)
+      );
+
+      formData.append(
+        "github",
+        github.trim()
+      );
+
+      formData.append(
+        "linkedin",
+        linkedin.trim()
+      );
+
+      formData.append(
+        "portfolio",
+        portfolio.trim()
+      );
+
+      if (photoFile) {
+        formData.append(
+          "profilePhoto",
+          photoFile
+        );
+      }
+
+      if (removePhoto) {
+        formData.append(
+          "removePhoto",
+          "true"
+        );
+      }
+
+      // IMPORTANT:
+      // onSave must return the API response.
+      const response = await onSave(
+        formData
+      );
+
+      console.log(
+        "PROFILE SAVED:",
+        response
+      );
+
+      // Don't manually construct profile here.
+      // Parent receives the updated user.
+
+      onClose();
+    } catch (err) {
+      console.error("PROFILE SAVE ERROR:", err);
+      if (err.data?.code === "PROFILE_INCOMPLETE" || err.message?.toLowerCase().includes("complete your profile")) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          availability: "Complete your profile before becoming available to teammates.",
+        }));
+      }
+      setError(err?.message || "Failed to update participant profile.");
+    } finally {
+      setSaving(false);
     }
-
-    // IMPORTANT:
-    // onSave must return the API response.
-    const response = await onSave(
-      formData
-    );
-
-    console.log(
-      "PROFILE SAVED:",
-      response
-    );
-
-    // Don't manually construct profile here.
-    // Parent receives the updated user.
-
-    onClose();
-  } catch (err) {
-    console.error("PROFILE SAVE ERROR:", err);
-    if (err.data?.code === "PROFILE_INCOMPLETE" || err.message?.toLowerCase().includes("complete your profile")) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        availability: "Complete your profile before becoming available to teammates.",
-      }));
-    }
-    setError(err?.message || "Failed to update participant profile.");
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-neutral-950/60 p-4 backdrop-blur-xs">
@@ -516,7 +516,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             onClick={onClose}
             className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         </div>
 
@@ -557,7 +557,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     onClick={() => fileInputRef.current?.click()}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                   >
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
                     Choose Photo
                   </button>
                   {photoPreview && (
@@ -604,9 +604,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setName(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, name: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.name ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.name ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. Rahul Sharma"
                 />
                 {fieldErrors.name && (
@@ -625,9 +624,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setRole(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, role: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.role ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.role ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. Full Stack Developer | AI Enthusiast"
                 />
                 {fieldErrors.role && (
@@ -657,18 +655,16 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                       setGenderOpen(false);
                     }
                   }}
-                  className={`mt-1 flex h-[38px] w-full items-center justify-between rounded-lg border ${
-                    fieldErrors.gender ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs shadow-2xs transition-colors hover:border-neutral-400 focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:hover:border-neutral-600`}
+                  className={`mt-1 flex h-[38px] w-full items-center justify-between rounded-lg border ${fieldErrors.gender ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs shadow-2xs transition-colors hover:border-neutral-400 focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:hover:border-neutral-600`}
                 >
                   <span className={gender ? "font-medium text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500"}>
                     {gender || "Select gender"}
                   </span>
 
                   <svg
-                    className={`h-4 w-4 text-neutral-500 transition-transform duration-200 dark:text-neutral-400 ${
-                      genderOpen ? "rotate-180" : ""
-                    }`}
+                    className={`h-4 w-4 text-neutral-500 transition-transform duration-200 dark:text-neutral-400 ${genderOpen ? "rotate-180" : ""
+                      }`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -706,11 +702,10 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                               setGenderOpen(false);
                             }
                           }}
-                          className={`flex cursor-pointer items-center justify-between px-3 py-2.5 transition-colors ${
-                            isSelected
+                          className={`flex cursor-pointer items-center justify-between px-3 py-2.5 transition-colors ${isSelected
                               ? "bg-indigo-50 font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400"
                               : "text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/80"
-                          }`}
+                            }`}
                         >
                           <span>{option}</span>
                           {isSelected && (
@@ -740,9 +735,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setDateOfBirth(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, dateOfBirth: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.dateOfBirth ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.dateOfBirth ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 />
                 {fieldErrors.dateOfBirth && (
                   <p className="mt-1 text-[11px] font-medium text-red-500">⚠ {fieldErrors.dateOfBirth}</p>
@@ -762,9 +756,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setLocation(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, location: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.location ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.location ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. Mumbai, Maharashtra, India"
                 />
                 {fieldErrors.location && (
@@ -782,9 +775,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setAvailability(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, availability: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.availability ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.availability ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 >
                   <option value="" disabled hidden>Select availability status...</option>
                   <option value="Available">● Available for Teammates</option>
@@ -813,9 +805,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                   setBio(e.target.value);
                   setFieldErrors((prev) => ({ ...prev, bio: null }));
                 }}
-                className={`mt-1 w-full rounded-lg border ${
-                  fieldErrors.bio ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                className={`mt-1 w-full rounded-lg border ${fieldErrors.bio ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 placeholder="Brief summary of your skills, background, and what you enjoy building..."
               />
               {fieldErrors.bio && (
@@ -939,9 +930,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                       setFieldErrors((prev) => ({ ...prev, graduationYear: null }));
                     }
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.graduationYear ? "border-rose-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.graduationYear ? "border-rose-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="e.g. 2026"
                 />
                 {fieldErrors.graduationYear && (
@@ -1005,9 +995,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 value={interestInput}
                 onChange={(e) => setInterestInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddInterest(e)}
-                className={`flex-1 rounded-lg border ${
-                  fieldErrors.interests ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                className={`flex-1 rounded-lg border ${fieldErrors.interests ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                 placeholder="Type an interest (e.g. AI/ML, Web3, FinTech) and press Add or Enter..."
               />
               <button
@@ -1066,9 +1055,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setGithub(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, links: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="github.com/username"
                 />
               </div>
@@ -1084,9 +1072,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setLinkedin(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, links: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="linkedin.com/in/username"
                 />
               </div>
@@ -1102,9 +1089,8 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                     setPortfolio(e.target.value);
                     setFieldErrors((prev) => ({ ...prev, links: null }));
                   }}
-                  className={`mt-1 w-full rounded-lg border ${
-                    fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
-                  } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
+                  className={`mt-1 w-full rounded-lg border ${fieldErrors.links ? "border-red-500" : "border-neutral-300 dark:border-neutral-700"
+                    } bg-white px-3 py-2 text-xs text-neutral-900 shadow-2xs focus:border-indigo-500 focus:outline-hidden dark:bg-neutral-800 dark:text-white`}
                   placeholder="yourportfolio.com"
                 />
               </div>

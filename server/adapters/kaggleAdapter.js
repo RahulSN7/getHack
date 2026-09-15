@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/adapters/kaggleAdapter.js
 // Adapter for fetching live hackathons and competitions from Kaggle
-// ---------------------------------------------------------------------------
+
 
 const PLATFORM_NAME = "kaggle";
 

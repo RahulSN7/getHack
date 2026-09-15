@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // authService.js — Centralized OTP Authentication API Service
 // Communicates with Express backend via Vite /api proxy.
-// ---------------------------------------------------------------------------
+
 
 const API_BASE = "/api/auth";
 

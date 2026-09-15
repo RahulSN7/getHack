@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // LandingPage — main discovery landing page
-// ---------------------------------------------------------------------------
+
 
 import HeroCTA from "../../components/pages/landing/HeroCTA";
 import FeaturedHackathons from "../../components/pages/landing/FeaturedHackathons";

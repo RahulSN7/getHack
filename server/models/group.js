@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/group.js — Mongoose Group Chat Model for getHack
 // Stores persistent group chat identity, membership, and Stream Chat channel ID
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep10UIPolishAndUX.js
 // Automated Test Suite for Step 10: Notification UI/UX Polish, Date Grouping, & Accessibility
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const fs = require("fs");

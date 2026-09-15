@@ -1,9 +1,9 @@
-// ---------------------------------------------------------------------------
+
 // Hackathons — discovery page with Filter popover, Search, Sort & Saved view
 //
 // Pipeline: MongoDB API → search → status filter → platform filter → format filter → saved filter → sort → grid
 // All data fetched strictly from backend MongoDB endpoints. Zero mock data.
-// ---------------------------------------------------------------------------
+
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -295,10 +295,9 @@ function Hackathons() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      !showSavedOnly
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${!showSavedOnly
+                      ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -319,10 +318,9 @@ function Hackathons() {
                     font-semibold
                     transition-all
                     duration-150
-                    ${
-                      showSavedOnly
-                        ? `${accentBgSoft} ${accentText} shadow-xs`
-                        : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    ${showSavedOnly
+                      ? `${accentBgSoft} ${accentText} shadow-xs`
+                      : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
@@ -349,10 +347,9 @@ function Hackathons() {
                       px-1
                       text-[10px]
                       font-bold
-                      ${
-                        showSavedOnly
-                          ? "bg-indigo-500 text-white"
-                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                      ${showSavedOnly
+                        ? "bg-indigo-500 text-white"
+                        : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
                       }
                     `}
                   >

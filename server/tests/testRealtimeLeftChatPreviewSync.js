@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testRealtimeLeftChatPreviewSync.js
 // Integration Test Suite for Real-Time Left Chat Preview & Sorting Sync
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 
@@ -11,9 +11,9 @@ function getChannelLatestTimestamp(channel, clearedAt) {
   const rawMessages = channel.state?.messages || [];
   const visibleMessages = clearTime
     ? rawMessages.filter((m) => {
-        const t = new Date(m.created_at || m.createdAt).getTime();
-        return !isNaN(t) && t > clearTime;
-      })
+      const t = new Date(m.created_at || m.createdAt).getTime();
+      return !isNaN(t) && t > clearTime;
+    })
     : rawMessages;
 
   if (visibleMessages.length > 0) {
@@ -40,9 +40,9 @@ function getConversationPreviewText(channel, clearedAt) {
   const rawMessages = channel.state?.messages || [];
   const visibleMessages = clearTime
     ? rawMessages.filter((m) => {
-        const t = new Date(m.created_at || m.createdAt).getTime();
-        return !isNaN(t) && t > clearTime;
-      })
+      const t = new Date(m.created_at || m.createdAt).getTime();
+      return !isNaN(t) && t > clearTime;
+    })
     : rawMessages;
 
   const lastMessage = visibleMessages.length > 0 ? visibleMessages[visibleMessages.length - 1] : null;

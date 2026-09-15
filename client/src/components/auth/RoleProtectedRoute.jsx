@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // RoleProtectedRoute.jsx — Role-Based Route Guard (Organizer Protection)
 // Verifies user.role matches required role. Redirects unauthorized users.
-// ---------------------------------------------------------------------------
+
 
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";

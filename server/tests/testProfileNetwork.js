@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testProfileNetwork.js
 // Unit Test Suite for Participant Profile System & Data Validation
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const { isProfileComplete } = require("../utils/profileValidation");
@@ -25,9 +25,9 @@ console.log("\n==============================================");
 console.log("Running getHack Profile & Connection Unit Tests");
 console.log("==============================================\n");
 
-// ---------------------------------------------------------------------------
+
 // Scenario 1: Gender & DOB Validation Rules
-// ---------------------------------------------------------------------------
+
 console.log("[Scenario 1: Gender & DOB Validation Rules]");
 
 runTest("Future date of birth is invalid", () => {
@@ -42,9 +42,9 @@ runTest("Allowed gender values are strictly validated", () => {
   assert.strictEqual(allowed.includes("InvalidGender"), false);
 });
 
-// ---------------------------------------------------------------------------
+
 // Scenario 2: View Profile & MongoDB User Data Resolution
-// ---------------------------------------------------------------------------
+
 console.log("\n[Scenario 2: View Profile & MongoDB User Data Resolution]");
 
 runTest("View Profile fetches exact target user by ID and does not return current user", () => {
@@ -82,9 +82,9 @@ runTest("Old MongoDB users with missing profile properties receive safe defaults
   assert.strictEqual(safeProfile.role, "Participant");
 });
 
-// ---------------------------------------------------------------------------
+
 // Scenario 3: Profile Completeness Validation (isProfileComplete)
-// ---------------------------------------------------------------------------
+
 console.log("\n[Scenario 3: Profile Completeness Validation]");
 
 runTest("Incomplete profile (missing interests & links) returns false", () => {

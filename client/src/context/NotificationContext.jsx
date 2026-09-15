@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // client/src/context/NotificationContext.jsx — Global Notification State & Real-time Provider
 // Manages notification state, unread counts, Socket.IO listeners, deduplication, and read actions
-// ---------------------------------------------------------------------------
+
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { io } from "socket.io-client";
@@ -23,9 +23,9 @@ export function NotificationProvider({ children }) {
   const socketRef = useRef(null);
   const inFlightPromiseRef = useRef(null);
 
-  // ---------------------------------------------------------------------------
+
   // Fetch initial unread count from API
-  // ---------------------------------------------------------------------------
+
   const fetchUnreadCount = useCallback(async () => {
     if (!isAuthenticated) {
       setUnreadCount(0);
@@ -41,9 +41,9 @@ export function NotificationProvider({ children }) {
     }
   }, [isAuthenticated]);
 
-  // ---------------------------------------------------------------------------
+
   // Fetch paginated notifications from API (with deduplication & state caching)
-  // ---------------------------------------------------------------------------
+
   const fetchNotifications = useCallback(async (options = {}) => {
     if (!isAuthenticated) return;
 
@@ -92,9 +92,9 @@ export function NotificationProvider({ children }) {
     return promise;
   }, [isAuthenticated, hasFetchedOnce]);
 
-  // ---------------------------------------------------------------------------
+
   // Initialize background data fetching immediately on authentication
-  // ---------------------------------------------------------------------------
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchUnreadCount();
@@ -106,9 +106,9 @@ export function NotificationProvider({ children }) {
     }
   }, [isAuthenticated, fetchUnreadCount, fetchNotifications]);
 
-  // ---------------------------------------------------------------------------
+
   // Socket.IO Real-Time Connection Lifecycle & Event Listener
-  // ---------------------------------------------------------------------------
+
   useEffect(() => {
     if (!isAuthenticated) {
       if (socketRef.current) {
@@ -199,9 +199,9 @@ export function NotificationProvider({ children }) {
     };
   }, [isAuthenticated, fetchUnreadCount]);
 
-  // ---------------------------------------------------------------------------
+
   // Mark single notification read
-  // ---------------------------------------------------------------------------
+
   const markNotificationAsRead = useCallback(async (notificationId) => {
     let wasUnread = false;
     setNotifications((prev) =>
@@ -225,9 +225,9 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
+
   // Mark all notifications read
-  // ---------------------------------------------------------------------------
+
   const markAllNotificationsAsRead = useCallback(async () => {
     setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
     setUnreadCount(0);
@@ -239,9 +239,9 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
+
   // Delete single notification
-  // ---------------------------------------------------------------------------
+
   const deleteNotification = useCallback(async (notificationId) => {
     if (!notificationId) return;
 
@@ -269,9 +269,9 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
+
   // Clear all notifications
-  // ---------------------------------------------------------------------------
+
   const clearAllNotifications = useCallback(async () => {
     let previousList = [];
     let previousUnreadCount = 0;
@@ -295,9 +295,9 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
-  // ---------------------------------------------------------------------------
+
   // Centralized Notification Navigation Handler
-  // ---------------------------------------------------------------------------
+
   const handleNotificationClick = useCallback(
     async (n, navigate, closeDropdown) => {
       if (!n) return;
@@ -348,9 +348,9 @@ export function NotificationProvider({ children }) {
     [markNotificationAsRead]
   );
 
-  // ---------------------------------------------------------------------------
+
   // Centralized Accept / Reject Action Handler for Notifications (Helper)
-  // ---------------------------------------------------------------------------
+
   const respondToNotificationAction = useCallback(
     async (n, action) => {
       if (!n || !n._id || !action) return;
@@ -372,12 +372,12 @@ export function NotificationProvider({ children }) {
             prev.map((item) =>
               String(item._id) === notifId
                 ? {
-                    ...item,
-                    isRead: true,
-                    actionHandled: true,
-                    actionStatus: action,
-                    message: action === "accept" ? "Team invitation accepted" : "Team invitation declined",
-                  }
+                  ...item,
+                  isRead: true,
+                  actionHandled: true,
+                  actionStatus: action,
+                  message: action === "accept" ? "Team invitation accepted" : "Team invitation declined",
+                }
                 : item
             )
           );
@@ -388,12 +388,12 @@ export function NotificationProvider({ children }) {
             prev.map((item) =>
               String(item._id) === notifId
                 ? {
-                    ...item,
-                    isRead: true,
-                    actionHandled: true,
-                    actionStatus: action,
-                    message: action === "accept" ? "Connection request accepted" : "Connection request declined",
-                  }
+                  ...item,
+                  isRead: true,
+                  actionHandled: true,
+                  actionStatus: action,
+                  message: action === "accept" ? "Connection request accepted" : "Connection request declined",
+                }
                 : item
             )
           );

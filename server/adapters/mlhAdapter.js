@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/adapters/mlhAdapter.js
 // Adapter for fetching live hackathons from Major League Hacking (MLH)
-// ---------------------------------------------------------------------------
+
 
 const PLATFORM_NAME = "mlh";
 
@@ -43,7 +43,7 @@ function parseMlhEvents(html) {
 
   // Match MLH event cards: <div class="event"> ... </div>
   const eventBlockRegex = /<div[^>]*class="[^"]*event[^"]*"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi;
-  
+
   // Extract JSON-LD if present
   const jsonLdRegex = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi;
   let jsonLdMatch;

@@ -1,6 +1,6 @@
-// ---------------------------------------------------------------------------
+
 // OrganizerProfilePage.jsx — Complete Production Organizer Profile Experience
-// ---------------------------------------------------------------------------
+
 
 import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
@@ -267,9 +267,9 @@ function OrganizerProfilePage() {
     profile?.instagram ||
     profile?.discord;
 
-  // ---------------------------------------------------------------------------
+
   // Loading Skeleton State
-  // ---------------------------------------------------------------------------
+
   if (loading) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-8 sm:px-6 lg:px-8 space-y-8 animate-pulse">
@@ -290,9 +290,9 @@ function OrganizerProfilePage() {
     );
   }
 
-  // ---------------------------------------------------------------------------
+
   // Error Fallback State
-  // ---------------------------------------------------------------------------
+
   if (error || !profile) {
     return (
       <main className="mx-auto max-w-4xl px-5 py-16 text-center sm:px-6 lg:px-8">

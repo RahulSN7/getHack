@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/controllers/chatController.js — Chat Token & User Sync Controller
 // Generates Stream Chat tokens, synchronizes users, and handles user blocking.
-// ---------------------------------------------------------------------------
+
 
 const fs = require("fs");
 const path = require("path");
@@ -15,10 +15,10 @@ const {
   upsertStreamUsers,
 } = require("../services/streamService");
 
-// ---------------------------------------------------------------------------
+
 // GET /api/chat/token
 // Get Stream Chat Token for Current User
-// ---------------------------------------------------------------------------
+
 const getStreamToken = async (req, res) => {
   try {
     if (!req.user) {
@@ -64,9 +64,9 @@ const getStreamToken = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/ensure-user
-// ---------------------------------------------------------------------------
+
 const ensureUser = async (req, res) => {
   try {
     if (!req.user) {
@@ -149,9 +149,9 @@ const ensureUser = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/chat/access/:userId — Check Chat Authorization & Block Status
-// ---------------------------------------------------------------------------
+
 const checkChatAccess = async (req, res) => {
   try {
     if (!req.user) {
@@ -218,9 +218,9 @@ const checkChatAccess = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/block/:userId — Block User Server-Side
-// ---------------------------------------------------------------------------
+
 const blockUser = async (req, res) => {
   try {
     if (!req.user) {
@@ -251,9 +251,9 @@ const blockUser = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/unblock/:userId — Unblock User Server-Side
-// ---------------------------------------------------------------------------
+
 const unblockUser = async (req, res) => {
   try {
     if (!req.user) {
@@ -284,9 +284,9 @@ const unblockUser = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/chat/block-status/:userId — Get Block Status for Target User
-// ---------------------------------------------------------------------------
+
 const getBlockStatus = async (req, res) => {
   try {
     if (!req.user) {
@@ -328,9 +328,9 @@ const getBlockStatus = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/chat/states — Get all chat states (favourites & closed) for current user
-// ---------------------------------------------------------------------------
+
 const getChatStates = async (req, res) => {
   try {
     if (!req.user) {
@@ -364,9 +364,9 @@ const getChatStates = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/favourite — Toggle or set favourite status for a channel
-// ---------------------------------------------------------------------------
+
 const toggleFavourite = async (req, res) => {
   try {
     if (!req.user) {
@@ -410,9 +410,9 @@ const toggleFavourite = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/close — Close (hide) a conversation for current user
-// ---------------------------------------------------------------------------
+
 const closeChat = async (req, res) => {
   try {
     if (!req.user) {
@@ -456,9 +456,9 @@ const closeChat = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/reopen — Reopen (un-hide) a closed conversation for current user
-// ---------------------------------------------------------------------------
+
 const reopenChat = async (req, res) => {
   try {
     if (!req.user) {
@@ -501,9 +501,9 @@ const reopenChat = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/upload — Server Fallback File Upload Endpoint for Chat
-// ---------------------------------------------------------------------------
+
 const uploadChatFile = async (req, res) => {
   try {
     if (!req.user) {
@@ -533,9 +533,9 @@ const uploadChatFile = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/clear — Clear chat history for the authenticated user ONLY
-// ---------------------------------------------------------------------------
+
 const clearChat = async (req, res) => {
   try {
     if (!req.user) {
@@ -576,9 +576,9 @@ const clearChat = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/groups — Create persistent group in MongoDB and Stream Chat
-// ---------------------------------------------------------------------------
+
 const Group = require("../models/group");
 
 const createGroup = async (req, res) => {
@@ -665,9 +665,9 @@ const createGroup = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/chat/groups — Fetch persistent groups for authenticated user
-// ---------------------------------------------------------------------------
+
 const getUserGroups = async (req, res) => {
   try {
     if (!req.user) {
@@ -697,9 +697,9 @@ const getUserGroups = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/chat/groups/removed — Fetch groups from which user was removed
-// ---------------------------------------------------------------------------
+
 const getUserRemovedGroups = async (req, res) => {
   try {
     if (!req.user) {
@@ -748,9 +748,9 @@ const getGroupQuery = (groupId) => {
   };
 };
 
-// ---------------------------------------------------------------------------
+
 // GET /api/chat/groups/:groupId — Fetch single group details by ID or channel ID
-// ---------------------------------------------------------------------------
+
 const getGroupById = async (req, res) => {
   try {
     if (!req.user) {
@@ -813,9 +813,9 @@ const getGroupById = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PATCH /api/chat/groups/:groupId/description — Update group description
-// ---------------------------------------------------------------------------
+
 const updateGroupDescription = async (req, res) => {
   try {
     if (!req.user) {
@@ -863,9 +863,9 @@ const updateGroupDescription = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // POST /api/chat/groups/:groupId/members — Add new members to a group
-// ---------------------------------------------------------------------------
+
 const addGroupMembers = async (req, res) => {
   try {
     if (!req.user) {
@@ -989,9 +989,9 @@ const addGroupMembers = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PATCH /api/chat/groups/:groupId/name — Admin-only group name update
-// ---------------------------------------------------------------------------
+
 const updateGroupName = async (req, res) => {
   try {
     if (!req.user) {
@@ -1066,9 +1066,9 @@ const updateGroupName = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // PATCH /api/chat/groups/:groupId/avatar — Admin-only group avatar update
-// ---------------------------------------------------------------------------
+
 const updateGroupAvatar = async (req, res) => {
   try {
     if (!req.user) {
@@ -1151,9 +1151,9 @@ const updateGroupAvatar = async (req, res) => {
   }
 };
 
-// ---------------------------------------------------------------------------
+
 // DELETE /api/chat/groups/:groupId/members/:memberId — Admin-only member removal
-// ---------------------------------------------------------------------------
+
 const removeGroupMember = async (req, res) => {
   try {
     if (!req.user) {

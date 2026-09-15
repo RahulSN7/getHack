@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testStep2FrontendIntegration.js
 // Unit & Integration Test for Notification UI Service & Real Data Binding
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 const mongoose = require("mongoose");

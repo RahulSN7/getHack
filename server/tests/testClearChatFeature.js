@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testClearChatFeature.js
 // Integration Test Suite for Persistent Real-Time Clear Chat Feature
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

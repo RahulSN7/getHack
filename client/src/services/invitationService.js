@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // client/src/services/invitationService.js
 // API Service for sending and responding to Team Invitations via Stream Chat
-// ---------------------------------------------------------------------------
+
 
 const API_BASE = "/api/invitations";
 

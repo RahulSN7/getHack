@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testPhase4TeammateDiscovery.js
 // Integration test suite for Phase 4: Intelligent Teammate Discovery
-// ---------------------------------------------------------------------------
+
 
 const dns = require("dns");
 try {

@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/adapters/devpostAdapter.js
 // Adapter for fetching live hackathons from Devpost API
-// ---------------------------------------------------------------------------
+
 
 const PLATFORM_NAME = "devpost";
 
@@ -11,7 +11,7 @@ const PLATFORM_NAME = "devpost";
  */
 async function fetchHackathons() {
   const url = "https://devpost.com/api/hackathons?challenge_type[]=online&challenge_type[]=in_person&sort_by=Recently+Added";
-  
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -29,7 +29,7 @@ async function fetchHackathons() {
 
     return items.map((item) => {
       const isOnline = item.displayed_location?.location?.toLowerCase().includes("online") || item.open_state === "online";
-      
+
       // Parse prize amount and clean HTML tags if present
       let prizeAmount = 0;
       let prizeDescription = "";

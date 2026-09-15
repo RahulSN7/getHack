@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/otp.js — Mongoose OTP Schema for Email Verification
 // Stores hashed 6-digit OTPs with automatic TTL expiration & attempt tracking.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 

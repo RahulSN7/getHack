@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/tests/testLeftChatPreviewEditSync.js
 // Integration Test Suite for Left Chat Preview Edit Synchronization & Precision
-// ---------------------------------------------------------------------------
+
 
 const assert = require("node:assert");
 

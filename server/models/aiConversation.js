@@ -1,7 +1,7 @@
-// ---------------------------------------------------------------------------
+
 // server/models/aiConversation.js — Mongoose Model for AI Chat & State
 // Stores persistent conversation history, context, and agent execution state.
-// ---------------------------------------------------------------------------
+
 
 const mongoose = require("mongoose");
 
