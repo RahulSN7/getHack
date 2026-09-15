@@ -115,8 +115,9 @@ function applyPlatformFilter(hackathons, platformId) {
 
 // Saved Filter
 function applySavedFilter(hackathons, showSavedOnly, isSaved) {
-  if (!showSavedOnly) return hackathons;
-  return hackathons.filter((h) => isSaved(h.id));
+  if (!showSavedOnly || !Array.isArray(hackathons)) return hackathons;
+  const validIdSet = new Set(hackathons.map((h) => String(h.id)));
+  return hackathons.filter((h) => h && h.id && isSaved(h.id) && validIdSet.has(String(h.id)));
 }
 
 // Sort
@@ -143,6 +144,7 @@ function Hackathons() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isSaved, reconcileSaved } = useSaved();
 
   const isParticipant = isAuthenticated && user?.role?.toLowerCase() === "participant";
   const showCreateHackathonButton = !isParticipant;
@@ -174,8 +176,13 @@ function Hackathons() {
     setError(null);
     try {
       const data = await hackathonService.getPublicHackathons({ limit: 200 });
-      const items = data.data || data.hackathons || [];
-      setAllHackathons(items.map(normalizeHackathon));
+      const items = Array.isArray(data?.data) ? data.data : Array.isArray(data?.hackathons) ? data.hackathons : [];
+      const normalized = items.map(normalizeHackathon);
+      setAllHackathons(normalized);
+      // Clean up stale saved IDs that no longer exist in the platform
+      if (normalized.length > 0) {
+        reconcileSaved(normalized.map((h) => h.id));
+      }
     } catch (err) {
       console.error("Failed to fetch hackathons from MongoDB:", err);
       setError(err.message || "We couldn't retrieve hackathons right now. Please try again.");
@@ -183,7 +190,7 @@ function Hackathons() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [reconcileSaved]);
 
   useEffect(() => {
     loadPublicHackathons();
@@ -194,7 +201,11 @@ function Hackathons() {
     setVisibleCount(15);
   }, [searchQuery, statusFilter, platformFilter, showSavedOnly, sortBy]);
 
-  const { isSaved, savedCount } = useSaved();
+  const validSavedCount = useMemo(() => {
+    if (loading || !Array.isArray(allHackathons) || !allHackathons.length) return 0;
+    const validIdSet = new Set(allHackathons.map((h) => String(h.id)));
+    return allHackathons.filter((h) => h && h.id && isSaved(h.id) && validIdSet.has(String(h.id))).length;
+  }, [loading, allHackathons, isSaved]);
 
   const hasFilters =
     searchQuery.trim() !== "" ||
@@ -306,7 +317,7 @@ function Hackathons() {
                 <button
                   type="button"
                   onClick={() => setShowSavedOnly(true)}
-                  aria-label={`View saved hackathons (${savedCount})`}
+                  aria-label={`View saved hackathons (${validSavedCount})`}
                   className={`
                     inline-flex
                     items-center
@@ -353,7 +364,7 @@ function Hackathons() {
                       }
                     `}
                   >
-                    {savedCount}
+                    {validSavedCount}
                   </span>
                 </button>
               </div>

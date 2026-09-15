@@ -7,9 +7,9 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-neutral-950">
         <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">

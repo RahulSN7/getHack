@@ -209,18 +209,19 @@ function HackathonCard({ hackathon }) {
 
             {/* Name & Organizer */}
             <div className="min-w-0 flex-1">
-              <h3 className="break-words text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
+              <h3 className="truncate text-[15px] font-semibold leading-snug text-neutral-900 dark:text-white">
                 <Link
                   to={id ? `/hackathons/${id}` : "#"}
                   onClick={handleViewDetails}
                   state={{ from: currentLocation }}
-                  className="hover:text-[#2563EB] dark:hover:text-blue-400"
+                  title={name}
+                  className="block truncate hover:text-[#2563EB] dark:hover:text-blue-400"
                 >
                   {name}
                 </Link>
               </h3>
               {organizer && (
-                <p className="mt-0.5 break-words text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
                   {organizer}
                 </p>
               )}

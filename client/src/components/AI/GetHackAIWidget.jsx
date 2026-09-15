@@ -30,6 +30,7 @@ export default function GetHackAIWidget() {
   const messagesEndRef = useRef(null);
   const buttonRef = useRef(null);
   const cardRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const dragStartRef = useRef({
     startX: 0,
     startY: 0,
@@ -216,7 +217,7 @@ export default function GetHackAIWidget() {
         if (element.hasPointerCapture(activePointerId)) {
           element.releasePointerCapture(activePointerId);
         }
-      } catch (err) {}
+      } catch (err) { }
     }
 
     dragStartRef.current.pointerId = null;
@@ -229,7 +230,7 @@ export default function GetHackAIWidget() {
           if (latest) {
             try {
               localStorage.setItem(STORAGE_KEY, JSON.stringify(latest));
-            } catch (err) {}
+            } catch (err) { }
           }
           return latest;
         });
@@ -247,7 +248,7 @@ export default function GetHackAIWidget() {
     if (target && typeof target.setPointerCapture === "function") {
       try {
         target.setPointerCapture(e.pointerId);
-      } catch (err) {}
+      } catch (err) { }
     }
     startDrag(e.clientX, e.clientY, e.pointerId, target);
   };
@@ -425,7 +426,6 @@ export default function GetHackAIWidget() {
       top: `${clamped.y}px`,
       right: "auto",
       bottom: "auto",
-      touchAction: "none",
     };
   };
 
@@ -450,17 +450,16 @@ export default function GetHackAIWidget() {
           style={{
             ...(buttonPosition
               ? {
-                  left: `${buttonPosition.x}px`,
-                  top: `${buttonPosition.y}px`,
-                  bottom: "auto",
-                  right: "auto",
-                }
+                left: `${buttonPosition.x}px`,
+                top: `${buttonPosition.y}px`,
+                bottom: "auto",
+                right: "auto",
+              }
               : {}),
             touchAction: "none",
           }}
-          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-lg hover:shadow-xl border border-neutral-200/90 dark:border-indigo-500/35 transition-shadow transition-transform duration-300 group touch-none select-none ${
-            isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
-          }`}
+          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-lg hover:shadow-xl border border-neutral-200/90 dark:border-indigo-500/35 transition-shadow transition-transform duration-300 group touch-none select-none ${isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
+            }`}
         >
           <div className="relative flex items-center justify-center pointer-events-none">
             <Logo iconOnly className="w-5 h-5 object-contain pointer-events-none" alt="getHack AI" />
@@ -477,10 +476,18 @@ export default function GetHackAIWidget() {
       {isOpen && (
         <div
           ref={cardRef}
-          style={getDrawerStyle()}
-          className={`fixed z-50 flex flex-col w-[380px] sm:w-[420px] max-w-[95vw] h-[580px] max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden transition-shadow duration-300 font-sans ${
-            isDragging ? "ring-2 ring-indigo-500/40" : ""
-          }`}
+          style={{
+            ...getDrawerStyle(),
+            overscrollBehavior: "contain",
+          }}
+          onWheel={(e) => {
+            e.stopPropagation();
+            if (messagesContainerRef.current && !messagesContainerRef.current.contains(e.target)) {
+              messagesContainerRef.current.scrollTop += e.deltaY;
+            }
+          }}
+          className={`fixed z-50 flex flex-col w-[380px] sm:w-[420px] max-w-[95vw] h-[580px] max-h-[85vh] bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden transition-shadow duration-300 font-sans overscroll-contain ${isDragging ? "ring-2 ring-indigo-500/40" : ""
+            }`}
         >
           {/* Header */}
           <div
@@ -489,9 +496,8 @@ export default function GetHackAIWidget() {
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
             style={{ touchAction: "none" }}
-            className={`flex items-center justify-between px-5 py-4 bg-slate-900 text-white border-b border-neutral-800 select-none touch-none ${
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
+            className={`flex items-center justify-between px-5 py-4 bg-slate-900 text-white border-b border-neutral-800 select-none touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab"
+              }`}
           >
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center pointer-events-none">
@@ -504,7 +510,7 @@ export default function GetHackAIWidget() {
                     Assistant
                   </span>
                 </h3>
-               
+
               </div>
             </div>
             <button
@@ -527,9 +533,8 @@ export default function GetHackAIWidget() {
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
             style={{ touchAction: "none" }}
-            className={`bg-slate-950/50 dark:bg-neutral-950 px-4 py-2 text-[11px] text-neutral-400 border-b border-neutral-200/20 flex items-center justify-between select-none touch-none ${
-              isDragging ? "cursor-grabbing" : "cursor-grab"
-            }`}
+            className={`bg-slate-950/50 dark:bg-neutral-950 px-4 py-2 text-[11px] text-neutral-400 border-b border-neutral-200/20 flex items-center justify-between select-none touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab"
+              }`}
           >
             <span className="flex items-center gap-1.5 font-medium text-neutral-300">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
@@ -539,7 +544,19 @@ export default function GetHackAIWidget() {
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-neutral-900/50">
+          <div
+            ref={messagesContainerRef}
+            style={{
+              overscrollBehavior: "contain",
+              overscrollBehaviorY: "contain",
+              WebkitOverflowScrolling: "touch",
+            }}
+            onWheel={(e) => {
+              e.stopPropagation();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex-1 overflow-y-auto overscroll-contain overscroll-y-contain touch-pan-y p-4 space-y-4 bg-slate-50/50 dark:bg-neutral-900/50"
+          >
             {messages.map((msg) => {
               const hasRecs = msg.recommendations?.teammates?.length > 0 || msg.recommendations?.hackathons?.length > 0;
 
@@ -549,15 +566,13 @@ export default function GetHackAIWidget() {
                   className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`${
-                      hasRecs ? "w-full max-w-[95%] sm:max-w-[92%]" : "max-w-[85%]"
-                    } rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-xs ${
-                      msg.role === "user"
+                    className={`${hasRecs ? "w-full max-w-[95%] sm:max-w-[92%]" : "max-w-[85%]"
+                      } rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-xs ${msg.role === "user"
                         ? "bg-indigo-600 text-white rounded-br-none"
                         : msg.isError
-                        ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-bl-none"
-                        : "bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/80 rounded-bl-none"
-                    }`}
+                          ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-bl-none"
+                          : "bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 border border-neutral-200/80 dark:border-neutral-700/80 rounded-bl-none"
+                      }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.content}</p>
 
@@ -695,38 +710,38 @@ export default function GetHackAIWidget() {
                       </div>
                     )}
 
-                  {/* Render Confirmation Box for Pending Actions */}
-                  {msg.pendingAction && msg.pendingAction.type === "send_connection_request" && (
-                    <div className="mt-3 p-3 rounded-2xl bg-purple-50/90 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 space-y-2 text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="text-purple-600 text-sm">✉️</span>
-                        <p className="font-bold text-xs text-purple-950 dark:text-purple-200">
-                          Send connection request to {msg.pendingAction.targetName || "candidate"}?
-                        </p>
+                    {/* Render Confirmation Box for Pending Actions */}
+                    {msg.pendingAction && msg.pendingAction.type === "send_connection_request" && (
+                      <div className="mt-3 p-3 rounded-2xl bg-purple-50/90 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 space-y-2 text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="text-purple-600 text-sm">✉️</span>
+                          <p className="font-bold text-xs text-purple-950 dark:text-purple-200">
+                            Send connection request to {msg.pendingAction.targetName || "candidate"}?
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => handleSend("Send Request")}
+                            disabled={loading}
+                            className="flex-1 py-1.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                          >
+                            Send Request
+                          </button>
+                          <button
+                            onClick={() => handleSend("Cancel")}
+                            disabled={loading}
+                            className="flex-1 py-1.5 px-3 rounded-xl bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 text-[11px] font-bold transition-all disabled:opacity-50 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          onClick={() => handleSend("Send Request")}
-                          disabled={loading}
-                          className="flex-1 py-1.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
-                        >
-                          Send Request
-                        </button>
-                        <button
-                          onClick={() => handleSend("Cancel")}
-                          disabled={loading}
-                          className="flex-1 py-1.5 px-3 rounded-xl bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 text-[11px] font-bold transition-all disabled:opacity-50 cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  <span className="text-[10px] text-neutral-400 mt-1 px-1">
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
                 </div>
-                <span className="text-[10px] text-neutral-400 mt-1 px-1">
-                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
               );
             })}
 

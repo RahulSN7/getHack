@@ -68,6 +68,10 @@ function HackathonDetailsPage() {
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       navigate(`/login?redirect=/hackathons/${id}`, { replace: true });
     }

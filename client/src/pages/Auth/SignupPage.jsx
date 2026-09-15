@@ -170,7 +170,12 @@ function SignupPage() {
       });
       setIsLoading(false);
 
-      navigate("/");
+      const userRole = String(newUser?.role || "").toLowerCase().trim();
+      if (userRole === "organizer") {
+        navigate("/organizer", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err) {
       setIsLoading(false);
       setGeneralError(err.message || "Incorrect verification code. Please try again.");

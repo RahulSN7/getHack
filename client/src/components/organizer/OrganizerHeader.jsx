@@ -303,18 +303,25 @@ function OrganizerHeader() {
                     cursor-pointer
                   "
                   >
-                    <span className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
+                    <span className="relative grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
                       {user?.profile?.avatar || user?.avatar ? (
                         <img
                           src={user.profile?.avatar || user.avatar}
                           alt={user?.name || "Organizer"}
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            const fallback = e.currentTarget.nextElementSibling;
+                            if (fallback) fallback.style.display = "flex";
+                          }}
                           className="h-full w-full object-cover"
                         />
-                      ) : user?.name ? (
-                        user.name.charAt(0).toUpperCase()
-                      ) : (
-                        "O"
-                      )}
+                      ) : null}
+                      <span
+                        style={{ display: user?.profile?.avatar || user?.avatar ? "none" : "flex" }}
+                        className="h-full w-full items-center justify-center"
+                      >
+                        {user?.name ? user.name.charAt(0).toUpperCase() : "O"}
+                      </span>
                     </span>
                   </button>
 

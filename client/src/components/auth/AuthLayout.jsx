@@ -3,10 +3,22 @@
 // Renders page-level "Back to landing page" navigation link & brand logo.
 
 
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, Navigate } from "react-router-dom";
 import Logo from "../common/Logo";
+import { useAuth } from "../../context/useAuth";
 
 function AuthLayout() {
+  const { user, isAuthenticated, loading } = useAuth();
+
+  // If already authenticated, redirect immediately to role-specific experience
+  if (!loading && isAuthenticated && user) {
+    const isOrganizer = user?.role && String(user.role).toLowerCase().trim() === "organizer";
+    if (isOrganizer) {
+      return <Navigate to="/organizer" replace />;
+    }
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
       {/* ── Top Header Navigation Bar ── */}

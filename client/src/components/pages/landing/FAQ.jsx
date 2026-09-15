@@ -82,11 +82,10 @@ function FAQ() {
                 >
                   <span className="text-base sm:text-lg">{item.question}</span>
                   <span
-                    className={`ml-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-base font-bold transition-transform duration-200 ${
-                      isOpen
+                    className={`ml-4 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-base font-bold transition-transform duration-200 ${isOpen
                         ? "border-neutral-300 bg-neutral-100 text-neutral-950 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                         : "border-neutral-200 bg-transparent text-neutral-500 dark:border-neutral-800 dark:text-neutral-400"
-                    }`}
+                      }`}
                   >
                     {isOpen ? "−" : "+"}
                   </span>

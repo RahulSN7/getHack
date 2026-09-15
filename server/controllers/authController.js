@@ -450,6 +450,7 @@ const googleAuth = async (req, res) => {
       }
       if (picture && (!user.profile || !user.profile.avatar)) {
         user.profile = { ...(user.profile || {}), avatar: picture };
+        user.markModified("profile");
         modified = true;
       }
       if (modified) {
@@ -564,6 +565,7 @@ const googleCallback = async (req, res) => {
       }
       if (picture && (!user.profile || !user.profile.avatar)) {
         user.profile = { ...(user.profile || {}), avatar: picture };
+        user.markModified("profile");
         modified = true;
       }
       if (modified) await user.save();

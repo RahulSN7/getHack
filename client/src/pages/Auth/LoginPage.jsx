@@ -154,11 +154,13 @@ function LoginPage() {
       const loggedUser = await verifyOtp({ email: email.trim(), otp: cleanOtp });
       setIsLoading(false);
 
-      // Redirect based on account role or redirect query parameter
-      const searchParams = new URLSearchParams(window.location.search);
-      const redirectUrl = searchParams.get("redirect");
-
-      navigate("/");
+      // Redirect based on account role
+      const userRole = String(loggedUser?.role || "").toLowerCase().trim();
+      if (userRole === "organizer") {
+        navigate("/organizer", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err) {
       setIsLoading(false);
       setGeneralError(err.message || "Incorrect verification code. Please try again.");

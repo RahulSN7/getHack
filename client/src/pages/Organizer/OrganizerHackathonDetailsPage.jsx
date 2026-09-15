@@ -53,6 +53,10 @@ function OrganizerHackathonDetailsPage() {
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  useEffect(() => {
     let isMounted = true;
     setImgError(false);
     async function loadOrganizerHackathon() {
