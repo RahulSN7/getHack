@@ -148,7 +148,7 @@ function OrganizerHeader() {
             transition-all
             duration-300
             ease-out
-            overflow-hidden
+            overflow-visible
             ${
               scrolled && !mobileMenuOpen
                 ? `
@@ -329,7 +329,7 @@ function OrganizerHeader() {
                     className="
                       absolute
                       right-0
-                      top-[calc(100%+8px)]
+                      top-[calc(100%+12px)]
                       w-44
                       overflow-hidden
                       rounded-xl
@@ -337,11 +337,11 @@ function OrganizerHeader() {
                       border-neutral-200
                       bg-white
                       py-1
-                      shadow-lg
+                      shadow-xl
                       shadow-neutral-950/10
                       dark:border-neutral-800
                       dark:bg-neutral-900
-                      dark:shadow-neutral-950/40
+                      dark:shadow-neutral-950/50
                       z-50
                     "
                   >

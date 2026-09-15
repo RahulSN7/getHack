@@ -439,7 +439,7 @@ function Header() {
             transition-all
             duration-300
             ease-out
-            overflow-hidden
+            overflow-visible
             ${
               scrolled && !mobileMenuOpen
                 ? `
@@ -657,35 +657,38 @@ function Header() {
 
               {notificationOpen && (
                 <div
-                  className="
+                  className={`
                     fixed
-                    top-14
-                    left-3
-                    right-3
+                    ${scrolled ? "top-[74px]" : "top-16"}
+                    left-3.5
+                    right-3.5
                     z-50
-                    max-h-[calc(100vh-80px)]
+                    max-h-[calc(100vh-90px)]
                     flex
                     flex-col
 
                     overflow-hidden
                     rounded-xl
 
+                    border
+                    border-neutral-200/90
                     bg-white
 
-                    shadow-lg
-                    shadow-neutral-950/8
+                    shadow-xl
+                    shadow-neutral-950/10
 
+                    dark:border-neutral-800
                     dark:bg-neutral-900
-                    dark:shadow-neutral-950/40
+                    dark:shadow-neutral-950/50
 
                     sm:absolute
-                    sm:top-[calc(100%+8px)]
+                    sm:top-[calc(100%+12px)]
                     sm:left-auto
                     sm:right-0
-                    sm:w-80
-                    sm:max-w-sm
-                    sm:max-h-[480px]
-                  "
+                    sm:w-[300px]
+                    sm:max-w-[300px]
+                    sm:max-h-[410px]
+                  `}
                 >
                   {/* Header */}
 
@@ -694,8 +697,8 @@ function Header() {
                       flex
                       items-center
                       justify-between
-                      px-4
-                      py-3
+                      px-3.5
+                      py-2.5
                       border-b
                       border-neutral-100
                       dark:border-neutral-800/80
@@ -791,7 +794,21 @@ function Header() {
 
                     {/* Notification Items Container */}
 
-                    <div className="flex-1 overflow-y-auto max-h-[380px] sm:max-h-[420px] divide-y divide-neutral-100 dark:divide-neutral-800/60">
+                    <div
+                      onWheel={(e) => {
+                        const el = e.currentTarget;
+                        if (!el) return;
+                        const { scrollTop, scrollHeight, clientHeight } = el;
+                        const delta = e.deltaY;
+                        const isUp = delta < 0;
+                        const isDown = delta > 0;
+                        if ((isUp && scrollTop <= 0) || (isDown && scrollTop + clientHeight >= scrollHeight - 0.5)) {
+                          e.stopPropagation();
+                        }
+                      }}
+                      style={{ overscrollBehavior: "contain" }}
+                      className="flex-1 overflow-y-auto overscroll-contain max-h-[330px] sm:max-h-[350px] divide-y divide-neutral-100 dark:divide-neutral-800/60"
+                    >
                       {/* 7. SKELETON LOADING STATE */}
                       {loadingNotifs && (
                         <div className="p-4 space-y-3">
@@ -1116,7 +1133,7 @@ function Header() {
                     className="
                       absolute
                       right-0
-                      top-[calc(100%+8px)]
+                      top-[calc(100%+12px)]
                       w-44
                       overflow-hidden
                       rounded-xl
@@ -1124,11 +1141,11 @@ function Header() {
                       border-neutral-200
                       bg-white
                       py-1
-                      shadow-lg
+                      shadow-xl
                       shadow-neutral-950/10
                       dark:border-neutral-800
                       dark:bg-neutral-900
-                      dark:shadow-neutral-950/40
+                      dark:shadow-neutral-950/50
                       z-50
                     "
                   >
