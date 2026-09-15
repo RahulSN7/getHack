@@ -1,0 +1,10 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "TC04 - Hackathons page loads",
+  "description": "Verify the Hackathons discovery page loads and displays hackathon event cards from the backend API.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /hackathons" },
+    { "type": "assertion", "description": "Verify the hackathon list loads and renders hackathon cards with title and event dates" }
+  ]
+}

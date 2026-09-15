@@ -1,0 +1,10 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "TC02 - Login page loads",
+  "description": "Verify the Login page opens cleanly with Email and Password input fields.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /login" },
+    { "type": "assertion", "description": "Verify the login form renders with Email, Password input fields, and Sign In button" }
+  ]
+}

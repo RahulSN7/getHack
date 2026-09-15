@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!api|uploads|socket.io).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "Smoke Test — Login and Signup Pages",
+  "description": "Verify user authentication pages (Login and Signup) open cleanly with interactive form inputs.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /login" },
+    { "type": "assertion", "description": "Verify the login page renders with Email, Password input fields, and Sign In button" },
+    { "type": "action", "description": "Navigate to /signup" },
+    { "type": "assertion", "description": "Verify the signup page renders with Full Name, Email, Password, and Role selection fields" }
+  ]
+}

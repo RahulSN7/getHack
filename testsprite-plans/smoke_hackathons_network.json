@@ -1,0 +1,12 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "Smoke Test — Hackathons and Network Discovery Pages",
+  "description": "Verify Hackathons discovery page and Network/Teammates page load with data from the API.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /hackathons" },
+    { "type": "assertion", "description": "Verify hackathon list page loads and displays hackathon cards with title, dates, and images" },
+    { "type": "action", "description": "Navigate to /teammates" },
+    { "type": "assertion", "description": "Verify Network/Teammates page loads and displays developer profiles" }
+  ]
+}

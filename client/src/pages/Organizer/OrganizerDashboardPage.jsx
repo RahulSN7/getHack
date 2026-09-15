@@ -13,16 +13,21 @@ import { getHackathonRegistrationStatus, getHackathonImage } from "../../utils/h
 // Helper to format date string
 function formatDate(dateStr) {
   if (!dateStr) return "N/A";
+  if (typeof dateStr === "object" && !(dateStr instanceof Date)) {
+    const actualDate = dateStr.startDate || dateStr.deadline || dateStr.eventStartDate;
+    if (!actualDate) return "N/A";
+    dateStr = actualDate;
+  }
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
+    if (isNaN(d.getTime())) return typeof dateStr === "string" ? dateStr : "N/A";
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     }).format(d);
   } catch {
-    return dateStr;
+    return typeof dateStr === "string" ? dateStr : "N/A";
   }
 }
 
@@ -77,7 +82,12 @@ function OrganizerDashboardPage() {
         setLoading(true);
         const data = await hackathonService.getMyHackathons();
         if (isMounted) {
-          setHackathons(data?.hackathons || []);
+          const list = Array.isArray(data?.hackathons)
+            ? data.hackathons
+            : Array.isArray(data?.data)
+            ? data.data
+            : [];
+          setHackathons(list);
         }
       } catch (err) {
         if (isMounted) {

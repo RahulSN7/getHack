@@ -3,7 +3,7 @@ function HeroCTA() {
     <div
       className="
         mt-6
-        sm:mt-10
+        sm:mt-8
         flex
         flex-col
         gap-3

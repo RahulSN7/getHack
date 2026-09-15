@@ -175,6 +175,7 @@ const router = createBrowserRouter([
         <OrganizerLayout />
       </RoleProtectedRoute>
     ),
+    errorElement: <AppErrorBoundary />,
     children: [
       {
         index: true,

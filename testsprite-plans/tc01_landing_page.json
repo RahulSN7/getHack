@@ -1,0 +1,10 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "TC01 - Landing page loads",
+  "description": "Verify the getHack landing page loads successfully with hero title, search bar, navigation header, and featured hackathons.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /" },
+    { "type": "assertion", "description": "Verify the main hero section 'Find your next hackathon' and navigation header are visible" }
+  ]
+}

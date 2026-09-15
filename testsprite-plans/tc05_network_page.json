@@ -1,0 +1,10 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "TC05 - Network page loads",
+  "description": "Verify the Network / Teammates discovery page loads developer profiles from the backend API.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /teammates" },
+    { "type": "assertion", "description": "Verify the Teammates page loads and renders developer profile cards" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "Smoke Test — Landing Page and Navigation Header",
+  "description": "Verify landing page loads with main hero section, search bar, featured hackathons, and navigation header containing links to Hackathons, Teammates, and Auth buttons.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /" },
+    { "type": "assertion", "description": "Verify the landing page header is visible with getHack logo and navigation links" },
+    { "type": "assertion", "description": "Verify the hero title 'Find your next hackathon' and call-to-action buttons render without errors" },
+    { "type": "action", "description": "Click on 'Hackathons' in the main navigation header" },
+    { "type": "assertion", "description": "Verify the browser navigates to /hackathons and displays hackathon discovery cards" }
+  ]
+}

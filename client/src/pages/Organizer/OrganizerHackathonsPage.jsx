@@ -12,16 +12,21 @@ import BackButton from "../../components/common/BackButton";
 
 function formatDate(dateStr) {
   if (!dateStr) return "N/A";
+  if (typeof dateStr === "object" && !(dateStr instanceof Date)) {
+    const actualDate = dateStr.startDate || dateStr.deadline || dateStr.eventStartDate;
+    if (!actualDate) return "N/A";
+    dateStr = actualDate;
+  }
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
+    if (isNaN(d.getTime())) return typeof dateStr === "string" ? dateStr : "N/A";
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     }).format(d);
   } catch {
-    return dateStr;
+    return typeof dateStr === "string" ? dateStr : "N/A";
   }
 }
 
@@ -76,7 +81,12 @@ function OrganizerHackathonsPage() {
         setLoading(true);
         const data = await hackathonService.getMyHackathons();
         if (isMounted) {
-          setHackathons(data?.hackathons || []);
+          const list = Array.isArray(data?.hackathons)
+            ? data.hackathons
+            : Array.isArray(data?.data)
+            ? data.data
+            : [];
+          setHackathons(list);
         }
       } catch (err) {
         if (isMounted) {
@@ -240,10 +250,11 @@ function OrganizerHackathonsPage() {
             const statusLabel = getStatus(h);
             const badge = getStatusBadge(statusLabel);
             const photoUrl = getHackathonImage(h);
+            const hackathonId = h.id || h._id || "";
 
             return (
               <div
-                key={h.id}
+                key={hackathonId || Math.random()}
                 className="
                   flex
                   flex-col
@@ -273,7 +284,7 @@ function OrganizerHackathonsPage() {
                     />
                   ) : (
                     <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 font-bold text-lg dark:bg-neutral-800 dark:border-neutral-700 dark:text-indigo-400">
-                      {(h.title || h.name || "H").charAt(0).toUpperCase()}
+                      {String(h.title || h.name || "H").charAt(0).toUpperCase()}
                     </div>
                   )}
 
@@ -281,7 +292,7 @@ function OrganizerHackathonsPage() {
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h3 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
                         <Link
-                          to={`/organizer/hackathons/${h.id}`}
+                          to={`/organizer/hackathons/${hackathonId}`}
                           state={{ from: currentLocation }}
                           className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
                         >
@@ -312,15 +323,15 @@ function OrganizerHackathonsPage() {
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400 pt-1">
                       <span>
                         <strong className="font-semibold text-neutral-700 dark:text-neutral-300">Reg. Deadline:</strong>{" "}
-                        {formatDate(h.registrationDeadline)}
+                        {formatDate(h.registrationDeadline || h.registration?.deadline)}
                       </span>
                       <span>
                         <strong className="font-semibold text-neutral-700 dark:text-neutral-300">Start:</strong>{" "}
-                        {formatDate(h.startDate || h.hackathonDate)}
+                        {formatDate(h.startDate || h.hackathonDate || h.event?.startDate)}
                       </span>
                       <span>
                         <strong className="font-semibold text-neutral-700 dark:text-neutral-300">End:</strong>{" "}
-                        {formatDate(h.endDate || h.eventEndDate)}
+                        {formatDate(h.endDate || h.eventEndDate || h.event?.endDate)}
                       </span>
                     </div>
                   </div>
@@ -329,7 +340,7 @@ function OrganizerHackathonsPage() {
                 {/* ── Actions: View | Edit | Delete ── */}
                 <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t border-neutral-100 md:border-t-0 dark:border-neutral-800">
                   <Link
-                    to={`/organizer/hackathons/${h.id}`}
+                    to={`/organizer/hackathons/${hackathonId}`}
                     className="
                       inline-flex
                       items-center
@@ -358,7 +369,7 @@ function OrganizerHackathonsPage() {
                   </Link>
 
                   <Link
-                    to={`/organizer/hackathons/${h.id}/edit`}
+                    to={`/organizer/hackathons/${hackathonId}/edit`}
                     className="
                       inline-flex
                       items-center

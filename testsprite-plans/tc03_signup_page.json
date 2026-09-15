@@ -1,0 +1,10 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "TC03 - Signup page loads",
+  "description": "Verify the Signup page opens cleanly with Full Name, Email, Password, and Role selection fields.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /signup" },
+    { "type": "assertion", "description": "Verify the signup form renders with Full Name, Email, Password, and Role selector" }
+  ]
+}

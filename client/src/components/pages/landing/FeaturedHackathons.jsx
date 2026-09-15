@@ -57,7 +57,7 @@ function FeaturedHackathons() {
   }, []);
 
   return (
-    <section id="hackathons" className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-20">
+    <section id="hackathons" className="px-4 pt-12 pb-12 sm:px-6 sm:pt-20 sm:pb-16 lg:px-8 lg:pt-24 lg:pb-20">
       <div className="mx-auto max-w-7xl">
         {/* Section header */}
         <div className="flex items-end justify-between gap-4">

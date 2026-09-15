@@ -1,0 +1,12 @@
+{
+  "projectId": "79049e2f-7bdc-4d95-9a99-426f867850dd",
+  "type": "frontend",
+  "name": "Smoke Test — Organizer Portal Accessibility",
+  "description": "Verify the organizer portal dashboard and organizer hackathons list load without blank pages or crash errors.",
+  "planSteps": [
+    { "type": "action", "description": "Navigate to /organizer" },
+    { "type": "assertion", "description": "Verify organizer portal dashboard or login prompt loads correctly" },
+    { "type": "action", "description": "Navigate to /organizer/hackathons" },
+    { "type": "assertion", "description": "Verify My Hackathons management list loads without console errors" }
+  ]
+}

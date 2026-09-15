@@ -195,8 +195,15 @@ function Header() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    let tick = false;
     const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
+      if (!tick) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 25);
+          tick = false;
+        });
+        tick = true;
+      }
     };
 
     handleScroll();
@@ -410,48 +417,83 @@ function Header() {
           fixed
           top-0
           left-0
+          right-0
           z-50
-          w-full
-
-          transition-shadow
+          flex
+          justify-center
+          pointer-events-none
+          transition-all
           duration-300
           ease-out
-
           ${
-            scrolled || mobileMenuOpen
-              ? `
-                bg-white/80
-                backdrop-blur-md
-                border-b
-                border-neutral-200/60
-                shadow-xs
-
-                dark:bg-neutral-950/80
-                dark:border-neutral-800/60
-                dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
-              `
-              : `
-                bg-transparent
-                border-b
-                border-transparent
-                shadow-none
-                backdrop-blur-none
-              `
+            scrolled && !mobileMenuOpen
+              ? "pt-3.5 sm:pt-4 px-3.5 sm:px-6 lg:px-8"
+              : "pt-0 px-0"
           }
         `}
       >
         <div
-          className="
-            mx-auto
-            flex
-            h-14
-            max-w-7xl
-            items-center
-            px-5
-            sm:px-6
-            lg:px-8
-          "
+          className={`
+            pointer-events-auto
+            w-full
+            transition-all
+            duration-300
+            ease-out
+            overflow-hidden
+            ${
+              scrolled && !mobileMenuOpen
+                ? `
+                  max-w-6xl
+                  rounded-full
+                  border
+                  border-neutral-200/80
+                  bg-white/80
+                  backdrop-blur-md
+                  shadow-md
+                  shadow-neutral-950/5
+                  dark:border-neutral-800/80
+                  dark:bg-neutral-950/80
+                  dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]
+                `
+                : `
+                  max-w-7xl
+                  rounded-none
+                  border-b
+                  ${
+                    scrolled || mobileMenuOpen
+                      ? `
+                        border-neutral-200/60
+                        bg-white/80
+                        backdrop-blur-md
+                        shadow-xs
+                        dark:border-neutral-800/60
+                        dark:bg-neutral-950/80
+                        dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]
+                      `
+                      : `
+                        border-transparent
+                        bg-transparent
+                        shadow-none
+                        backdrop-blur-none
+                      `
+                  }
+                `
+            }
+          `}
         >
+          <div
+            className={`
+              mx-auto
+              flex
+              h-14
+              w-full
+              items-center
+              justify-between
+              transition-all
+              duration-300
+              ${scrolled && !mobileMenuOpen ? "px-4 sm:px-6" : "px-5 sm:px-6 lg:px-8"}
+            `}
+          >
           {/* ==================================================
               LOGO
               ================================================== */}
@@ -1456,7 +1498,8 @@ function Header() {
             </div>
           </nav>
         </div>
-      </header>
+      </div>
+    </header>
 
       {/* Mobile Backdrop Overlay */}
       {mobileMenuOpen && (
