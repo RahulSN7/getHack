@@ -98,14 +98,13 @@ export function AuthProvider({ children }) {
     throw new Error("Google authentication failed");
   };
 
-  // Logout handler
+  // Logout handler — clears client auth state immediately to update UI synchronously
   const logout = async () => {
+    saveUser(null);
     try {
       await authService.logout();
     } catch {
-      // Ignore errors during logout cleanup
-    } finally {
-      saveUser(null);
+      // Ignore errors during backend logout cleanup
     }
   };
 

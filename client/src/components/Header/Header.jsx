@@ -1178,9 +1178,10 @@ function Header() {
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           setProfileOpen(false);
-                          logout();
+                          navigate("/", { replace: true });
+                          await logout();
                         }}
                         className="
                         flex
@@ -1460,9 +1461,10 @@ function Header() {
                     </Link>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setMobileMenuOpen(false);
-                        logout();
+                        navigate("/", { replace: true });
+                        await logout();
                       }}
                       className="
                       w-full

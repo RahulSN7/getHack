@@ -4,12 +4,13 @@
 
 
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/useAuth";
 import Logo from "../common/Logo";
 
 function OrganizerHeader() {
+  const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -376,9 +377,10 @@ function OrganizerHeader() {
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           setUserDropdownOpen(false);
-                          logout();
+                          navigate("/", { replace: true });
+                          await logout();
                         }}
                         className="
                         flex
@@ -506,9 +508,10 @@ function OrganizerHeader() {
 
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     setMobileMenuOpen(false);
-                    logout();
+                    navigate("/", { replace: true });
+                    await logout();
                   }}
                   className="mt-2 w-full rounded-lg bg-neutral-950 px-3 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                 >
