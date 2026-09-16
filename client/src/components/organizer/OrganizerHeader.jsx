@@ -432,7 +432,7 @@ function OrganizerHeader() {
                   sm:flex
                 "
                 >
-                  Log in
+                  Sign In
                 </Link>
               )}
 

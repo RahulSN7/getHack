@@ -31,6 +31,14 @@ const otpSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    requestCount: {
+      type: Number,
+      default: 1,
+    },
+    windowStartedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,

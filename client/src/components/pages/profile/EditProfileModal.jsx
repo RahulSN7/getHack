@@ -19,6 +19,13 @@ function formatDateForInput(dateStr) {
   }
 }
 
+function getInitial(name) {
+  if (!name || typeof name !== "string") return "P";
+  const trimmed = name.trim();
+  if (!trimmed) return "P";
+  return trimmed.charAt(0).toUpperCase();
+}
+
 function parseCommaSeparatedValues(inputString, existingList = []) {
   if (!inputString || typeof inputString !== "string") return [];
   const rawItems = inputString.split(",");
@@ -89,6 +96,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
   // Profile Photo File & Preview state
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(profile.avatar || "");
+  const [photoError, setPhotoError] = useState(false);
   const [removePhoto, setRemovePhoto] = useState(false);
 
   // Skills state
@@ -132,6 +140,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       setAvailability(prof.availability || "");
       setPhotoFile(null);
       setPhotoPreview(prof.avatar || "");
+      setPhotoError(false);
       setRemovePhoto(false);
       setSkills(normalizeTagArray(prof.skills));
       setSkillInput("");
@@ -170,6 +179,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
     setError(null);
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
+    setPhotoError(false);
     setRemovePhoto(false);
   };
 
@@ -534,11 +544,16 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             </h3>
             <div className="flex items-center gap-4">
               <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800">
-                {photoPreview ? (
-                  <img src={photoPreview} alt="Avatar preview" className="h-full w-full object-cover" />
+                {photoPreview && !photoError ? (
+                  <img
+                    src={photoPreview}
+                    alt="Avatar preview"
+                    onError={() => setPhotoError(true)}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span className="text-lg font-bold text-neutral-500 dark:text-neutral-400">
-                    {name ? name.charAt(0).toUpperCase() : "P"}
+                    {getInitial(name)}
                   </span>
                 )}
               </div>

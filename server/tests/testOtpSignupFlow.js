@@ -276,6 +276,125 @@ async function runTests() {
   }
   console.log("✓ Test 5 Passed: Resending OTP invalidates old OTP and new OTP succeeds.");
 
+  // ── TEST 6: Duplicate Email Signup Prevention & Normalization ──
+  console.log("\n[Test 6] Duplicate Email Signup Prevention & Normalization...");
+  
+  // 1. Attempt signup with existing participant email (with spaces & mixed case)
+  const dupEmailMixed = "  OTptest_PARTICIPANT@GmAil.cOm  ";
+  const reqDupSend = {
+    body: {
+      email: dupEmailMixed,
+      role: "participant",
+      isSignup: true,
+    },
+  };
+  const resDupSend = createMockRes();
+
+  await sendOtp(reqDupSend, resDupSend);
+
+  if (resDupSend.statusCode !== 409) {
+    throw new Error(`Test 6 Failed: Expected status 409 for duplicate email signup, got ${resDupSend.statusCode}. Msg: ${resDupSend.jsonData?.message}`);
+  }
+  if (!resDupSend.jsonData?.message?.includes("An account with this email already exists")) {
+    throw new Error(`Test 6 Failed: Unexpected error message: ${resDupSend.jsonData?.message}`);
+  }
+
+  // Verify no OTP record was generated for duplicate email signup
+  const otpForDup = await Otp.findOne({ email: pEmail });
+  if (otpForDup) {
+    throw new Error(`Test 6 Failed: OTP record was created for a duplicate email signup attempt.`);
+  }
+
+  // Verify User count for pEmail is still exactly 1
+  const dupUserCount = await User.countDocuments({ email: pEmail });
+  if (dupUserCount !== 1) {
+    throw new Error(`Test 6 Failed: Expected exactly 1 user document, found ${dupUserCount}.`);
+  }
+
+  // 2. Direct verifyOtp attempt with isSignup: true for existing organizer
+  const reqDupVerify = {
+    body: {
+      email: "  OTptest_ORGANIZER@gmail.com ",
+      otp: "654321",
+      name: "Bob Organizer Duplicate",
+      role: "organizer",
+      isSignup: true,
+    },
+  };
+  const resDupVerify = createMockRes();
+
+  await verifyOtp(reqDupVerify, resDupVerify);
+
+  if (resDupVerify.statusCode !== 409) {
+    throw new Error(`Test 6 Failed: Direct verifyOtp for duplicate email should return 409, got ${resDupVerify.statusCode}`);
+  }
+
+  // 3. Ensure existing user CAN still request a Login OTP normally (isSignup not set)
+  const reqLoginSend = {
+    body: {
+      email: pEmail,
+    },
+  };
+  const resLoginSend = createMockRes();
+
+  await sendOtp(reqLoginSend, resLoginSend);
+  if (resLoginSend.statusCode !== 200) {
+    throw new Error(`Test 6 Failed: Existing user login sendOtp failed with status ${resLoginSend.statusCode}`);
+  }
+  console.log("✓ Test 6 Passed: Duplicate email signup rejected with 409, no OTP sent, no duplicate DB record created, normal login untouched.");
+
+  // ── TEST 7: Unregistered Email Login Prevention & Error Message ──
+  console.log("\n[Test 7] Unregistered Email Login Prevention & Error Message...");
+
+  const nonExistentEmail = "  NOBODY_registered_12345@gmail.com  ";
+
+  // 1. sendOtp for non-existent email on login
+  const reqNoUserSend = {
+    body: {
+      email: nonExistentEmail,
+      isSignup: false,
+    },
+  };
+  const resNoUserSend = createMockRes();
+
+  await sendOtp(reqNoUserSend, resNoUserSend);
+
+  if (resNoUserSend.statusCode !== 404) {
+    throw new Error(`Test 7 Failed: Expected status 404 for unregistered email login, got ${resNoUserSend.statusCode}. Msg: ${resNoUserSend.jsonData?.message}`);
+  }
+  if (!resNoUserSend.jsonData?.message?.includes("No account found with this email. Please Sign Up first.")) {
+    throw new Error(`Test 7 Failed: Unexpected error message: ${resNoUserSend.jsonData?.message}`);
+  }
+
+  // Verify no OTP was created in DB for unregistered email
+  const otpNoUser = await Otp.findOne({ email: "nobody_registered_12345@gmail.com" });
+  if (otpNoUser) {
+    throw new Error(`Test 7 Failed: OTP was created for an unregistered email login attempt.`);
+  }
+
+  // 2. Direct verifyOtp for non-existent email on login
+  const reqNoUserVerify = {
+    body: {
+      email: nonExistentEmail,
+      otp: "123456",
+      isSignup: false,
+    },
+  };
+  const resNoUserVerify = createMockRes();
+
+  await verifyOtp(reqNoUserVerify, resNoUserVerify);
+
+  if (resNoUserVerify.statusCode !== 404) {
+    throw new Error(`Test 7 Failed: Direct verifyOtp for unregistered email should return 404, got ${resNoUserVerify.statusCode}`);
+  }
+
+  // Verify no user was created
+  const createdNoUser = await User.findOne({ email: "nobody_registered_12345@gmail.com" });
+  if (createdNoUser) {
+    throw new Error(`Test 7 Failed: User document was created during unregistered email login attempt.`);
+  }
+  console.log("✓ Test 7 Passed: Unregistered email login rejected with 404, no OTP created, no user created.");
+
   // Clean up test users & OTPs
   await User.deleteMany({ email: { $in: testEmails } });
   await Otp.deleteMany({ email: { $in: testEmails } });

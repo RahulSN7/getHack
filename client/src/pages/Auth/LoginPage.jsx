@@ -227,7 +227,7 @@ function LoginPage() {
             className={`text-2xl font-bold tracking-tight sm:text-3xl ${isCardDark ? "text-white" : "text-neutral-900"
               }`}
           >
-            {step === 1 ? "Sign in" : "Verify your email"}
+            {step === 1 ? "Sign In" : "Verify your email"}
           </h1>
           <p
             className={`text-xs font-medium ${isCardDark ? "text-neutral-400" : "text-neutral-500"
@@ -254,7 +254,20 @@ function LoginPage() {
               : "border-red-200/80 bg-red-50 text-red-600"
               }`}
           >
-            {generalError}
+            {generalError.includes("Sign Up") ? (
+              <span>
+                {generalError.split("Sign Up")[0]}
+                <Link
+                  to="/signup"
+                  className="font-bold underline transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                >
+                  Sign Up
+                </Link>
+                {generalError.split("Sign Up")[1]}
+              </span>
+            ) : (
+              generalError
+            )}
           </div>
         )}
 
@@ -476,7 +489,7 @@ function LoginPage() {
               to="/signup"
               className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
             >
-              Sign up
+              Sign Up
             </Link>
           </p>
         </div>

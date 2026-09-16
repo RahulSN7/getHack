@@ -62,14 +62,15 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!user;
 
-  // Send OTP handler
-  const sendOtp = async ({ email, role }) => {
-    return await authService.sendOtp({ email, role });
+  // Send OTP handler — forwards isSignup to backend to distinguish signup vs login intent
+  const sendOtp = async ({ email, role, isSignup }) => {
+    return await authService.sendOtp({ email, role, isSignup });
   };
 
   // Verify OTP handler & set authenticated user state
-  const verifyOtp = async ({ email, otp, name, role }) => {
-    const data = await authService.verifyOtp({ email, otp, name, role });
+  // isSignup: true creates a new account, false logs in an existing user
+  const verifyOtp = async ({ email, otp, name, role, isSignup }) => {
+    const data = await authService.verifyOtp({ email, otp, name, role, isSignup });
     if (data?.user) {
       saveUser(data.user);
       return data.user;
@@ -77,14 +78,14 @@ export function AuthProvider({ children }) {
     throw new Error("OTP Verification failed");
   };
 
-  // Legacy login alias using OTP verify
+  // Legacy login alias using OTP verify — explicitly NOT a signup
   const login = async ({ email, otp }) => {
-    return await verifyOtp({ email, otp });
+    return await verifyOtp({ email, otp, isSignup: false });
   };
 
-  // Legacy signup alias using OTP verify
+  // Legacy signup alias using OTP verify — explicitly IS a signup
   const signup = async ({ name, email, otp, role }) => {
-    return await verifyOtp({ email, otp, name, role });
+    return await verifyOtp({ email, otp, name, role, isSignup: true });
   };
 
   // Google Auth handler & set authenticated user state

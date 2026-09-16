@@ -1234,7 +1234,7 @@ function Header() {
                   sm:flex
                 "
                 >
-                  Log in
+                  Sign In
                 </Link>
               )}
 
@@ -1507,7 +1507,7 @@ function Header() {
                     dark:hover:bg-neutral-200
                   "
                   >
-                    Log in
+                    Sign In
                   </Link>
                 )}
               </div>

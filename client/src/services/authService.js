@@ -23,7 +23,7 @@ async function handleResponse(response) {
       } else if (response.status === 504 || response.status === 502 || response.status === 503) {
         message = "Backend server is unreachable. Please ensure the Express server is running on port 5000.";
       } else if (response.status === 404) {
-        message = "Authentication API endpoint not found.";
+        message = "No account found with this email. Please Sign Up first.";
       } else {
         message = "Unable to process authentication request. Please try again.";
       }
@@ -38,27 +38,29 @@ async function handleResponse(response) {
 
 export const authService = {
   // Send 6-digit verification OTP to email
-  async sendOtp({ email, role }) {
+  // isSignup: true for Sign Up flow, false/undefined for Sign In flow
+  async sendOtp({ email, role, isSignup }) {
     const response = await fetch(`${API_BASE}/send-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({ email, role }),
+      body: JSON.stringify({ email, role, isSignup: !!isSignup }),
     });
     return handleResponse(response);
   },
 
   // Verify OTP & complete authentication
-  async verifyOtp({ email, otp, name, role }) {
+  // isSignup: true for Sign Up flow, false/undefined for Sign In flow
+  async verifyOtp({ email, otp, name, role, isSignup }) {
     const response = await fetch(`${API_BASE}/verify-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({ email, otp, name, role }),
+      body: JSON.stringify({ email, otp, name, role, isSignup: !!isSignup }),
     });
     return handleResponse(response);
   },

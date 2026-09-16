@@ -10,7 +10,7 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const User = require("../models/user");
 const Otp = require("../models/otp");
-const { sendOtpEmail } = require("../services/emailService");
+const { sendOtpEmail, sendWelcomeEmail } = require("../services/emailService");
 const { upsertStreamUser } = require("../services/streamService");
 
 // Configure public DNS resolvers for consistent MX domain resolution
@@ -31,6 +31,37 @@ const COOKIE_OPTIONS = {
 // Generate JWT token for user
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "7d" });
+};
+
+// Sends one-time Welcome Email on new account creation.
+// Guarded by user.welcomeEmailSent flag to prevent duplicates.
+const triggerWelcomeEmail = async (user) => {
+  if (!user || !user.email) return;
+
+  const userEmail = user.email.toLowerCase().trim();
+  const maskedEmail = userEmail.replace(/(?<=^.{2}).*(?=@)/, "***");
+
+  if (user.welcomeEmailSent) {
+    console.log(`[AUTH] Welcome email already sent for ${maskedEmail} — skipping.`);
+    return;
+  }
+
+  console.log(`[AUTH] Sending welcome email to ${maskedEmail}`);
+
+  try {
+    const result = await sendWelcomeEmail(userEmail, user.name);
+    if (result && result.success) {
+      console.log(`[AUTH] Welcome email sent successfully to ${maskedEmail} | Message ID: ${result.messageId}`);
+      user.welcomeEmailSent = true;
+      user.markModified("welcomeEmailSent");
+      await user.save();
+    } else {
+      console.warn(`[AUTH] Welcome email returned unsuccessful status for ${maskedEmail}`);
+    }
+  } catch (err) {
+    // Log but do not throw — welcome email failure must not block authentication
+    console.error(`[AUTH] Welcome email failed for ${maskedEmail}: ${err.message || "Unknown error"}`);
+  }
 };
 
 /**
@@ -157,6 +188,18 @@ const sendOtp = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Determine if this is a signup request (has role, isSignup flag, intent, or purpose)
+    const { isSignup, intent, purpose, role } = req.body || {};
+    const isSignupRequest = Boolean(isSignup || intent === "signup" || purpose === "signup" || role);
+
+    if (isSignupRequest) {
+      console.log("[OTP TRACE] SIGNUP OTP endpoint reached");
+    } else {
+      console.log("[OTP TRACE] SIGNIN OTP endpoint reached");
+    }
+
+    console.log(`[AUTH] OTP requested — flow: ${isSignupRequest ? "signup" : "login"}, email domain: ${normalizedEmail.split("@")[1] || "unknown"}`);
+
     // 1. Format Validation
     if (!isValidEmailFormat(normalizedEmail)) {
       return res.status(400).json({ message: "Please enter a valid email address." });
@@ -178,34 +221,69 @@ const sendOtp = async (req, res) => {
       });
     }
 
-    // Check if user already exists
+    // 3. Existing-user check — enforce signup/login intent
     const existingUser = await User.findOne({ email: normalizedEmail });
 
-    // Rate Limiting Cooldown Check (30 seconds between resends)
+    if (existingUser && isSignupRequest) {
+      return res.status(409).json({
+        message: "An account with this email already exists. Please Sign In instead.",
+        isExistingUser: true,
+      });
+    }
+
+    if (!existingUser && !isSignupRequest) {
+      return res.status(404).json({
+        message: "No account found with this email. Please Sign Up first.",
+        isExistingUser: false,
+      });
+    }
+
+    // 4. Server-Side Rate Limiting Checks (60s minimum cooldown, max 5 requests per hour)
     const existingOtp = await Otp.findOne({ email: normalizedEmail });
-    if (existingOtp && existingOtp.lastSentAt) {
-      const elapsedSeconds = (Date.now() - new Date(existingOtp.lastSentAt).getTime()) / 1000;
-      if (elapsedSeconds < 30) {
-        const waitTime = Math.ceil(30 - elapsedSeconds);
-        return res.status(429).json({
-          message: `Please wait ${waitTime} seconds before requesting another code.`,
-          cooldownSeconds: waitTime,
-        });
+    let newRequestCount = 1;
+    let newWindowStartedAt = new Date();
+
+    if (existingOtp) {
+      // 4a. Cooldown check: minimum 60 seconds between requests for the same email
+      if (existingOtp.lastSentAt) {
+        const elapsedSeconds = (Date.now() - new Date(existingOtp.lastSentAt).getTime()) / 1000;
+        if (elapsedSeconds < 60) {
+          const waitTime = Math.ceil(60 - elapsedSeconds);
+          return res.status(429).json({
+            message: `Please wait ${waitTime} seconds before requesting another code.`,
+            cooldownSeconds: waitTime,
+          });
+        }
+      }
+
+      // 4b. Hourly window check: maximum 5 requests per email within 1 hour
+      const windowAgeMs = Date.now() - new Date(existingOtp.windowStartedAt || existingOtp.createdAt || Date.now()).getTime();
+      const ONE_HOUR_MS = 60 * 60 * 1000;
+
+      if (windowAgeMs > ONE_HOUR_MS) {
+        // Reset hourly counter
+        newRequestCount = 1;
+        newWindowStartedAt = new Date();
+      } else {
+        if ((existingOtp.requestCount || 1) >= 5) {
+          return res.status(429).json({
+            message: "Maximum OTP request limit reached for this hour. Please try again later.",
+          });
+        }
+        newRequestCount = (existingOtp.requestCount || 1) + 1;
+        newWindowStartedAt = existingOtp.windowStartedAt || new Date();
       }
     }
 
-    // Generate secure 6-digit numeric OTP
+    // 5. Generate secure 6-digit numeric OTP
     const rawOtp = crypto.randomInt(100000, 999999).toString();
-    console.log("[OTP] OTP generated");
+    console.log("[OTP TRACE] OTP generated");
 
-    // Hash OTP before database storage
+    // 6. Hash OTP before database storage (invalidates any prior active code)
     const salt = await bcrypt.genSalt(10);
     const otpHash = await bcrypt.hash(rawOtp, salt);
-
-    // Set 10-minute expiry time
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save/Update OTP record in database
     await Otp.findOneAndUpdate(
       { email: normalizedEmail },
       {
@@ -214,16 +292,20 @@ const sendOtp = async (req, res) => {
         expiresAt,
         attempts: 0,
         lastSentAt: new Date(),
+        requestCount: newRequestCount,
+        windowStartedAt: newWindowStartedAt,
       },
       { upsert: true, new: true }
     );
-    console.log("[OTP] OTP stored");
+    console.log("[OTP TRACE] OTP stored");
 
-    // Dispatch OTP email
+    // 7. Dispatch OTP email — this is the ONLY email sent during OTP request
+    console.log("[OTP TRACE] About to send OTP email");
     try {
       await sendOtpEmail(normalizedEmail, rawOtp);
+      console.log("[AUTH] OTP email sent successfully");
     } catch (emailErr) {
-      console.error("sendOtpEmail failure:", emailErr.message);
+      console.error("[AUTH] OTP email failed:", emailErr.message);
       return res.status(400).json({
         message: "We couldn't send a verification code to this email. Please check the email address and try again.",
       });
@@ -235,7 +317,7 @@ const sendOtp = async (req, res) => {
       isExistingUser: !!existingUser,
     });
   } catch (error) {
-    console.error("sendOtp error:", error);
+    console.error("[AUTH] sendOtp error:", error);
     return res.status(500).json({
       message: "We couldn't send a verification code to this email. Please check the email address and try again.",
     });
@@ -245,7 +327,6 @@ const sendOtp = async (req, res) => {
 // ── 2. VERIFY OTP ──
 const verifyOtp = async (req, res) => {
   try {
-    console.log("[OTP] Verification request received");
     const { email, otp, name, role } = req.body || {};
 
     if (!email || !otp) {
@@ -259,6 +340,30 @@ const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Please enter a valid email address." });
     }
 
+    const isSignupRequest = Boolean(
+      req.body?.isSignup ||
+      req.body?.intent === "signup" ||
+      req.body?.purpose === "signup" ||
+      req.body?.role
+    );
+
+    // Re-confirm existing user state at verify time
+    const existingUser = await User.findOne({ email: normalizedEmail });
+
+    if (existingUser && isSignupRequest) {
+      return res.status(409).json({
+        message: "An account with this email already exists. Please Sign In instead.",
+        isExistingUser: true,
+      });
+    }
+
+    if (!existingUser && !isSignupRequest) {
+      return res.status(404).json({
+        message: "No account found with this email. Please Sign Up first.",
+        isExistingUser: false,
+      });
+    }
+
     if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
       return res.status(400).json({ message: "Verification code must be 6 digits." });
     }
@@ -267,9 +372,7 @@ const verifyOtp = async (req, res) => {
     const otpDoc = await Otp.findOne({ email: normalizedEmail });
 
     if (!otpDoc || otpDoc.expiresAt < new Date()) {
-      if (otpDoc) {
-        await Otp.deleteOne({ email: normalizedEmail });
-      }
+      if (otpDoc) await Otp.deleteOne({ email: normalizedEmail });
       return res.status(400).json({
         message: "This verification code has expired. Please request a new code.",
       });
@@ -283,44 +386,39 @@ const verifyOtp = async (req, res) => {
       });
     }
 
-    // Compare OTP hash (allow 123456 dev bypass in non-production for automated testing)
-    const isMatch = (process.env.NODE_ENV !== "production" && cleanOtp === "123456") || await bcrypt.compare(cleanOtp, otpDoc.otpHash);
+    // Compare OTP hash (allow 123456 dev bypass in non-production)
+    const isMatch =
+      (process.env.NODE_ENV !== "production" && cleanOtp === "123456") ||
+      (await bcrypt.compare(cleanOtp, otpDoc.otpHash));
 
     if (!isMatch) {
       otpDoc.attempts += 1;
       await otpDoc.save();
-
       if (otpDoc.attempts >= 5) {
         await Otp.deleteOne({ email: normalizedEmail });
-        return res.status(400).json({
-          message: "Too many attempts. Please request a new verification code.",
-        });
+        return res.status(400).json({ message: "Too many attempts. Please request a new verification code." });
       }
-
-      return res.status(400).json({
-        message: "Incorrect verification code. Please try again.",
-      });
+      return res.status(400).json({ message: "Incorrect verification code. Please try again." });
     }
 
-    console.log("[OTP] OTP verification successful");
-
-    // OTP Verification Successful -> Invalidate & Delete OTP record
+    // OTP is valid — delete it
     await Otp.deleteOne({ email: normalizedEmail });
+    console.log(`[AUTH] OTP verified for ${isSignupRequest ? "signup" : "login"} flow`);
 
     // Find or create user
-    let user = await User.findOne({ email: normalizedEmail });
+    let user = existingUser || (await User.findOne({ email: normalizedEmail }));
 
     if (user) {
-      // Update email verification status for existing user
+      // Existing user logging in — just update emailVerified if needed, no welcome email
       if (!user.emailVerified) {
         user.emailVerified = true;
         await user.save();
       }
+      console.log(`[AUTH] Existing user authenticated via OTP`);
     } else {
-      // Normalize role string for new user signup
+      // New user — create account then send welcome email
       const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "participant";
       const validRole = normalizedRole === "organizer" ? "organizer" : "participant";
-
       const userName = name && typeof name === "string" && name.trim() ? name.trim() : "Developer";
 
       user = await User.create({
@@ -330,9 +428,11 @@ const verifyOtp = async (req, res) => {
         emailVerified: true,
         profile: {},
       });
-    }
 
-    console.log("[OTP] Account creation successful");
+      console.log(`[AUTH] New user created via OTP signup`);
+      // Welcome email is sent ONLY here — after new account creation
+      await triggerWelcomeEmail(user);
+    }
 
     // Generate JWT token & set session cookie
     const token = generateToken(user._id);
@@ -340,7 +440,7 @@ const verifyOtp = async (req, res) => {
 
     // Synchronize authenticated user with Stream Chat server-side
     upsertStreamUser(user).catch((e) =>
-      console.warn("Background Stream Chat sync warning:", e.message)
+      console.warn("[AUTH] Background Stream Chat sync warning:", e.message)
     );
 
     return res.status(200).json({
@@ -349,9 +449,9 @@ const verifyOtp = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error("verifyOtp error:", error);
+    console.error("[AUTH] verifyOtp error:", error);
     if (error.code === 11000) {
-      return res.status(409).json({ message: "An account with this email already exists." });
+      return res.status(409).json({ message: "An account with this email already exists. Please Sign In instead." });
     }
     return res.status(500).json({ message: "An unexpected error occurred during OTP verification." });
   }
@@ -439,24 +539,19 @@ const googleAuth = async (req, res) => {
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
 
     if (user) {
+      // Existing Google user — update fields if needed, no welcome email
       let modified = false;
-      if (!user.googleId) {
-        user.googleId = googleId;
-        modified = true;
-      }
-      if (!user.emailVerified) {
-        user.emailVerified = true;
-        modified = true;
-      }
+      if (!user.googleId) { user.googleId = googleId; modified = true; }
+      if (!user.emailVerified) { user.emailVerified = true; modified = true; }
       if (picture && (!user.profile || !user.profile.avatar)) {
         user.profile = { ...(user.profile || {}), avatar: picture };
         user.markModified("profile");
         modified = true;
       }
-      if (modified) {
-        await user.save();
-      }
+      if (modified) await user.save();
+      console.log(`[AUTH] Existing user authenticated via Google OAuth`);
     } else {
+      // New user via Google — create account then send welcome email
       const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "participant";
       const validRole = normalizedRole === "organizer" ? "organizer" : "participant";
 
@@ -471,6 +566,10 @@ const googleAuth = async (req, res) => {
           role: validRole === "organizer" ? "Organizer" : "Participant",
         },
       });
+
+      console.log(`[AUTH] New user created via Google OAuth`);
+      // Welcome email is sent ONLY here — after new account creation
+      await triggerWelcomeEmail(user);
     }
 
     // Generate JWT token & set session cookie
@@ -554,22 +653,19 @@ const googleCallback = async (req, res) => {
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
 
     if (user) {
+      // Existing user via Google callback — no welcome email
       let modified = false;
-      if (!user.googleId) {
-        user.googleId = googleId;
-        modified = true;
-      }
-      if (!user.emailVerified) {
-        user.emailVerified = true;
-        modified = true;
-      }
+      if (!user.googleId) { user.googleId = googleId; modified = true; }
+      if (!user.emailVerified) { user.emailVerified = true; modified = true; }
       if (picture && (!user.profile || !user.profile.avatar)) {
         user.profile = { ...(user.profile || {}), avatar: picture };
         user.markModified("profile");
         modified = true;
       }
       if (modified) await user.save();
+      console.log(`[AUTH] Existing user authenticated via Google OAuth callback`);
     } else {
+      // New user via Google callback — create account then send welcome email
       user = await User.create({
         name,
         email,
@@ -581,6 +677,10 @@ const googleCallback = async (req, res) => {
           role: signupRole === "organizer" ? "Organizer" : "Participant",
         },
       });
+
+      console.log(`[AUTH] New user created via Google OAuth callback`);
+      // Welcome email is sent ONLY here — after new account creation
+      await triggerWelcomeEmail(user);
     }
 
     const token = generateToken(user._id);

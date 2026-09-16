@@ -119,7 +119,7 @@ function SignupPage() {
 
     try {
       const selectedRole = role.toLowerCase();
-      await sendOtp({ email: email.trim(), role: selectedRole });
+      await sendOtp({ email: email.trim(), role: selectedRole, isSignup: true });
       setIsLoading(false);
       setStep(2);
       setResendCooldown(30); // Start 30s resend cooldown
@@ -137,7 +137,7 @@ function SignupPage() {
 
     try {
       const selectedRole = role.toLowerCase();
-      await sendOtp({ email: email.trim(), role: selectedRole });
+      await sendOtp({ email: email.trim(), role: selectedRole, isSignup: true });
       setIsResending(false);
       setResendCooldown(30);
       setOtp("");
@@ -167,6 +167,7 @@ function SignupPage() {
         email: email.trim(),
         otp: cleanOtp,
         role: selectedRole,
+        isSignup: true,
       });
       setIsLoading(false);
 
@@ -271,7 +272,20 @@ function SignupPage() {
               : "border-red-200/80 bg-red-50 text-red-600"
               }`}
           >
-            {generalError}
+            {generalError.includes("Sign In") ? (
+              <span>
+                {generalError.split("Sign In")[0]}
+                <Link
+                  to="/login"
+                  className="font-bold underline transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+                >
+                  Sign In
+                </Link>
+                {generalError.split("Sign In")[1]}
+              </span>
+            ) : (
+              generalError
+            )}
           </div>
         )}
 
@@ -551,7 +565,7 @@ function SignupPage() {
               to="/login"
               className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
             >
-              Sign in
+              Sign In
             </Link>
           </p>
         </div>
