@@ -14,6 +14,7 @@ import ConversationItem from "./ConversationItem";
 import ChatPanel from "./ChatPanel";
 import StartNewChatModal from "./StartNewChatModal";
 import CreateGroupModal from "./CreateGroupModal";
+import useSEO from "../../../utils/useSEO";
 
 function getChannelLatestTimestamp(channel, clearedAt) {
   if (!channel) return 0;
@@ -82,6 +83,11 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
 }
 
 function Messages() {
+  useSEO(
+    "Messages — getHack",
+    "Connect and collaborate with your getHack connections through direct and team conversations."
+  );
+
   const { user } = useAuth();
   const { chatClient, ready, error: chatError, retryConnect } = useChatContext();
 

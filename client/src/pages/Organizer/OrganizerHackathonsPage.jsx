@@ -9,6 +9,7 @@ import DeleteConfirmationModal from "../../components/organizer/DeleteConfirmati
 import { hackathonService } from "../../services/hackathonService";
 import { getHackathonRegistrationStatus, getHackathonImage } from "../../utils/hackathonFormatters";
 import BackButton from "../../components/common/BackButton";
+import useSEO from "../../utils/useSEO";
 
 function formatDate(dateStr) {
   if (!dateStr) return "N/A";
@@ -62,6 +63,11 @@ function getStatusBadge(status) {
 }
 
 function OrganizerHackathonsPage() {
+  useSEO(
+    "My Hackathons — getHack",
+    "Create, publish, and manage your hackathons on getHack."
+  );
+
   const currentLocation = useLocation();
   const [hackathons, setHackathons] = useState([]);
   const [loading, setLoading] = useState(true);

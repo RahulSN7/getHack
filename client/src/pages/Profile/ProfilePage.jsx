@@ -9,8 +9,14 @@ import { useAuth } from "../../context/useAuth";
 import { userService } from "../../services/userService";
 import UserProfile from "../../components/pages/profile/UserProfile";
 import OrganizerProfilePage from "../Organizer/OrganizerProfilePage";
+import useSEO from "../../utils/useSEO";
 
 export default function ProfilePage() {
+  useSEO(
+    "Profile — getHack",
+    "View and manage your getHack profile, skills, and professional information."
+  );
+
   const { id } = useParams();
   const { user: currentUser, loading: authLoading } = useAuth();
 

@@ -15,6 +15,7 @@ import { useAuth } from "../../context/useAuth";
 import { teamService } from "../../services/teamService";
 import { invitationService } from "../../services/invitationService";
 import { resolveTeamMembers, resolveTeamLeader, getTeamActionState } from "../../utils/teamMemberResolver";
+import useSEO from "../../utils/useSEO";
 
 function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
   const [imgError, setImgError] = useState(false);
@@ -107,6 +108,11 @@ function TeamDetailsSkeleton() {
 }
 
 export default function TeamDetailsPage() {
+  useSEO(
+    "My Teams — getHack",
+    "Create, manage, and collaborate with your hackathon teams on getHack."
+  );
+
   const { id } = useParams();
   const { user: currentUser, isAuthenticated } = useAuth();
   const [hasRequested, setHasRequested] = useState(false);

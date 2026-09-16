@@ -42,13 +42,6 @@ function Footer() {
             <p className="mt-2.5 max-w-sm break-words text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
               Discover hackathons. Find your people. Build something meaningful.
             </p>
-
-            <div className="mt-3.5 sm:mt-5 flex items-center gap-3 text-xs text-neutral-400 dark:text-neutral-500">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                All Systems Operational
-              </span>
-            </div>
           </div>
 
           {/* Product & Resources Columns (2 columns on mobile, spans 2 on lg) */}

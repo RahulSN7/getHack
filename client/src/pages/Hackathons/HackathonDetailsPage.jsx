@@ -13,6 +13,7 @@ import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../constants/themeTokens";
 import DeadlineDisplay from "../../components/pages/hackathons/DeadlineDisplay";
 import BackButton from "../../components/common/BackButton";
 import { hackathonService } from "../../services/hackathonService";
+import useSEO from "../../utils/useSEO";
 import {
   formatTeamSize,
   formatPrize,
@@ -66,6 +67,20 @@ function HackathonDetailsPage() {
   const [hackathon, setHackathon] = useState(null);
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
+
+  const pageTitle = loading
+    ? "Hackathon Details — getHack"
+    : hackathon
+      ? `${hackathon.name} — Hackathon Details | getHack`
+      : "Page Not Found — getHack";
+
+  const pageDesc = loading
+    ? "Explore hackathon details, timeline, and registration on getHack."
+    : hackathon
+      ? hackathon.description || hackathon.shortDescription || "Discover hackathons, find teammates with the right skills, and build something meaningful."
+      : "The page you're looking for doesn't exist or may have been moved.";
+
+  useSEO(pageTitle, pageDesc);
 
   useEffect(() => {
     window.scrollTo(0, 0);

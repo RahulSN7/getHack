@@ -8,6 +8,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import NetworkFilters from "./NetworkFilters";
 import NetworkUserCard from "./NetworkUserCard";
 import { userService } from "../../../services/userService";
+import useSEO from "../../../utils/useSEO";
 
 
 // Days ago parser helper
@@ -52,6 +53,11 @@ function matchesUserSearch(user, query) {
 
 
 function Network() {
+  useSEO(
+    "My Network — getHack",
+    "Manage your connections and connect with people in the getHack community."
+  );
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");

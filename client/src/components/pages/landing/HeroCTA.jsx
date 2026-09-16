@@ -23,7 +23,6 @@ function HeroCTA() {
           sm:w-auto
           items-center
           justify-center
-          gap-2
 
           rounded-lg
 
@@ -55,24 +54,6 @@ function HeroCTA() {
         "
       >
         Browse Hackathons
-
-        <svg
-          className="
-            h-4 w-4
-            transition-transform
-            duration-200
-            group-hover:translate-x-1
-          "
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M5 12h14" />
-          <path d="m12 5 7 7-7 7" />
-        </svg>
       </a>
 
       {/* Secondary — Find Teammates */}

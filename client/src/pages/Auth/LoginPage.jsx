@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthInput from "../../components/auth/AuthInput";
 import OtpInput from "../../components/auth/OtpInput";
 import { useAuth } from "../../context/useAuth";
+import useSEO from "../../utils/useSEO";
 
 // Helper function to partially mask email address (e.g. rahul@gmail.com -> r***l@gmail.com)
 function maskEmail(emailStr) {
@@ -20,6 +21,11 @@ function maskEmail(emailStr) {
 }
 
 function LoginPage() {
+  useSEO(
+    "Sign In — getHack",
+    "Sign in to getHack to discover hackathons, connect with teammates, and collaborate."
+  );
+
   const navigate = useNavigate();
   const { sendOtp, verifyOtp, googleAuth } = useAuth();
 

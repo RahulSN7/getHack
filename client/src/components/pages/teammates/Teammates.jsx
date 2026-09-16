@@ -23,6 +23,7 @@ import TeamCard from "./TeamCard";
 import TeamDetailsModal from "./TeamDetailsModal";
 import CreateTeamModal from "./CreateTeamModal";
 import { resolveTeamMembers, resolveTeamLeader } from "../../../utils/teamMemberResolver";
+import useSEO from "../../../utils/useSEO";
 
 
 // Role matching helper (maps filter IDs to role strings)
@@ -768,6 +769,11 @@ function TeamRequestsView({ onShowToast, onRequestStateChange }) {
 
 
 function Teammates() {
+  useSEO(
+    "Find Teammates — Connect with Developers & Designers | getHack",
+    "Find developers, designers, and teammates with the skills you need to build your next hackathon project."
+  );
+
   const { user: currentUser, isAuthenticated } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab") || "members";

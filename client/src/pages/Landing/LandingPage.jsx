@@ -9,8 +9,14 @@ import FindTeammates from "../../components/pages/landing/FindTeammates";
 import WhyGetHack from "../../components/pages/landing/WhyGetHack";
 import FAQ from "../../components/pages/landing/FAQ";
 import Footer from "../../components/pages/landing/Footer";
+import useSEO from "../../utils/useSEO";
 
 function LandingPage() {
+  useSEO(
+    "getHack — Find Hackathons, Teammates & Build Together",
+    "Discover hackathons, find people with the right skills, build your team, and create something meaningful with getHack."
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       {/* Hero Section */}

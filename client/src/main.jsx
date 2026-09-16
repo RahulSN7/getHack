@@ -33,6 +33,7 @@ import AuthLayout from "./components/auth/AuthLayout.jsx";
 import LoginPage from "./pages/Auth/LoginPage.jsx";
 import SignupPage from "./pages/Auth/SignupPage.jsx";
 import ForgotPasswordPage from "./pages/Auth/ForgotPasswordPage.jsx";
+import NotFoundPage from "./pages/NotFound/NotFoundPage.jsx";
 
 function AppErrorBoundary() {
   const error = useRouteError();
@@ -164,6 +165,10 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
   },
 
@@ -205,6 +210,10 @@ const router = createBrowserRouter([
         path: "profile/:id",
         element: <OrganizerProfilePage />,
       },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
   },
 
@@ -230,7 +239,7 @@ const router = createBrowserRouter([
   /* Fallback Route */
   {
     path: "*",
-    element: <LandingPage />,
+    element: <NotFoundPage />,
   },
 ]);
 

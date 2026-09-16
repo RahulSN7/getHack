@@ -15,6 +15,7 @@ import HackathonFilters from "./HackathonFilters";
 import HackathonSort from "./HackathonSort";
 import HackathonGrid from "./HackathonGrid";
 import { hackathonService } from "../../../services/hackathonService";
+import useSEO from "../../../utils/useSEO";
 import {
   formatTeamSize,
   formatPrize,
@@ -162,6 +163,15 @@ function Hackathons() {
   const [platformFilter, setPlatformFilter] = useState("all");
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("deadline-asc");
+
+  useSEO(
+    showSavedOnly
+      ? "Saved Hackathons — getHack"
+      : "Hackathons — Discover Opportunities | getHack",
+    showSavedOnly
+      ? "View the hackathons you've saved and keep track of opportunities you're interested in."
+      : "Explore hackathons and discover opportunities to participate, compete, and build innovative projects."
+  );
 
   // Pagination state (15 per batch)
   const [visibleCount, setVisibleCount] = useState(15);

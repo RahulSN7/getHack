@@ -9,6 +9,7 @@ import { useAuth } from "../../context/useAuth";
 import DeleteConfirmationModal from "../../components/organizer/DeleteConfirmationModal";
 import { hackathonService } from "../../services/hackathonService";
 import { getHackathonRegistrationStatus, getHackathonImage } from "../../utils/hackathonFormatters";
+import useSEO from "../../utils/useSEO";
 
 // Helper to format date string
 function formatDate(dateStr) {
@@ -64,6 +65,11 @@ function getStatusBadge(status) {
 }
 
 function OrganizerDashboardPage() {
+  useSEO(
+    "Organizer Dashboard — getHack",
+    "Manage your hackathons and organizer activities on getHack."
+  );
+
   const currentLocation = useLocation();
   const { user } = useAuth();
   const [hackathons, setHackathons] = useState([]);
