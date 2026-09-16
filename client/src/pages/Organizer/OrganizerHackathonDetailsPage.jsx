@@ -211,7 +211,7 @@ function OrganizerHackathonDetailsPage() {
               {hackathonImage && !imgError ? (
                 <img
                   src={hackathonImage}
-                  alt={name}
+                  alt={`${name} hackathon`}
                   onError={() => setImgError(true)}
                   className="h-12 w-12 shrink-0 rounded-xl object-cover shadow-2xs ring-1 ring-black/5 dark:ring-white/10"
                 />

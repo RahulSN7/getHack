@@ -43,6 +43,8 @@ function AuthInput({
           placeholder={placeholder}
           required={required}
           autoComplete={autoComplete}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
           className={`
             h-10
             w-full
@@ -55,7 +57,7 @@ function AuthInput({
             duration-150
             ${isPasswordType ? "pr-10" : "pr-3.5"}
             ${error
-              ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
+              ? "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/20 dark:border-rose-500"
               : isDark
                 ? "border-neutral-800 bg-neutral-950 text-white placeholder-neutral-500 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20"
                 : "border-neutral-200 bg-white text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
@@ -101,7 +103,7 @@ function AuthInput({
       </div>
 
       {error && (
-        <p className="text-[11px] font-medium text-red-500">
+        <p id={`${id}-error`} role="alert" className="text-[11px] font-medium text-red-600 dark:text-rose-400">
           {error}
         </p>
       )}

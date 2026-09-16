@@ -13,7 +13,7 @@ export default function Logo({
   variant = "auto",
   iconOnly = false,
   className = "h-7 w-auto",
-  alt = "getHack Logo",
+  alt = "getHack logo",
 }) {
   if (iconOnly) {
     return (

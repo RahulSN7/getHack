@@ -112,12 +112,12 @@ async function runPhase6Tests() {
   const multiOrd = extractOrdinalIndices("Connect me with the first two", 3);
   assert.deepStrictEqual(multiOrd, [0, 1], "Should parse first two indices [0, 1]");
 
-  const ordinalResp = generateFallbackResponse(
+  const ordinalResp = await generateFallbackResponse(
     [{ role: "user", content: "Tell me about the second one" }],
     { userProfile }
   );
   // Using conversation messages with previousHackathons
-  const ordinalRespWithHistory = generateFallbackResponse(
+  const ordinalRespWithHistory = await generateFallbackResponse(
     [
       { role: "user", content: "Find hackathons" },
       { role: "assistant", content: "Here are 3 hackathons", recommendations: { hackathons: sampleHackathons } },
@@ -130,7 +130,7 @@ async function runPhase6Tests() {
 
   // 3. Anaphoric Pronoun Resolution ("this hackathon", "him", "her", "them")
   console.log("\n3. Testing Anaphoric Pronoun Resolution...");
-  const reqResp = generateFallbackResponse(
+  const reqResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find hackathons" },
       { role: "assistant", content: "Here is VoltHacks", recommendations: { hackathons: [sampleHackathons[0]] } },
@@ -142,7 +142,7 @@ async function runPhase6Tests() {
   assert(reqResp.text.includes("Python"), "Should display required skills for VoltHacks");
   console.log("  ✅ Anaphoric hackathon reference resolution passed.");
 
-  const connectHimResp = generateFallbackResponse(
+  const connectHimResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find teammates" },
       { role: "assistant", content: "Here is Py Dev", recommendations: { teammates: [sampleTeammates[0]] } },
@@ -156,7 +156,7 @@ async function runPhase6Tests() {
 
   // 4. Multiple Teammate Connections ("the first two", "second and third")
   console.log("\n4. Testing Multiple Teammate Connection Requests...");
-  const multiConnResp = generateFallbackResponse(
+  const multiConnResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find teammates" },
       { role: "assistant", content: "Here are candidates", recommendations: { teammates: sampleTeammates } },
@@ -171,7 +171,7 @@ async function runPhase6Tests() {
 
   // 5. Ambiguity Resolution (CRITICAL RULE #6: Do not guess when ambiguous)
   console.log("\n5. Testing Ambiguity Resolution...");
-  const ambiguousResp = generateFallbackResponse(
+  const ambiguousResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find two hackathons" },
       { role: "assistant", content: "Here are hackathons", recommendations: { hackathons: sampleHackathons.slice(0, 2) } },
@@ -196,7 +196,7 @@ async function runPhase6Tests() {
     { role: "user", content: "Which one is best?" },
   ];
 
-  const switchResp = generateFallbackResponse(contextSwitchSeq, { userProfile });
+  const switchResp = await generateFallbackResponse(contextSwitchSeq, { userProfile });
   assert(switchResp.text.includes("React Web Summit Hackathon"), "Should evaluate newly searched React hackathon, not old AI hackathon");
   console.log("  ✅ Context switching passed.");
 
@@ -205,7 +205,7 @@ async function runPhase6Tests() {
   assert(isContextResetCommand("Start over"), "Should recognize 'Start over'");
   assert(isContextResetCommand("clear context"), "Should recognize 'clear context'");
 
-  const resetResp = generateFallbackResponse(
+  const resetResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find hackathons" },
       { role: "assistant", content: "Here are hackathons", recommendations: { hackathons: sampleHackathons } },
@@ -218,7 +218,7 @@ async function runPhase6Tests() {
 
   // 8. Grammar & Spelling Tolerance with Context
   console.log("\n8. Testing Grammar & Spelling Tolerance with Context...");
-  const typoReqResp = generateFallbackResponse(
+  const typoReqResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find hackathons" },
       { role: "assistant", content: "Here is VoltHacks", recommendations: { hackathons: [sampleHackathons[0]] } },
@@ -228,7 +228,7 @@ async function runPhase6Tests() {
   );
   assert(typoReqResp.text.includes("VoltHacks AI Challenge"), "Should handle typos ('skill i need for this hackthon')");
 
-  const typoConnectResp = generateFallbackResponse(
+  const typoConnectResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find teammates" },
       { role: "assistant", content: "Here is Py Dev", recommendations: { teammates: [sampleTeammates[0]] } },
@@ -241,7 +241,7 @@ async function runPhase6Tests() {
 
   // 9. Context Debug Mode
   console.log("\n9. Testing Context Debug Mode...");
-  const debugResp = generateFallbackResponse(
+  const debugResp = await generateFallbackResponse(
     [
       { role: "user", content: "Find hackathons" },
       { role: "assistant", content: "Here is VoltHacks", recommendations: { hackathons: [sampleHackathons[0]] } },
@@ -260,7 +260,7 @@ async function runPhase6Tests() {
 
   // Step 1: Find AI hackathons
   history.push({ role: "user", content: "Find AI hackathons" });
-  let step1 = generateFallbackResponse(history, { userProfile });
+  let step1 = await generateFallbackResponse(history, { userProfile });
   assert(step1.toolCalls, "Step 1 should execute search_hackathons tool call");
 
   // Simulate tool response
@@ -269,39 +269,39 @@ async function runPhase6Tests() {
 
   // Step 2: Which one is best?
   history.push({ role: "user", content: "Which one is best?" });
-  let step2 = generateFallbackResponse(history, { userProfile });
+  let step2 = await generateFallbackResponse(history, { userProfile });
   assert(step2.recommendations.hackathons.length === 1, "Step 2 should recommend 1 best hackathon");
   const selectedHackTitle = step2.recommendations.hackathons[0].title || step2.recommendations.hackathons[0].name;
   history.push({ role: "assistant", content: step2.text, recommendations: step2.recommendations });
 
   // Step 3: Why?
   history.push({ role: "user", content: "Why?" });
-  let step3 = generateFallbackResponse(history, { userProfile });
+  let step3 = await generateFallbackResponse(history, { userProfile });
   assert(step3.text.includes("strongest fit"), "Step 3 should explain why selected hackathon was recommended");
   history.push({ role: "assistant", content: step3.text });
 
   // Step 4: What skills does it require?
   history.push({ role: "user", content: "What skills does it require?" });
-  let step4 = generateFallbackResponse(history, { userProfile });
+  let step4 = await generateFallbackResponse(history, { userProfile });
   assert(step4.text.includes(selectedHackTitle), "Step 4 should display requirements for selected hackathon");
   history.push({ role: "assistant", content: step4.text });
 
   // Step 5: What skills am I missing?
   history.push({ role: "user", content: "What skills am I missing?" });
-  let step5 = generateFallbackResponse(history, { userProfile });
+  let step5 = await generateFallbackResponse(history, { userProfile });
   assert(step5.text.includes("You may need:"), "Step 5 should show skill gap analysis");
   history.push({ role: "assistant", content: step5.text });
 
   // Step 6: Find teammates
   history.push({ role: "user", content: "Find teammates" });
-  let step6 = generateFallbackResponse(history, { userProfile });
+  let step6 = await generateFallbackResponse(history, { userProfile });
   // Simulate teammates search tool response
   history.push({ role: "tool", name: "find_teammates", content: JSON.stringify({ teammates: sampleTeammates }) });
   history.push({ role: "assistant", content: "Found 3 teammates", recommendations: { teammates: sampleTeammates } });
 
   // Step 7: Which one is best?
   history.push({ role: "user", content: "Which one is best?" });
-  let step7 = generateFallbackResponse(history, { userProfile });
+  let step7 = await generateFallbackResponse(history, { userProfile });
   assert.strictEqual(step7.recommendations.teammates.length, 1, "Step 7 should return 1 best teammate card");
   const bestTeammate = step7.recommendations.teammates[0];
   const bestTeammateName = bestTeammate.name;
@@ -310,20 +310,20 @@ async function runPhase6Tests() {
 
   // Step 8: Why him?
   history.push({ role: "user", content: "Why him?" });
-  let step8 = generateFallbackResponse(history, { userProfile });
+  let step8 = await generateFallbackResponse(history, { userProfile });
   assert(step8.text.includes(bestTeammateName), "Step 8 should explain why best teammate was selected");
   history.push({ role: "assistant", content: step8.text });
 
   // Step 9: Connect me with him
   history.push({ role: "user", content: "Connect me with him" });
-  let step9 = generateFallbackResponse(history, { userProfile });
+  let step9 = await generateFallbackResponse(history, { userProfile });
   assert(step9.pendingAction, "Step 9 should generate connection confirmation pendingAction");
   assert.strictEqual(step9.pendingAction.targetUserId, bestTeammateId, "Step 9 should preserve real target user ID");
   history.push({ role: "assistant", content: step9.text, pendingAction: step9.pendingAction });
 
   // Step 10: Yes
   history.push({ role: "user", content: "Yes" });
-  let step10 = generateFallbackResponse(history, { userProfile });
+  let step10 = await generateFallbackResponse(history, { userProfile });
   assert.strictEqual(step10.toolCalls[0].name, "send_connection_request", "Step 10 should issue send_connection_request tool call");
   assert.strictEqual(step10.toolCalls[0].args.targetUserId, bestTeammateId);
 

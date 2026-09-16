@@ -547,7 +547,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
                 {photoPreview && !photoError ? (
                   <img
                     src={photoPreview}
-                    alt="Avatar preview"
+                    alt={name ? `${name} profile photo preview` : "Profile photo preview"}
                     onError={() => setPhotoError(true)}
                     className="h-full w-full object-cover"
                   />

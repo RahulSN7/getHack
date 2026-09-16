@@ -218,7 +218,7 @@ export default function CreateGroupModal({ isOpen, onClose, onCreateGroup }) {
                   {avatarPreview ? (
                     <img
                       src={avatarPreview}
-                      alt="Group avatar preview"
+                      alt={groupName ? `${groupName} group photo preview` : "Group photo preview"}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -265,7 +265,7 @@ export default function CreateGroupModal({ isOpen, onClose, onCreateGroup }) {
 
             {/* Error Message */}
             {error && (
-              <div className="text-xs font-medium text-rose-500 text-center bg-rose-50 dark:bg-rose-950/40 p-2 rounded-lg border border-rose-200 dark:border-rose-900/60">
+              <div role="alert" className="text-xs font-medium text-rose-500 text-center bg-rose-50 dark:bg-rose-950/40 p-2 rounded-lg border border-rose-200 dark:border-rose-900/60">
                 {error}
               </div>
             )}
@@ -278,8 +278,12 @@ export default function CreateGroupModal({ isOpen, onClose, onCreateGroup }) {
               <input
                 type="text"
                 value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
+                onChange={(e) => {
+                  setGroupName(e.target.value);
+                  if (error) setError("");
+                }}
                 placeholder="e.g. Hackathon Team Alpha"
+                aria-invalid={!!error}
                 className="w-full rounded-xl border border-neutral-200 bg-white py-2.5 px-3 text-xs text-neutral-800 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder-neutral-500"
                 maxLength={50}
               />
@@ -377,7 +381,7 @@ export default function CreateGroupModal({ isOpen, onClose, onCreateGroup }) {
                       {conn.avatar ? (
                         <img
                           src={conn.avatar}
-                          alt={conn.name}
+                          alt={conn.name ? `${conn.name} profile photo` : "Connection profile photo"}
                           className="h-8 w-8 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
                         />
                       ) : (

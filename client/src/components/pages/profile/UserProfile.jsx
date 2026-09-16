@@ -55,7 +55,7 @@ function UserAvatar({ avatar, name, sizeClass = "h-24 w-24 text-2xl" }) {
     return (
       <img
         src={avatar}
-        alt={`${name}'s profile photo`}
+        alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-2xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
       />

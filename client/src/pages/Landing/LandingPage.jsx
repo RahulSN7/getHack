@@ -74,7 +74,27 @@ function LandingPage() {
                   />
                 </svg>
               </span>
-              {" "}and your team.
+              {" "}and your{" "}
+              <span className="relative whitespace-nowrap">
+                <span className="relative z-10">team</span>
+                {/* Underline accent */}
+                <svg
+                  aria-hidden="true"
+                  className="absolute -bottom-1.5 left-0 w-full"
+                  viewBox="0 0 300 10"
+                  preserveAspectRatio="none"
+                  fill="none"
+                >
+                  <path
+                    d="M2 8 C60 3, 200 3, 298 7"
+                    stroke="#2563eb"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    opacity="0.45"
+                  />
+                </svg>
+              </span>
+              .
             </h1>
 
             {/* Description */}

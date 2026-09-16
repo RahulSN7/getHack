@@ -84,7 +84,11 @@ function HackathonGrid({ hackathons, hasFilters, onClearFilters }) {
     <div
       className="
         grid
+        grid-cols-1
         gap-4
+        min-w-0
+        w-full
+        max-w-full
 
         sm:grid-cols-2
         lg:grid-cols-3

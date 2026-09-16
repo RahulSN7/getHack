@@ -16,6 +16,7 @@ const {
   leaveTeam,
   removeMember,
   inviteConnections,
+  deleteTeam,
 } = require("../controllers/teamController");
 
 const {
@@ -49,6 +50,9 @@ router.get("/:id", optionalAuth, getTeamById);
 
 // Edit team — team leader only
 router.put("/:id", requireAuth, updateTeam);
+
+// Delete team — team leader only
+router.delete("/:id", requireAuth, deleteTeam);
 
 // Invite connections — team leader/members
 router.post("/:id/invite", requireAuth, inviteConnections);

@@ -332,7 +332,7 @@ export default function GroupInfo() {
                 {group.avatar ? (
                   <img
                     src={group.avatar}
-                    alt={group.name}
+                    alt={`${group.name || "Group"} group avatar`}
                     className="h-24 w-24 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700 shadow-md transition-all group-hover:brightness-75"
                   />
                 ) : (
@@ -369,7 +369,7 @@ export default function GroupInfo() {
                 {group.avatar ? (
                   <img
                     src={group.avatar}
-                    alt={group.name}
+                    alt={`${group.name || "Group"} group avatar`}
                     className="h-24 w-24 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700 shadow-md"
                   />
                 ) : (
@@ -603,7 +603,7 @@ export default function GroupInfo() {
                       {memberAvatar ? (
                         <img
                           src={memberAvatar}
-                          alt={member.name}
+                          alt={member.name ? `${member.name} profile photo` : "Member profile photo"}
                           className="h-10 w-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0 group-hover:opacity-90 transition-opacity"
                         />
                       ) : (

@@ -362,6 +362,9 @@ function ErrorState({ onRetry, message }) {
 function MyTeamsView({ currentUser, onShowToast }) {
   const [myTeams, setMyTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [teamToDelete, setTeamToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const fetchMyTeams = async () => {
     setLoading(true);
@@ -389,6 +392,24 @@ function MyTeamsView({ currentUser, onShowToast }) {
     } catch (err) {
       console.error("Leave team error:", err);
       if (onShowToast) onShowToast(err.message || "Failed to leave team.");
+    }
+  };
+
+  const handleConfirmDeleteTeam = async () => {
+    if (!teamToDelete) return;
+    const targetId = teamToDelete._id || teamToDelete.id;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await teamService.deleteTeam(targetId);
+      setMyTeams((prev) => prev.filter((t) => (t._id || t.id) !== targetId));
+      if (onShowToast) onShowToast("Team deleted successfully!");
+      setTeamToDelete(null);
+    } catch (err) {
+      console.error("Delete team error:", err);
+      setDeleteError(err.message || "Failed to delete team. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -432,79 +453,146 @@ function MyTeamsView({ currentUser, onShowToast }) {
   const userIdStr = (currentUser?.id || currentUser?._id)?.toString();
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {myTeams.map((t) => {
-        const rawLeader = t.createdBy || t.leader;
-        const leaderIdStr = (typeof rawLeader === "object" ? (rawLeader?._id || rawLeader?.id) : rawLeader)?.toString();
-        const isLeader = Boolean(userIdStr && (userIdStr === leaderIdStr || leaderIdStr === "priya-sharma" || leaderIdStr === "user-current"));
-        const leaderObj = resolveTeamLeader(t, currentUser);
+    <>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {myTeams.map((t) => {
+          const rawLeader = t.createdBy || t.leader;
+          const leaderIdStr = (typeof rawLeader === "object" ? (rawLeader?._id || rawLeader?.id) : rawLeader)?.toString();
+          const isLeader = Boolean(userIdStr && (userIdStr === leaderIdStr || leaderIdStr === "priya-sharma" || leaderIdStr === "user-current"));
+          const leaderObj = resolveTeamLeader(t, currentUser);
 
-        return (
-          <article
-            key={t._id || t.id}
-            className="flex flex-col justify-between rounded-xl border border-neutral-200 bg-white p-5 shadow-xs transition-all dark:border-neutral-800 dark:bg-neutral-900"
-          >
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isLeader ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"}`}>
-                    {isLeader ? "Team Leader" : "Member"}
+          return (
+            <article
+              key={t._id || t.id}
+              className="flex flex-col justify-between rounded-xl border border-neutral-200 bg-white p-5 shadow-xs transition-all dark:border-neutral-800 dark:bg-neutral-900"
+            >
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isLeader ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"}`}>
+                      {isLeader ? "Team Leader" : "Member"}
+                    </span>
+                    <h3 className="mt-1.5 text-base font-bold text-neutral-900 dark:text-white">
+                      {t.teamName}
+                    </h3>
+                  </div>
+                  <span className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                    {t.currentSize} / {t.maxSize} members
                   </span>
-                  <h3 className="mt-1.5 text-base font-bold text-neutral-900 dark:text-white">
-                    {t.teamName}
-                  </h3>
                 </div>
-                <span className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                  {t.currentSize} / {t.maxSize} members
-                </span>
+
+                <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                  {t.hackathonName}
+                </p>
+
+                {leaderObj && leaderObj.name && (
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    Leader: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{leaderObj.name}</span>
+                  </p>
+                )}
+
+                {t.description && (
+                  <p className="line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400">
+                    {t.description}
+                  </p>
+                )}
               </div>
 
-              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                {t.hackathonName}
-              </p>
-
-              {leaderObj && leaderObj.name && (
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Leader: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{leaderObj.name}</span>
-                </p>
-              )}
-
-              {t.description && (
-                <p className="line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400">
-                  {t.description}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-5 flex items-center justify-end gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800">
-              <Link
-                to={`/team/${t._id || t.id}`}
-                state={{ from: "/teammates?tab=my-teams" }}
-                className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
-              >
-                View Team
-              </Link>
-              {isLeader ? (
+              <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800">
                 <Link
-                  to={`/team/${t._id || t.id}/edit`}
-                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                  to={`/team/${t._id || t.id}`}
+                  state={{ from: "/teammates?tab=my-teams" }}
+                  className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
                 >
-                  Manage Team
+                  View Team
                 </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleLeave(t._id || t.id)}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
-                >
-                  Leave Team
-                </button>
-              )}
+                {isLeader ? (
+                  <>
+                    <Link
+                      to={`/team/${t._id || t.id}/edit`}
+                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                    >
+                      Manage Team
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTeamToDelete(t);
+                        setDeleteError(null);
+                      }}
+                      className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
+                    >
+                      Delete Team
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleLeave(t._id || t.id)}
+                    className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
+                  >
+                    Leave Team
+                  </button>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      {/* Delete Team Confirmation Modal */}
+      {teamToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                Delete team?
+              </h3>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Are you sure you want to delete <strong className="text-neutral-800 dark:text-neutral-200">{teamToDelete.teamName}</strong>? This action cannot be undone.
+              </p>
             </div>
-          </article>
-        );
-      })}
-    </div>
+
+            {deleteError && (
+              <div className="rounded-lg bg-rose-50 p-2.5 text-xs font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setTeamToDelete(null);
+                  setDeleteError(null);
+                }}
+                className="rounded-lg border border-neutral-300 px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDeleteTeam}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-400 disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                    </svg>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete Team</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -527,7 +615,7 @@ function RequestUserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
     return (
       <img
         src={avatar}
-        alt={name}
+        alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
       />

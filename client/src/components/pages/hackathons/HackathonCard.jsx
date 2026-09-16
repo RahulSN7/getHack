@@ -135,10 +135,6 @@ function HackathonCard({ hackathon }) {
   const handleViewDetails = (e) => {
     e.preventDefault();
     if (!id) return;
-    if (!isAuthenticated) {
-      navigate(`/login?redirect=/hackathons/${id}`, { state: { from: currentLocation } });
-      return;
-    }
     navigate(`/hackathons/${id}`, { state: { from: currentLocation } });
   };
 
@@ -148,6 +144,8 @@ function HackathonCard({ hackathon }) {
         group
         flex
         w-full
+        max-w-full
+        min-w-0
         h-full
         flex-col
         justify-between
@@ -155,7 +153,7 @@ function HackathonCard({ hackathon }) {
         border
         border-neutral-200
         bg-white
-        p-4
+        p-3.5
         sm:p-5
         transition-shadow
         duration-150
@@ -168,10 +166,10 @@ function HackathonCard({ hackathon }) {
         dark:hover:shadow-neutral-950/30
       "
     >
-      <div>
+      <div className="min-w-0 w-full">
         {/* ── 1. Header: Logo + Name + Organizer & Status + Save Button ── */}
-        <div className="flex items-start justify-between gap-2.5 sm:gap-3">
-          <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3">
+        <div className="flex items-start justify-between gap-2 sm:gap-3 min-w-0">
+          <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3">
             {/* Logo / Avatar fallback */}
             <Link
               to={id ? `/hackathons/${id}` : "#"}
@@ -183,7 +181,7 @@ function HackathonCard({ hackathon }) {
               {logoUrl && !imgError ? (
                 <img
                   src={logoUrl}
-                  alt={organizer || name}
+                  alt={organizer ? `${organizer} logo` : `${name} hackathon`}
                   onError={() => setImgError(true)}
                   className="h-9 w-9 shrink-0 rounded-lg object-cover max-w-full"
                 />
@@ -228,20 +226,20 @@ function HackathonCard({ hackathon }) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
             {/* Registration Status Badge */}
             {status === "UPCOMING" ? (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+              <span className="inline-flex shrink-0 items-center gap-1 sm:gap-1.5 rounded-full bg-blue-500/10 px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
                 UPCOMING
               </span>
             ) : status === "OPEN" ? (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+              <span className="inline-flex shrink-0 items-center gap-1 sm:gap-1.5 rounded-full bg-emerald-500/10 px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 OPEN
               </span>
             ) : (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+              <span className="inline-flex shrink-0 items-center gap-1 sm:gap-1.5 rounded-full bg-neutral-100 px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
                 CLOSED
               </span>
@@ -293,8 +291,8 @@ function HackathonCard({ hackathon }) {
         )}
 
         {/* ── 4. Stats: Start Date & Prize ── */}
-        <div className="mt-4 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
-          <div className={startDateFormatted ? "grid grid-cols-2 gap-3" : "block"}>
+        <div className="mt-4 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80 min-w-0">
+          <div className={startDateFormatted ? "grid grid-cols-2 gap-2 sm:gap-3 min-w-0" : "block min-w-0"}>
             {startDateFormatted && (
               <div className="min-w-0">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
@@ -318,7 +316,7 @@ function HackathonCard({ hackathon }) {
       </div>
 
       {/* ── 5. Footer: Deadline (Left) & View Details CTA (Right) ── */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-t border-neutral-100 pt-3.5 dark:border-neutral-800/80 min-w-0 w-full">
         <div className="min-w-0 flex-1">
           <DeadlineDisplay
             registrationDeadline={registrationDeadline}

@@ -284,7 +284,7 @@ function OrganizerHackathonsPage() {
                   {photoUrl ? (
                     <img
                       src={photoUrl}
-                      alt={h.title || h.name || "Hackathon"}
+                      alt={h.title || h.name ? `${h.title || h.name} hackathon` : "Hackathon"}
                       className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
                     />
                   ) : (

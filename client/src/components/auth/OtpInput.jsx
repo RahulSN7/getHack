@@ -103,6 +103,8 @@ function OtpInput({ value = "", onChange, length = 6, disabled = false, error = 
           onPaste={handlePaste}
           disabled={disabled}
           autoComplete="one-time-code"
+          aria-invalid={error}
+          aria-label={`Digit ${index + 1} of ${length}`}
           className={`
             h-12
             w-11

@@ -304,18 +304,21 @@ function extractTargetUserNameFromMessage(userMessage) {
 
   const connectPatterns = [
     /^(?:send\s+(?:a\s+)?connection\s+request\s+to|send\s+connection\s+to|send\s+req\s+to|send\s+request\s+to)\s+(.+)$/i,
-    /^(?:connect\s+me\s+with|connect\s+me\s+to|connect\s+with|connect\s+to|connect)\s+(.+)$/i,
-    /^(?:search\s+for|find\s+user|find)\s+(.+)$/i,
+    /^(?:connect\s+me\s+with|connect\s+me\s+to|connect\s+with|connect\s+to)\s+(.+)$/i,
+    /^(?:i\s+want\s+to\s+connect\s+with|i\s+want\s+connect\s+with|want\s+to\s+connect\s+with)\s+(.+)$/i,
+    /^(?:send\s+([a-z0-9_.-]+(?:\s+[a-z0-9_.-]+)*)\s+a\s+(?:connection\s+)?request)$/i,
     /^(?:add|invite)\s+(.+?)(?:\s+to\s+my\s+network|\s+to\s+network)?$/i,
+    /^(?:find\s+user|search\s+user|find\s+profile\s+of|user\s+named)\s+(.+)$/i,
+    /^(?:find|search\s+for)\s+@([a-z0-9_.-]+)$/i,
+    /^(?:connect)\s+@([a-z0-9_.-]+)$/i,
   ];
 
-  const pronounsAndStopwords = new Set([
-    "him", "her", "them", "they", "this teammate", "that teammate",
-    "the teammate", "this user", "that user", "the user", "this person",
-    "that person", "me", "myself", "first one", "second one", "the first one",
-    "the second one", "1st", "2nd", "3rd", "first", "second", "third",
-    "the first two", "the 1st two", "those two", "these two", "both",
-    "a user", "someone", "anybody", "anyone"
+  const pronounsAndNonUsers = new Set([
+    "him", "her", "them", "they", "me", "myself", "it", "this", "that",
+    "first one", "second one", "the first one", "the second one", "1st", "2nd", "3rd",
+    "first", "second", "third", "both", "a user", "someone", "anybody", "anyone",
+    "hackathon", "hackathons", "hacakthon", "hacakthons", "hackthons", "hackathones",
+    "developer", "developers", "teammate", "teammates", "designer", "designers"
   ]);
 
   for (const p of connectPatterns) {
@@ -324,8 +327,10 @@ function extractTargetUserNameFromMessage(userMessage) {
       let cand = match[1].replace(/[?.!]/g, "").trim();
       cand = cand.replace(/\s+(?:please|now|for\s+me)$/i, "").trim();
       cand = cand.replace(/^(?:a\s+user\s+named|user\s+named|someone\s+named|user)\s+/i, "").trim();
-      if (cand && !pronounsAndStopwords.has(cand.toLowerCase())) {
-        return cand; 
+      
+      const lowerCand = cand.toLowerCase();
+      if (cand && !pronounsAndNonUsers.has(lowerCand) && extractOrdinalIndices(lowerCand, 10).length === 0) {
+        return cand;
       }
     }
   }
@@ -1110,15 +1115,17 @@ function normalizeQueryText(text) {
   if (!text || typeof text !== "string") return "";
   let s = text.toLowerCase().trim();
 
-  // 1. Hackathon domain term typos
-  s = s.replace(/\b(hackthon|hackaton|hackathn|hacathon|hacathone|hackthons|hacathons)\b/g, "hackathon");
-  s = s.replace(/\b(hackathon\?|hackthon\?|hackaton\?)\b/g, "hackathon");
+  // 1. Hackathon domain term typos & variations
+  s = s.replace(/\b(hacakthon|hacakthons|hackthon|hackaton|hackathn|hacathon|hacathone|hackthons|hacathons|hackathones|hackthn|hackathn)\b/g, "hackathon");
+  s = s.replace(/\b(hackathon\?|hackthon\?|hackaton\?|hacakthon\?)\b/g, "hackathon");
+  s = s.replace(/\b(hacakthon's|hackathon's)\b/g, "hackathon");
 
-  // 2. Teammate & Team domain term typos
-  s = s.replace(/\b(temmate|temmates|teamate|teamates)\b/g, "teammate");
+  // 2. Teammate & Team domain term typos & variations
+  s = s.replace(/\b(temmate|temmates|teamate|teamates|teemmate|teemmates)\b/g, "teammate");
   s = s.replace(/\b(tem|teem|teamup|team-up)\b/g, (m) => (m === "teamup" || m === "team-up" ? "team up" : "team"));
   s = s.replace(/\bteam\s+mate(s)?\b/g, "teammate$1");
   s = s.replace(/\b(temmate\?|teamate\?)\b/g, "teammate");
+  s = s.replace(/\b(devloper|devlopers|devoloper|devolopers|deverloper)\b/g, "developer");
 
   // 3. Action / Requirement / Keyword typos
   s = s.replace(/\b(requr|requir|requirment|requirments|reqs|requre)\b/g, "require");
@@ -1130,7 +1137,7 @@ function normalizeQueryText(text) {
   s = s.replace(/\b(regestration|registraton|registraion)\b/g, "registration");
   s = s.replace(/\b(dont\s+hv|dont\s+have)\b/g, "dont have");
 
-  // 4. Technical term phrase normalization (preserve canonical meaning)
+  // 4. Technical term phrase normalization
   s = s.replace(/\bjava\s+script\b/g, "javascript");
   s = s.replace(/\bnode\s+js\b/g, "nodejs");
   s = s.replace(/\bmongo\s+db\b/g, "mongodb");
@@ -1155,278 +1162,315 @@ function understandUserQuery(userMessage, messages = [], context = {}) {
 
   const extractedSkill = extractSkillFromMessage(rawQuery) || extractSkillFromMessage(normalizedQuery);
   const extractedHackName = extractHackathonNameFromMessage(rawQuery) || extractHackathonNameFromMessage(normalizedQuery);
+  const extractedTargetName = extractTargetUserNameFromMessage(rawQuery) || extractTargetUserNameFromMessage(normalizedQuery);
 
   let intent = "GENERIC_FALLBACK";
   let confidence = 0.5;
 
-  const extractedTargetName = extractTargetUserNameFromMessage(rawQuery) || extractTargetUserNameFromMessage(normalizedQuery);
+  const lowerNorm = normalizedQuery;
 
-  // 1. Connection Intent
+  // 1. Context Reset Commands
+  if (isContextResetCommand(rawQuery) || isContextResetCommand(normalizedQuery)) {
+    const result = {
+      intent: "RESET_CONTEXT",
+      rawQuery,
+      normalizedQuery,
+      entities: { skill: null, hackathonName: null },
+      contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+      confidence: 0.99,
+    };
+    console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+    return result;
+  }
+
+  // 2. General AI Help / Capabilities
+  const isGeneralHelpQuery =
+    /\b(what\s+can\s+you\s+do|how\s+can\s+you\s+help|what\s+features\s+do\s+you\s+have|what\s+can\s+gethack\s+ai\s+do|help\s+me\s+with\s+gethack)\b/i.test(lowerNorm) ||
+    lowerNorm === "what can you do" ||
+    lowerNorm === "what can you do?" ||
+    lowerNorm === "help me" ||
+    lowerNorm === "help" ||
+    lowerNorm === "how can you help" ||
+    lowerNorm === "what features do you have";
+
+  if (isGeneralHelpQuery) {
+    const result = {
+      intent: "GENERAL_AI_HELP",
+      rawQuery,
+      normalizedQuery,
+      entities: { skill: null, hackathonName: null },
+      contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+      confidence: 0.98,
+    };
+    console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+    return result;
+  }
+
+  // 3. Explicit User Connection Intent (Only if valid target username extracted)
   const isDirectConnect =
     Boolean(extractedTargetName) &&
-    (/\b(connect\s+me\s+with|connect\s+with|send\s+(a\s+)?connection\s+request\s+to|send\s+req\s+to|i\s+want\s+to\s+connect\s+with|i\s+want\s+connect\s+with|connect\s+me\s+wid)\b/i.test(normalizedQuery) ||
-     normalizedQuery.startsWith("connect me with") ||
-     normalizedQuery.startsWith("connect with") ||
-     normalizedQuery.startsWith("send connection request to") ||
-     normalizedQuery.startsWith("send req to") ||
-     normalizedQuery.startsWith("i want to connect with") ||
-     normalizedQuery.startsWith("connect me wid"));
-
-  const isConnectIntent =
-    isDirectConnect ||
-    normalizedQuery.startsWith("connect with") ||
-    normalizedQuery.startsWith("send connection request") ||
-    normalizedQuery.startsWith("connect to") ||
-    (normalizedQuery.includes("connect") && !normalizedQuery.includes("network") && !normalizedQuery.includes("how") && !normalizedQuery.includes("discovers"));
+    (/\b(connect\s+me\s+with|connect\s+with|send\s+(a\s+)?connection\s+request\s+to|send\s+req\s+to|i\s+want\s+to\s+connect\s+with|connect\s+me\s+wid|send\s+.+\s+a\s+request)\b/i.test(lowerNorm) ||
+     lowerNorm.startsWith("connect me with") ||
+     lowerNorm.startsWith("connect with") ||
+     lowerNorm.startsWith("send connection request to") ||
+     lowerNorm.startsWith("send req to") ||
+     lowerNorm.startsWith("send request to") ||
+     lowerNorm.startsWith("find user") ||
+     lowerNorm.startsWith("search user"));
 
   if (isDirectConnect) {
-    intent = "DIRECT_CONNECT_USER";
-    confidence = 0.98;
-  } else if (isConnectIntent) {
-    intent = "CONNECT_USER";
-    confidence = 0.95;
+    const result = {
+      intent: "DIRECT_CONNECT_USER",
+      rawQuery,
+      normalizedQuery,
+      entities: { skill: extractedSkill, hackathonName: extractedHackName, targetName: extractedTargetName },
+      contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+      confidence: 0.98,
+    };
+    console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+    return result;
   }
 
-  // 2. Teammate Intents (Explicit Best Teammate & Teammate Discovery)
-  const isComplementaryRequest =
-    normalizedQuery.includes("complement") ||
-    normalizedQuery.includes("fill my skill gap") ||
-    normalizedQuery.includes("skill gap") ||
-    normalizedQuery.includes("different skills");
+  // 4. Teammate vs Hackathon Intent Disambiguation
+  const isTeammateMentioned =
+    /\b(teammate|teammates|developer|developers|designer|designers|candidate|candidates|person|people|team\s+up)\b/i.test(lowerNorm) ||
+    lowerNorm.includes("someone who") ||
+    lowerNorm.includes("someone skilled") ||
+    lowerNorm.includes("skilled in") ||
+    lowerNorm.includes("good at") ||
+    lowerNorm.includes("build a team") ||
+    lowerNorm.includes("create a team") ||
+    lowerNorm.includes("suggest a team");
 
-  const isBestTeammatesPlural =
-    /\b(best|top|strongest)\s+(teammates|candidates|people|participants)\b/i.test(normalizedQuery) ||
-    normalizedQuery.includes("provide me best teammates") ||
-    normalizedQuery.includes("give me best teammates") ||
-    normalizedQuery.includes("show best teammates") ||
-    normalizedQuery.includes("find best teammates");
+  const isHackathonMentioned =
+    /\b(hackathon|hackathons|hacakthon|hacakthons|hackthons|hackathones|event|events|competition|competitions)\b/i.test(lowerNorm) ||
+    lowerNorm.includes("find online ai") ||
+    lowerNorm.includes("find online") ||
+    lowerNorm.includes("upcoming hackathons") ||
+    lowerNorm.includes("best hackathon") ||
+    lowerNorm.includes("best hacakthon") ||
+    lowerNorm.includes("recommend a hackathon") ||
+    lowerNorm.includes("recommend hackathons");
 
-  const isExplicitBestTeammateQuery =
-    !isBestTeammatesPlural && (
-      /\b(best|strongest|top)\s+(teammate|candidate|person)\b/i.test(normalizedQuery) ||
-      /\bwhich\s+(teammate|candidate|person)\s+(is\s+)?(the\s+)?(best|strongest)\b/i.test(normalizedQuery) ||
-      /\bwhich\s+(teammate|candidate|person)\s+should\s+i\s+(choose|pick|select|invite|team\s+up\s+with)\b/i.test(normalizedQuery) ||
-      /\bwho\s+is\s+(the\s+)?(best|strongest)\s+(teammate|candidate|person)\b/i.test(normalizedQuery) ||
-      /\bwho\s+would\s+be\s+(the\s+)?(best|strongest)\s+(teammate|candidate|person)\b/i.test(normalizedQuery) ||
-      /\brecommend\s+(the\s+)?(best|strongest)\s+(teammate|candidate|person)\b/i.test(normalizedQuery) ||
-      /\bfind\s+(me\s+)?(the\s+)?(best|strongest)\s+(teammate|candidate|person)\b/i.test(normalizedQuery) ||
-      /\bsuggest\s+(the\s+)?(best|strongest)\s+(teammate|candidate|person)\b/i.test(normalizedQuery) ||
-      /\bwho\s+should\s+i\s+(choose|pick|select|invite|team\s+up\s+with)\b/i.test(normalizedQuery) ||
-      /\bwho\s+should\s+i\s+team\s+up\s+with\b/i.test(normalizedQuery) ||
-      normalizedQuery.includes("which teammate best") ||
-      normalizedQuery.includes("which teammate is best") ||
-      normalizedQuery.includes("which temmate best") ||
-      normalizedQuery.includes("best teemmate") ||
-      normalizedQuery.includes("best teammate for") ||
-      normalizedQuery.includes("who is the best teammate") ||
-      normalizedQuery.includes("top teammate") ||
-      normalizedQuery.includes("give me your top teammate") ||
-      normalizedQuery.includes("give me your top candidate") ||
-      (normalizedQuery.includes("which one is best") && (normalizedQuery.includes("teammate") || normalizedQuery.includes("candidate") || normalizedQuery.includes("person"))) ||
-      (normalizedQuery.includes("who is best") && (normalizedQuery.includes("teammate") || normalizedQuery.includes("candidate") || normalizedQuery.includes("person"))) ||
-      ((normalizedQuery === "which one is best" || normalizedQuery === "which is the best" || normalizedQuery === "which one best" || normalizedQuery === "which teammate best") && Boolean(previousTeammates))
-    );
+  // 4A. Implicit Hackathon Intelligence (deadline, requirements, details, skill gap)
+  const isSkillGapQuery =
+    lowerNorm.includes("missing") ||
+    lowerNorm.includes("skill gap") ||
+    lowerNorm.includes("skills i miss") ||
+    lowerNorm.includes("skill i miss") ||
+    lowerNorm.includes("skills i dont have") ||
+    lowerNorm.includes("skill i dont have");
 
-  if (intent === "GENERIC_FALLBACK" && isExplicitBestTeammateQuery) {
-    intent = "RECOMMEND_BEST_TEAMMATE";
-    confidence = 0.95;
-  }
+  const isDeadlineQuery =
+    lowerNorm.includes("deadline") ||
+    lowerNorm.includes("registration close") ||
+    lowerNorm.includes("how much time left") ||
+    lowerNorm.includes("last date to register");
 
-  // 3. Build Team Intent
-  const isBuildTeamQuery =
-    /\b(build|make|create|suggest|form)\s+(a\s+|my\s+|the\s+)?(best\s+)?team\b/i.test(normalizedQuery) ||
-    /\bwho\s+should\s+be\s+on\s+my\s+team\b/i.test(normalizedQuery) ||
-    /\bwhat\s+teammates\s+should\s+i\s+choose\b/i.test(normalizedQuery) ||
-    /\bwhich\s+teammates\s+should\s+i\s+choose\b/i.test(normalizedQuery) ||
-    /\bfind\s+teammates\s+i\s+should\s+invite\b/i.test(normalizedQuery) ||
-    /\bhelp\s+me\s+find\s+a\s+team\b/i.test(normalizedQuery) ||
-    /\bmake\s+a\s+team\s+for\s+me\b/i.test(normalizedQuery) ||
-    /\bhelp\s+me\s+build\s+team\b/i.test(normalizedQuery) ||
-    normalizedQuery.includes("build team") ||
-    normalizedQuery.includes("build my team") ||
-    normalizedQuery.includes("build a team") ||
-    normalizedQuery.includes("create a team") ||
-    normalizedQuery.includes("make a team") ||
-    normalizedQuery.includes("make team") ||
-    normalizedQuery.includes("suggest a team") ||
-    normalizedQuery.includes("best team for") ||
-    normalizedQuery.includes("who should be on my team") ||
-    normalizedQuery.includes("which teammates should i choose") ||
-    normalizedQuery.includes("what teammates should i choose") ||
-    normalizedQuery.includes("find teammates i should invite") ||
-    normalizedQuery.includes("which team would be best") ||
-    normalizedQuery.includes("which team best") ||
-    normalizedQuery.includes("help me make a team") ||
-    normalizedQuery === "best team for this hackathon" ||
-    normalizedQuery === "which team would be best";
+  const isRequirementsQuery =
+    /\b(what|which|wat)\s+(skills?|tech|technology|stack|requirements?)\b/i.test(lowerNorm) ||
+    lowerNorm.includes("what skills do i need") ||
+    lowerNorm.includes("what skills are required") ||
+    lowerNorm.includes("what skills do i require") ||
+    lowerNorm.includes("what skills are needed") ||
+    lowerNorm.includes("what requirements");
 
-  if (intent === "GENERIC_FALLBACK" && isBuildTeamQuery) {
-    intent = "BUILD_TEAM";
-    confidence = 0.95;
-  }
+  const isDetailsQuery =
+    lowerNorm.includes("tell me about this hackathon") ||
+    lowerNorm.includes("tell me about it") ||
+    lowerNorm.includes("explain this hackathon") ||
+    lowerNorm.includes("explain the hackathon");
 
-  const isTeammateRequest =
-    isComplementaryRequest ||
-    isExplicitBestTeammateQuery ||
-    normalizedQuery.includes("teammate") ||
-    normalizedQuery.includes("someone who") ||
-    normalizedQuery.includes("someone skilled") ||
-    normalizedQuery.includes("skilled in") ||
-    normalizedQuery.includes("good at") ||
-    normalizedQuery.includes("need an ml") ||
-    normalizedQuery.includes("need a frontend") ||
-    normalizedQuery.includes("need a ui") ||
-    normalizedQuery.includes("designer") ||
-    normalizedQuery.includes("ui/ux") ||
-    normalizedQuery.includes("candidate") ||
-    normalizedQuery.includes("team up") ||
-    normalizedQuery.includes("who to work with") ||
-    normalizedQuery.includes("who can join") ||
-    normalizedQuery.includes("join my team") ||
-    normalizedQuery.includes("provide me best teammates") ||
-    normalizedQuery.includes("provide me teammates") ||
-    normalizedQuery.includes("suggest teammates") ||
-    normalizedQuery.includes("find teammates") ||
-    normalizedQuery.includes("which teammate");
-
-  const isShowMoreTeammatesQuery =
-    /\b(show|find|give|get|fetch|see)\s+(me\s+)?(more|next)\s+(teammates?|candidates?|users?|people|teemmates?|teamates?)\b/i.test(normalizedQuery) ||
-    /\b(more|next)\s+(teammates?|candidates?|users?|people|teemmates?|teamates?)\b/i.test(normalizedQuery) ||
-    /\b(give\s+me\s+more|show\s+some\s+more\s+users|show\s+more\s+users|show\s+more|get\s+more)\b/i.test(normalizedQuery) ||
-    normalizedQuery === "more teammates" ||
-    normalizedQuery === "show more" ||
-    normalizedQuery === "give me more" ||
-    normalizedQuery === "show more teammates" ||
-    normalizedQuery === "show me more teammates" ||
-    normalizedQuery === "show me more teemmates" ||
-    normalizedQuery === "show more teamates";
-
-  if (intent === "GENERIC_FALLBACK" && isShowMoreTeammatesQuery) {
-    intent = "SHOW_MORE_TEAMMATES";
-    confidence = 0.98;
-  }
-
-  if (intent === "GENERIC_FALLBACK" && isTeammateRequest) {
-    if (isShowMoreTeammatesQuery) {
-      intent = "SHOW_MORE_TEAMMATES";
-      confidence = 0.98;
-    } else if (isExplicitBestTeammateQuery) {
-      intent = "RECOMMEND_BEST_TEAMMATE";
-      confidence = 0.95;
-    } else {
-      intent = "FIND_TEAMMATES";
-      confidence = 0.9;
+  if (!isTeammateMentioned) {
+    if (isSkillGapQuery) {
+      const result = {
+        intent: "HACKATHON_SKILL_GAP",
+        rawQuery,
+        normalizedQuery,
+        entities: { skill: extractedSkill, hackathonName: extractedHackName },
+        contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+        confidence: 0.95,
+      };
+      console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+      return result;
+    }
+    if (isDeadlineQuery) {
+      const result = {
+        intent: "HACKATHON_DEADLINE",
+        rawQuery,
+        normalizedQuery,
+        entities: { skill: extractedSkill, hackathonName: extractedHackName },
+        contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+        confidence: 0.95,
+      };
+      console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+      return result;
+    }
+    if (isRequirementsQuery) {
+      const result = {
+        intent: "HACKATHON_REQUIREMENTS",
+        rawQuery,
+        normalizedQuery,
+        entities: { skill: extractedSkill, hackathonName: extractedHackName },
+        contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+        confidence: 0.95,
+      };
+      console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+      return result;
+    }
+    if (isDetailsQuery) {
+      const result = {
+        intent: "HACKATHON_DETAILS",
+        rawQuery,
+        normalizedQuery,
+        entities: { skill: extractedSkill, hackathonName: extractedHackName },
+        contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+        confidence: 0.95,
+      };
+      console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+      return result;
     }
   }
 
-  // 3. Contextual Hackathon Intelligence Intents
-  if (intent === "GENERIC_FALLBACK") {
-    // Skill Gap
-    const isSkillGap =
-      normalizedQuery.includes("missing") ||
-      normalizedQuery.includes("what skill i miss") ||
-      normalizedQuery.includes("what skills i miss") ||
-      normalizedQuery.includes("what skills i dont have") ||
-      normalizedQuery.includes("what skill i dont have") ||
-      normalizedQuery.includes("which skill i need learn") ||
-      normalizedQuery.includes("which skills i need learn") ||
-      normalizedQuery.includes("my skill gap") ||
-      normalizedQuery.includes("skill gap");
-
-    if (isSkillGap) {
-      intent = "HACKATHON_SKILL_GAP";
-      confidence = 0.95;
-    }
-  }
-
-  if (intent === "GENERIC_FALLBACK") {
-    // Requirements
-    const isRequirements =
-      /\bwhat\s+(skills|skills\s+do\s+i|skills\s+i|skills\s+are|skills\s+needed|skills\s+required|skills\s+need|tech|technology|technologies|stack|tech\s+stack)\b/i.test(normalizedQuery) ||
-      /\bwhich\s+skills?\s+(need|needed|require|required)\b/i.test(normalizedQuery) ||
-      /\bwat\s+(skills|tech|technology)\b/i.test(normalizedQuery) ||
-      normalizedQuery.includes("what skill i need") ||
-      normalizedQuery.includes("what skills i need") ||
-      normalizedQuery.includes("what skill i require") ||
-      normalizedQuery.includes("what skills i require") ||
-      normalizedQuery.includes("which skill need") ||
-      normalizedQuery.includes("which skills need") ||
-      normalizedQuery.includes("wat tech required") ||
-      normalizedQuery.includes("what tech required") ||
-      normalizedQuery.includes("what tech stack") ||
-      normalizedQuery.includes("what do i require") ||
-      normalizedQuery.includes("skills for this") ||
-      normalizedQuery.includes("skills need") ||
-      normalizedQuery.includes("skill need") ||
-      normalizedQuery.includes("what requirement");
-
-    if (isRequirements) {
-      intent = "HACKATHON_REQUIREMENTS";
-      confidence = 0.95;
-    }
-  }
-
-  if (intent === "GENERIC_FALLBACK") {
-    // Deadline
-    const isDeadline =
-      normalizedQuery.includes("when deadline") ||
-      normalizedQuery.includes("registration close") ||
-      normalizedQuery.includes("when registration close") ||
-      normalizedQuery.includes("how much time left") ||
-      normalizedQuery.includes("registration deadline") ||
-      normalizedQuery.includes("last date to register");
-
-    if (isDeadline) {
-      intent = "HACKATHON_DEADLINE";
-      confidence = 0.95;
-    }
-  }
-
-  if (intent === "GENERIC_FALLBACK") {
-    // Best Hackathon
-    const isBestHackathon =
-      /\bwhich\s+(hackathon)?\s*(is\s+)?(the\s+)?best\b/i.test(normalizedQuery) ||
-      /\bwhich\s+one\s+(is\s+)?best\b/i.test(normalizedQuery) ||
-      normalizedQuery.includes("which hackathon should i") ||
-      normalizedQuery.includes("which hackathon should i participate") ||
-      normalizedQuery.includes("which hackathon should i join") ||
-      normalizedQuery.includes("which hackathon is best") ||
-      normalizedQuery.includes("which hackathon best") ||
-      normalizedQuery === "best hackathon for me" ||
-      normalizedQuery.includes("best hackathon for") ||
-      normalizedQuery.includes("which one best") ||
-      normalizedQuery.includes("suggest best hackathon") ||
-      ((normalizedQuery === "which one is best" || normalizedQuery === "which is the best" || normalizedQuery === "which one best") && Boolean(previousHackathons));
-
-    if (isBestHackathon) {
+  // 4B. Hackathon Intent Branch (when query is about hackathons and NOT asking for teammates)
+  if (isHackathonMentioned && !isTeammateMentioned) {
+    if (
+      /\b(best|recommend|top|suits?|join|participate)\b/i.test(lowerNorm) ||
+      lowerNorm.includes("provide me best") ||
+      lowerNorm.includes("which hackathon")
+    ) {
       intent = "RECOMMEND_BEST_HACKATHON";
       confidence = 0.95;
-    }
-  }
-
-  if (intent === "GENERIC_FALLBACK") {
-    // Hackathon Search
-    const isHackathonDiscovery =
-      normalizedQuery.includes("find hackathon") ||
-      normalizedQuery.includes("show me hackathon") ||
-      normalizedQuery.includes("suggest hackathon") ||
-      normalizedQuery.includes("recommend hackathon") ||
-      normalizedQuery.includes("find online");
-
-    if (isHackathonDiscovery) {
+    } else {
       intent = "HACKATHON_SEARCH";
-      confidence = 0.9;
+      confidence = 0.95;
     }
+
+    const result = {
+      intent,
+      rawQuery,
+      normalizedQuery,
+      entities: { skill: extractedSkill, hackathonName: extractedHackName },
+      contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+      confidence,
+    };
+    console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+    return result;
   }
 
-  if (intent === "GENERIC_FALLBACK") {
-    if (/\b(hi|hello|hey)\b/i.test(normalizedQuery)) {
-      intent = "GREETING";
-      confidence = 0.9;
+  // 4B. Teammate Intent Branch
+  if (isTeammateMentioned) {
+    const isBuildTeam =
+      /\b(build|make|create|suggest|form)\s+(a\s+|my\s+|the\s+)?(best\s+)?team\b/i.test(lowerNorm) ||
+      lowerNorm.includes("build team") ||
+      lowerNorm.includes("build a team") ||
+      lowerNorm.includes("create a team");
+
+    const isBestTeammate =
+      /\b(best|strongest|top)\s+(teammate|candidate|person)\b/i.test(lowerNorm) ||
+      /\bwhich\s+(teammate|candidate|person)\s+(is\s+)?(the\s+)?(best|strongest)\b/i.test(lowerNorm) ||
+      lowerNorm.includes("which teammate best") ||
+      lowerNorm.includes("which teammate is best") ||
+      lowerNorm.includes("best teammate for") ||
+      lowerNorm.includes("who is the best teammate");
+
+    const isShowMore =
+      /\b(show|find|give|get|fetch|see)\s+(me\s+)?(more|next)\s+(teammates?|candidates?|users?|people)?\b/i.test(lowerNorm) ||
+      lowerNorm === "more teammates" ||
+      lowerNorm === "show more" ||
+      lowerNorm === "give me more" ||
+      lowerNorm === "show me more teammates" ||
+      (lowerNorm.includes("more") && Boolean(previousTeammates));
+
+    if (isBuildTeam) {
+      intent = "BUILD_TEAM";
+      confidence = 0.95;
+    } else if (isBestTeammate) {
+      intent = "RECOMMEND_BEST_TEAMMATE";
+      confidence = 0.95;
+    } else if (isShowMore) {
+      intent = "SHOW_MORE_TEAMMATES";
+      confidence = 0.98;
+    } else {
+      intent = "FIND_TEAMMATES";
+      confidence = 0.95;
     }
+
+    const result = {
+      intent,
+      rawQuery,
+      normalizedQuery,
+      entities: { skill: extractedSkill, hackathonName: extractedHackName },
+      contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+      confidence,
+    };
+    console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+    return result;
   }
 
-  return {
+  // 5. Short Commands & Specific Phrase Detection without explicit "hackathon" or "teammate" word
+  if (
+    lowerNorm === "hackathons" ||
+    lowerNorm === "hackathon" ||
+    lowerNorm === "find hackathons" ||
+    lowerNorm === "show hackathons" ||
+    lowerNorm === "find hackathon" ||
+    lowerNorm === "show me hackathons" ||
+    lowerNorm === "find online ai hackathons" ||
+    lowerNorm === "find ai hackathons for me" ||
+    lowerNorm === "show upcoming hackathons" ||
+    lowerNorm === "what hackathons are available" ||
+    lowerNorm === "provide me a hackathon" ||
+    lowerNorm === "provide me best hackathon" ||
+    lowerNorm === "best hackathons" ||
+    lowerNorm === "best hackathon" ||
+    lowerNorm === "recommend a hackathon" ||
+    lowerNorm === "recommend hackathons for me" ||
+    lowerNorm === "online hackathons"
+  ) {
+    intent = lowerNorm.includes("best") || lowerNorm.includes("recommend") ? "RECOMMEND_BEST_HACKATHON" : "HACKATHON_SEARCH";
+    const result = {
+      intent,
+      rawQuery,
+      normalizedQuery,
+      entities: { skill: extractedSkill, hackathonName: extractedHackName },
+      contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+      confidence: 0.98,
+    };
+    console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+    return result;
+  }
+
+  if (
+    lowerNorm === "find teammates" ||
+    lowerNorm === "find developers" ||
+    lowerNorm === "find ai developer" ||
+    lowerNorm === "find a developer" ||
+    lowerNorm === "show developers" ||
+    lowerNorm === "more teammates" ||
+    lowerNorm === "show more" ||
+    lowerNorm === "give me more" ||
+    lowerNorm === "show more teammates" ||
+    lowerNorm === "show me more teammates"
+  ) {
+    const result = {
+      intent: lowerNorm.includes("more") || lowerNorm.includes("next") ? "SHOW_MORE_TEAMMATES" : "FIND_TEAMMATES",
+      rawQuery,
+      normalizedQuery,
+      entities: { skill: extractedSkill, hackathonName: extractedHackName },
+      contextReference: { previousHackathons, previousSelectedHackathon, previousTeammates, previousSelectedTeammate },
+      confidence: 0.98,
+    };
+    console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+    return result;
+  }
+
+  if (/\b(hi|hello|hey)\b/i.test(lowerNorm)) {
+    intent = "GREETING";
+    confidence = 0.9;
+  }
+
+  const result = {
     intent,
     rawQuery,
     normalizedQuery,
@@ -1442,6 +1486,8 @@ function understandUserQuery(userMessage, messages = [], context = {}) {
     },
     confidence,
   };
+  console.log(`[AI INTENT]\nmessage: "${rawQuery}"\nintent: "${result.intent}"\n`);
+  return result;
 }
 
 /**
@@ -1500,6 +1546,21 @@ function generateFallbackResponse(messages, context) {
         text: `Which teammate do you mean — ${names}?`,
       };
     }
+  }
+
+  // 3.5 General getHack AI Help / Capabilities
+  if (
+    queryAnalysis.intent === "GENERAL_AI_HELP" ||
+    lowerMsg === "what can you do" ||
+    lowerMsg === "what can you do?" ||
+    lowerMsg === "help me" ||
+    lowerMsg === "how can you help" ||
+    lowerMsg === "what features do you have" ||
+    lowerMsg === "what can gethack ai do"
+  ) {
+    return {
+      text: `As **getHack AI — Your Hackathon Assistant**, I can help you:\n\n1. **Discover Hackathons**: Search hackathons by skills, topics (e.g., AI, Web3), mode (online/in-person), or status.\n2. **Hackathon Details & Deadlines**: Check required skills, registration deadlines, eligibility, and skill gaps.\n3. **Find Teammates**: Discover complementary teammates skilled in React, Python, AI/ML, UI/UX, and more.\n4. **Connect & Collaborate**: Send connection requests and form teams for your hackathons.\n\n**Try asking:**\n• *"Find online AI hackathons"*\n• *"Recommend best hackathons for me"*\n• *"Find React developers"*\n• *"When is the deadline for this hackathon?"*`,
+    };
   }
 
   let { previousTeammates, previousSelectedTeammate } = extractTeammateContextFromMessages(messages);
@@ -2043,14 +2104,8 @@ function generateFallbackResponse(messages, context) {
 
       // Check if direct find_teammates search was already executed for this target name
       const hasSearchedForName = Array.isArray(messages) && messages.some((m) => {
-        if (m.role === "tool" && m.name === "find_teammates") {
-          let content = m.content;
-          if (typeof content === "string") {
-            try { content = JSON.parse(content); } catch (e) {}
-          }
-          if (content && content.searchArgs && content.searchArgs.query) {
-            return String(content.searchArgs.query).toLowerCase().trim() === extractedDirectName.toLowerCase().trim();
-          }
+        if (m.role === "tool" && (m.name === "find_teammates" || m.name === "search_users")) {
+          return true;
         }
         return false;
       });
@@ -2452,10 +2507,18 @@ function generateFallbackResponse(messages, context) {
     ((lowerMsg === "which one is best" || lowerMsg === "which is the best" || lowerMsg === "which one should i choose" || lowerMsg === "which one is best?") && Boolean(previousTeammates));
 
   const isTeammateRequest =
+    queryAnalysis.intent === "FIND_TEAMMATES" ||
+    queryAnalysis.intent === "RECOMMEND_BEST_TEAMMATE" ||
+    queryAnalysis.intent === "SHOW_MORE_TEAMMATES" ||
+    queryAnalysis.intent === "BUILD_TEAM" ||
     isComplementaryRequest ||
     isBestTeammateQuery ||
     lowerMsg.includes("teammate") ||
     lowerMsg.includes("teammates") ||
+    lowerMsg.includes("developer") ||
+    lowerMsg.includes("developers") ||
+    lowerMsg.includes("designer") ||
+    lowerMsg.includes("designers") ||
     lowerMsg.includes("someone who") ||
     lowerMsg.includes("someone skilled") ||
     lowerMsg.includes("skilled in") ||
@@ -2463,7 +2526,6 @@ function generateFallbackResponse(messages, context) {
     lowerMsg.includes("need an ml") ||
     lowerMsg.includes("need a frontend") ||
     lowerMsg.includes("need a ui") ||
-    lowerMsg.includes("designer") ||
     lowerMsg.includes("ui/ux") ||
     lowerMsg.includes("complementary") ||
     lowerMsg.includes("show me details for") ||
@@ -2477,6 +2539,7 @@ function generateFallbackResponse(messages, context) {
     lowerMsg.includes("provide me teammates") ||
     lowerMsg.includes("suggest teammates") ||
     lowerMsg.includes("find teammates") ||
+    lowerMsg.includes("find developers") ||
     lowerMsg.includes("which teammate") ||
     lowerMsg.includes("who should i choose") ||
     lowerMsg.includes("who should i team up with") ||

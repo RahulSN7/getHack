@@ -1,6 +1,7 @@
 import { Outlet, ScrollRestoration, Navigate } from "react-router-dom";
 import Header from "./components/Header/Header";
 import GetHackAIWidget from "./components/AI/GetHackAIWidget";
+import CookieConsentBanner from "./components/common/CookieConsentBanner";
 import { useAuth } from "./context/useAuth";
 
 // App — Root Layout Component
@@ -34,6 +35,7 @@ function App() {
       <Header />
       <Outlet />
       <GetHackAIWidget />
+      <CookieConsentBanner />
     </>
   );
 }

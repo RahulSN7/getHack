@@ -126,7 +126,7 @@ function OrganizerManagePage() {
                           {photoUrl ? (
                             <img
                               src={photoUrl}
-                              alt={h.name || h.title}
+                              alt={h.name || h.title ? `${h.name || h.title} hackathon` : "Hackathon"}
                               className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
                             />
                           ) : (

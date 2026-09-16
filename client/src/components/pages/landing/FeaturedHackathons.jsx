@@ -163,7 +163,11 @@ function FeaturedHackathons() {
             className="
               mt-10
               grid
+              grid-cols-1
               gap-5
+              min-w-0
+              w-full
+              max-w-full
 
               sm:grid-cols-2
               lg:grid-cols-3

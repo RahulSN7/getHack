@@ -1813,7 +1813,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
               {avatar && !imgError ? (
                 <img
                   src={avatar}
-                  alt={name}
+                  alt={isGroup ? `${name} group avatar` : `${name} profile photo`}
                   onError={() => setImgError(true)}
                   className="h-10 w-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 group-hover:opacity-90 transition-opacity"
                 />
@@ -2610,7 +2610,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                               <div key={`att-${attIdx}`} className="overflow-hidden rounded-xl border border-neutral-200/60 dark:border-neutral-700/60 max-w-sm my-1">
                                 <img
                                   src={fileUrl}
-                                  alt={fileName}
+                                  alt={fileName || "Shared image attachment"}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setLightboxImage({ url: fileUrl, title: fileName });
@@ -2749,7 +2749,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                         {msgUserAvatar ? (
                           <img
                             src={msgUserAvatar}
-                            alt={senderName}
+                            alt={senderName ? `${senderName} profile photo` : "User profile photo"}
                             className="h-8 w-8 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shadow-2xs"
                           />
                         ) : (
@@ -2889,7 +2889,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-200 dark:bg-neutral-800">
                   <img
                     src={pendingAttachment.url || pendingAttachment.cdnUrl}
-                    alt={pendingAttachment.name}
+                    alt={pendingAttachment.name || "Attachment preview"}
                     className="h-full w-full object-cover"
                   />
                   {pendingAttachment.uploading && (
@@ -3321,7 +3321,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             <div className="grid place-items-center p-2">
               <img
                 src={lightboxImage.url}
-                alt={lightboxImage.title}
+                alt={lightboxImage.title || "Full size attachment image"}
                 className="max-h-[75vh] w-auto object-contain rounded-xl"
               />
             </div>

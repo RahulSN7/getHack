@@ -913,7 +913,7 @@ function Header() {
                                     {senderAvatar ? (
                                       <img
                                         src={senderAvatar}
-                                        alt={senderName || "User"}
+                                        alt={senderName ? `${senderName} profile photo` : "User profile photo"}
                                         className="h-8 w-8 rounded-full object-cover ring-1 ring-neutral-200 dark:ring-neutral-700"
                                       />
                                     ) : initials ? (
@@ -1109,7 +1109,7 @@ function Header() {
                       {user?.profile?.avatar || user?.avatar ? (
                         <img
                           src={user.profile?.avatar || user.avatar}
-                          alt={user?.name || "User"}
+                          alt={user?.name ? `${user.name} profile photo` : "User profile photo"}
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
                             const fallback = e.currentTarget.nextElementSibling;

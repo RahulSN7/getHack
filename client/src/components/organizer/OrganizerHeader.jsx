@@ -308,7 +308,7 @@ function OrganizerHeader() {
                       {user?.profile?.avatar || user?.avatar ? (
                         <img
                           src={user.profile?.avatar || user.avatar}
-                          alt={user?.name || "Organizer"}
+                          alt={user?.name ? `${user.name} profile photo` : "Organizer profile photo"}
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
                             const fallback = e.currentTarget.nextElementSibling;

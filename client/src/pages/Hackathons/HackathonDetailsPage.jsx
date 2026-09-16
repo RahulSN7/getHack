@@ -12,6 +12,7 @@ import { useAuth } from "../../context/useAuth";
 import { ACCENT_TEXT, ACCENT_BG_SOFT } from "../../constants/themeTokens";
 import DeadlineDisplay from "../../components/pages/hackathons/DeadlineDisplay";
 import BackButton from "../../components/common/BackButton";
+import Skeleton from "../../components/common/Skeleton";
 import { hackathonService } from "../../services/hackathonService";
 import useSEO from "../../utils/useSEO";
 import {
@@ -87,12 +88,6 @@ function HackathonDetailsPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate(`/login?redirect=/hackathons/${id}`, { replace: true });
-    }
-  }, [authLoading, isAuthenticated, id, navigate]);
-
-  useEffect(() => {
     let isMounted = true;
     setImgError(false);
     async function loadHackathon() {
@@ -113,6 +108,9 @@ function HackathonDetailsPage() {
           const feeStr = formatFee(h.fee, h.registrationFee);
           const teamSizeStr = formatTeamSize(h.teamSize, h.minTeamSize, h.maxTeamSize);
 
+          const minTeam = h.minTeamSize || (typeof h.teamSize === "object" ? h.teamSize?.min : null);
+          const maxTeam = h.maxTeamSize || (typeof h.teamSize === "object" ? h.teamSize?.max : null);
+
           setHackathon({
             ...h,
             organizerId: typeof h.organizer === "object" ? (h.organizer._id || h.organizer.ref) : (h.organizer || "org_demo"),
@@ -127,6 +125,8 @@ function HackathonDetailsPage() {
             url: extUrl,
             hasValidRegistrationUrl: hasValidUrl,
             fee: feeStr,
+            minTeamSize: minTeam,
+            maxTeamSize: maxTeam,
             teamSize: teamSizeStr,
             prize: prizeStr,
             registrationOpen: h.registration?.deadline ? new Date(h.registration.deadline) > new Date() : (h.registrationDeadline ? new Date(h.registrationDeadline) > new Date() : true),
@@ -155,22 +155,48 @@ function HackathonDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 px-6 py-20 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
-        <div className="mx-auto max-w-xl text-center">
-          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
-            <svg className="h-4 w-4 animate-spin text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
-            </svg>
-            <span>Loading hackathon details...</span>
+      <div
+        role="status"
+        aria-label="Loading hackathon details..."
+        aria-busy="true"
+        className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 dark:bg-neutral-950 transition-colors"
+      >
+        <div className="mx-auto max-w-6xl space-y-6">
+          <Skeleton className="h-6 w-32 rounded-lg" />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-14 w-14 rounded-xl shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-7 w-3/4 rounded-lg" />
+                    <Skeleton className="h-4 w-1/2 rounded-md" />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Skeleton className="h-6 w-20 rounded-md" />
+                  <Skeleton className="h-6 w-24 rounded-md" />
+                  <Skeleton className="h-6 w-16 rounded-md" />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 space-y-3">
+                <Skeleton className="h-5 w-40 rounded-md" />
+                <Skeleton className="h-20 w-full rounded-xl" />
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <Skeleton className="h-10 w-full rounded-xl" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-
   // 404 Not Found State
-
   if (!hackathon) {
     return (
       <div className="min-h-screen bg-slate-50 px-6 py-20 transition-colors dark:bg-neutral-950 dark:text-neutral-100">
@@ -293,7 +319,7 @@ function HackathonDetailsPage() {
               {hackathonImage && !imgError ? (
                 <img
                   src={hackathonImage}
-                  alt={name}
+                  alt={`${name} hackathon`}
                   onError={() => setImgError(true)}
                   className="h-12 w-12 shrink-0 rounded-xl object-cover shadow-2xs ring-1 ring-black/5 dark:ring-white/10"
                 />

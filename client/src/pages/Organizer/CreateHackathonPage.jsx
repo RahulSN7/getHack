@@ -378,7 +378,7 @@ function CreateHackathonPage() {
                   <div className="relative group shrink-0">
                     <img
                       src={photoPreview}
-                      alt="Hackathon preview"
+                      alt={title ? `${title} hackathon preview` : "Hackathon preview"}
                       className="h-20 w-20 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
                     />
                     <button

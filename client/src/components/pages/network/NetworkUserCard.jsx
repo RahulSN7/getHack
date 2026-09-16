@@ -23,7 +23,7 @@ function UserAvatar({ avatar, name }) {
       {avatar && !imgError ? (
         <img
           src={avatar}
-          alt={name}
+          alt={name ? `${name} profile photo` : "User profile photo"}
           onError={() => setImgError(true)}
           className="h-[56px] w-[56px] rounded-full object-cover border border-[#232336]"
         />

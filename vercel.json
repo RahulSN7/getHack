@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!api|uploads|socket.io).*)",
+      "source": "/((?!api|uploads|socket.io|sitemap\\.xml|robots\\.txt).*)",
       "destination": "/index.html"
     }
   ]

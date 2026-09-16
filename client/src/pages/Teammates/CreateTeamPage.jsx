@@ -31,7 +31,7 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
     return (
       <img
         src={avatar}
-        alt={`${name}'s profile photo`}
+        alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
       />
@@ -70,6 +70,9 @@ export default function CreateTeamPage() {
   const [draftMembers, setDraftMembers] = useState([]);
   const [originalTeamFields, setOriginalTeamFields] = useState(null);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+  const [deleteTeamError, setDeleteTeamError] = useState(null);
 
   // Section 01: Team Information (Empty Initial State)
   const [teamName, setTeamName] = useState("");
@@ -251,6 +254,23 @@ export default function CreateTeamPage() {
     setDraftMembers((prev) => prev.filter((m) => String(m.id || m._id) !== String(targetId)));
     showToast(`${memberToRemove.name} marked for removal. Click Save Changes to commit.`);
     setMemberToRemove(null);
+  };
+
+  const handleConfirmDeleteTeam = async () => {
+    if (!editTeamId) return;
+    setIsDeletingTeam(true);
+    setDeleteTeamError(null);
+    try {
+      await teamService.deleteTeam(editTeamId);
+      showToast("Team deleted successfully!");
+      setShowDeleteModal(false);
+      navigate("/teammates?tab=my-teams");
+    } catch (err) {
+      console.error("Delete team error:", err);
+      setDeleteTeamError(err.message || "Failed to delete team. Please try again.");
+    } finally {
+      setIsDeletingTeam(false);
+    }
   };
 
 
@@ -1202,55 +1222,99 @@ export default function CreateTeamPage() {
 
           {/* Form Actions */}
           <div className="flex items-center justify-between pt-4">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="
-                rounded-lg
-                border
-                border-neutral-200
-                bg-white
-                px-5
-                py-2.5
-                text-xs
-                font-semibold
-                text-neutral-700
-                shadow-2xs
-                transition-colors
-                hover:bg-neutral-50
-                dark:border-neutral-800
-                dark:bg-neutral-900
-                dark:text-neutral-300
-                dark:hover:bg-neutral-800
-              "
-            >
-              Cancel
-            </button>
+            <div>
+              {isEditMode ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(true);
+                    setDeleteTeamError(null);
+                  }}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400"
+                >
+                  Delete Team
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="
+                    rounded-lg
+                    border
+                    border-neutral-200
+                    bg-white
+                    px-5
+                    py-2.5
+                    text-xs
+                    font-semibold
+                    text-neutral-700
+                    shadow-2xs
+                    transition-colors
+                    hover:bg-neutral-50
+                    dark:border-neutral-800
+                    dark:bg-neutral-900
+                    dark:text-neutral-300
+                    dark:hover:bg-neutral-800
+                  "
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="
-                inline-flex
-                items-center
-                gap-2
-                rounded-lg
-                bg-indigo-600
-                px-6
-                py-2.5
-                text-xs
-                font-semibold
-                text-white
-                shadow-2xs
-                transition-colors
-                hover:bg-indigo-500
-                disabled:opacity-50
-                dark:bg-indigo-500
-                dark:hover:bg-indigo-400
-              "
-            >
-              <span>{isSubmitting ? "Saving..." : isEditMode ? "Save Changes" : "Create Team"}</span>
-            </button>
+            <div className="flex items-center gap-2.5">
+              {isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="
+                    rounded-lg
+                    border
+                    border-neutral-200
+                    bg-white
+                    px-5
+                    py-2.5
+                    text-xs
+                    font-semibold
+                    text-neutral-700
+                    shadow-2xs
+                    transition-colors
+                    hover:bg-neutral-50
+                    dark:border-neutral-800
+                    dark:bg-neutral-900
+                    dark:text-neutral-300
+                    dark:hover:bg-neutral-800
+                  "
+                >
+                  Cancel
+                </button>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-lg
+                  bg-indigo-600
+                  px-6
+                  py-2.5
+                  text-xs
+                  font-semibold
+                  text-white
+                  shadow-2xs
+                  transition-colors
+                  hover:bg-indigo-500
+                  disabled:opacity-50
+                  dark:bg-indigo-500
+                  dark:hover:bg-indigo-400
+                "
+              >
+                <span>{isSubmitting ? "Saving..." : isEditMode ? "Save Changes" : "Create Team"}</span>
+              </button>
+            </div>
           </div>
         </form>
 
@@ -1330,6 +1394,59 @@ export default function CreateTeamPage() {
                   className="rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-400"
                 >
                   Discard Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Team Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in backdrop-blur-xs">
+            <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 space-y-4">
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                  Delete team?
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Are you sure you want to delete <strong className="text-neutral-800 dark:text-neutral-200">{teamName || "this team"}</strong>? This action cannot be undone.
+                </p>
+              </div>
+
+              {deleteTeamError && (
+                <div className="rounded-lg bg-rose-50 p-2.5 text-xs font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
+                  {deleteTeamError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeletingTeam}
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteTeamError(null);
+                  }}
+                  className="rounded-lg border border-neutral-300 px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeletingTeam}
+                  onClick={handleConfirmDeleteTeam}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-500 dark:bg-rose-500 dark:hover:bg-rose-400 disabled:opacity-50"
+                >
+                  {isDeletingTeam ? (
+                    <>
+                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                      </svg>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Delete Team</span>
+                  )}
                 </button>
               </div>
             </div>

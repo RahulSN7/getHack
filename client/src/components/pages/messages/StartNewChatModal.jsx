@@ -179,7 +179,7 @@ export default function StartNewChatModal({ isOpen, onClose, onSelectConnection 
                     {conn.avatar ? (
                       <img
                         src={conn.avatar}
-                        alt={conn.name}
+                        alt={conn.name ? `${conn.name} profile photo` : "Connection profile photo"}
                         className="h-10 w-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
                       />
                     ) : (

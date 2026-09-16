@@ -438,6 +438,49 @@ export default function GetHackAIWidget() {
     };
   };
 
+  const [cookieBannerOffset, setCookieBannerOffset] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  // Check prefers-reduced-motion accessibility setting
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+    const handler = (e) => setPrefersReducedMotion(e.matches);
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", handler);
+      return () => mediaQuery.removeEventListener("change", handler);
+    }
+  }, []);
+
+  // Listen for Cookie Consent Banner height & visibility broadcasts
+  useEffect(() => {
+    const handleBannerResize = (e) => {
+      const { height, visible } = e.detail || {};
+      if (visible && height > 0) {
+        setCookieBannerOffset(height + 16); // 16px safe gap above cookie banner
+      } else {
+        setCookieBannerOffset(0);
+      }
+    };
+
+    window.addEventListener("gethack:cookie-banner-resize", handleBannerResize);
+    return () => {
+      window.removeEventListener("gethack:cookie-banner-resize", handleBannerResize);
+    };
+  }, []);
+
+  // Compute effective Y coordinate taking temporary cookie banner offset into account
+  const getEffectiveButtonY = () => {
+    if (!buttonPosition) return null;
+    if (cookieBannerOffset <= 0) return buttonPosition.y;
+
+    const btnHeight = buttonRef.current?.offsetHeight || 48;
+    const maxAllowedY = window.innerHeight - btnHeight - cookieBannerOffset;
+    return Math.min(buttonPosition.y, Math.max(12, maxAllowedY));
+  };
+
+  const effectiveButtonY = getEffectiveButtonY();
+
   // Button is always rendered. Unauthenticated taps redirect to /login (see endDrag).
 
   return (
@@ -457,17 +500,22 @@ export default function GetHackAIWidget() {
             }
           }}
           style={{
-            ...(buttonPosition
+            ...(buttonPosition && effectiveButtonY !== null
               ? {
                 left: `${buttonPosition.x}px`,
-                top: `${buttonPosition.y}px`,
+                top: `${effectiveButtonY}px`,
                 bottom: "auto",
                 right: "auto",
               }
               : {}),
             touchAction: "none",
+            transition: isDragging
+              ? "none"
+              : prefersReducedMotion
+              ? "none"
+              : "top 250ms cubic-bezier(0.16, 1, 0.3, 1), left 250ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms ease-out",
           }}
-          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-lg hover:shadow-xl border border-neutral-200/90 dark:border-indigo-500/35 transition-shadow transition-transform duration-300 group touch-none select-none ${isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
+          className={`fixed z-50 flex items-center gap-2.5 px-5 py-3 rounded-full bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-lg hover:shadow-xl border border-neutral-200/90 dark:border-indigo-500/35 transition-shadow duration-300 group touch-none select-none ${isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:scale-105"
             }`}
         >
           <div className="relative flex items-center justify-center pointer-events-none">

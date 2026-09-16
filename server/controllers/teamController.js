@@ -5,6 +5,8 @@
 
 const Team = require("../models/team");
 const User = require("../models/user");
+const TeamRequest = require("../models/teamRequest");
+const TeamInvitation = require("../models/teamInvitation");
 const mongoose = require("mongoose");
 const { createNotification } = require("../services/notificationService");
 
@@ -594,6 +596,68 @@ const inviteConnections = async (req, res) => {
   }
 };
 
+// DELETE /api/teams/:id — Delete team (Team Leader only)
+const deleteTeam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+
+    let team = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      team = await Team.findById(id);
+    }
+    if (!team) {
+      team = await Team.findOne({ id });
+    }
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found." });
+    }
+
+    // Leader authorization check
+    const rawCreator = team.createdBy || team.leader;
+    const leaderIdStr = (typeof rawCreator === "object" ? (rawCreator?._id || rawCreator?.id) : rawCreator)?.toString();
+    const isLeader =
+      (team.createdBy && team.createdBy.toString() === userIdStr) ||
+      (team.leader && team.leader.toString() === userIdStr) ||
+      (leaderIdStr && leaderIdStr === userIdStr);
+
+    if (!isLeader) {
+      return res.status(403).json({ message: "Only the team leader can delete this team." });
+    }
+
+    const teamObjectId = team._id;
+
+    // Remove team document from MongoDB
+    await Team.deleteOne({ _id: teamObjectId });
+
+    // Cascading cleanup of related join requests & invitations
+    try {
+      if (TeamRequest) {
+        await TeamRequest.deleteMany({ team: teamObjectId });
+      }
+      if (TeamInvitation) {
+        await TeamInvitation.deleteMany({ team: teamObjectId });
+      }
+    } catch (cleanupErr) {
+      console.warn("Cleanup error during team deletion:", cleanupErr.message);
+    }
+
+    return res.json({
+      success: true,
+      message: "Team deleted successfully.",
+      teamId: teamObjectId.toString(),
+    });
+  } catch (error) {
+    console.error("Delete team error:", error);
+    return res.status(500).json({
+      message: "Server error occurred while deleting team.",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createTeam,
   getTeams,
@@ -604,5 +668,6 @@ module.exports = {
   leaveTeam,
   removeMember,
   inviteConnections,
+  deleteTeam,
 };
 

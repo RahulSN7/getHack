@@ -26,6 +26,7 @@ const chatRoutes = require("./routes/chatRoutes");
 const invitationRoutes = require("./routes/invitationRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const seoRoutes = require("./routes/seoRoutes");
 const { initHackathonSyncJob, runSyncTask } = require("./jobs/hackathonSyncJob");
 
 const { syncAllUsersToStream } = require("./services/streamService");
@@ -64,6 +65,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/", seoRoutes);
 
 // Admin sync endpoint alias
 app.post("/api/admin/hackathons/sync", (req, res) => {

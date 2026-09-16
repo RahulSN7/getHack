@@ -243,7 +243,7 @@ export default function AddGroupMembersModal({
                       {conn.avatar ? (
                         <img
                           src={conn.avatar}
-                          alt={conn.name}
+                          alt={conn.name ? `${conn.name} profile photo` : "Connection profile photo"}
                           className="h-8 w-8 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
                         />
                       ) : (

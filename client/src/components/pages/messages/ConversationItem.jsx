@@ -204,7 +204,7 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
         {avatar && !imgError ? (
           <img
             src={avatar}
-            alt={name}
+            alt={isGroup ? `${name} group avatar` : `${name} profile photo`}
             onError={() => setImgError(true)}
             className="h-12 w-12 rounded-full object-cover border border-neutral-200 dark:border-neutral-700"
           />

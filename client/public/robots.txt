@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /hackathons
+Allow: /teammates
+
+# Disallow private and authenticated application routes
+Disallow: /api/
+Disallow: /messages
+Disallow: /network
+Disallow: /create-team
+Disallow: /team/
+Disallow: /profile
+Disallow: /organizer
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+
+Sitemap: https://gethack.com/sitemap.xml

@@ -347,7 +347,7 @@ function OrganizerProfilePage() {
             {profile.avatar ? (
               <img
                 src={profile.avatar}
-                alt={profile.name}
+                alt={profile.name ? `${profile.name} profile photo` : "Organizer profile photo"}
                 className="h-16 w-16 shrink-0 rounded-2xl object-cover ring-1 ring-neutral-200 dark:ring-neutral-800"
                 onError={(e) => {
                   e.target.style.display = "none";

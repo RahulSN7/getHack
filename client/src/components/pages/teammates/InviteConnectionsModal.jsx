@@ -26,7 +26,7 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
     return (
       <img
         src={avatar}
-        alt={`${name}'s profile photo`}
+        alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
       />
@@ -49,7 +49,7 @@ function GroupAvatar({ avatar, name, sizeClass = "h-10 w-10 text-sm" }) {
     return (
       <img
         src={avatar}
-        alt={`${name} group photo`}
+        alt={name ? `${name} group avatar` : "Group avatar"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
       />

@@ -252,11 +252,12 @@ function LoginPage() {
           </p>
         </div>
 
-        {/* Error Banner */}
+        {/* Global / Server Error Message Banner */}
         {generalError && (
           <div
-            className={`rounded-xl border p-3.5 text-xs font-semibold ${isCardDark
-              ? "border-red-900/60 bg-red-950/60 text-red-300"
+            role="alert"
+            className={`rounded-xl border p-3 text-xs font-medium ${isCardDark
+              ? "border-red-900/50 bg-red-950/60 text-red-300"
               : "border-red-200/80 bg-red-50 text-red-600"
               }`}
           >
@@ -342,7 +343,11 @@ function LoginPage() {
                 label="Email address"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                  if (generalError) setGeneralError("");
+                }}
                 placeholder="Enter your email"
                 required
                 autoComplete="email"

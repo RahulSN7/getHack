@@ -1,6 +1,5 @@
 const steps = [
   {
-    number: "01",
     title: "Discover",
     description: "Discover hackathons and opportunities that match your interests and skills.",
     icon: (
@@ -11,7 +10,6 @@ const steps = [
     ),
   },
   {
-    number: "02",
     title: "Connect",
     description: "Find developers and designers with complementary skills and connect with the right people for your hackathon.",
     icon: (
@@ -24,7 +22,6 @@ const steps = [
     ),
   },
   {
-    number: "03",
     title: "Collaborate",
     description: "Build teams, communicate with your connections, and work together to turn ideas into projects.",
     icon: (
@@ -69,27 +66,23 @@ function HowItWorks() {
         <div className="mt-14 grid gap-8 sm:grid-cols-3 sm:gap-12">
 
           {steps.map((step) => (
-            <div key={step.number} className="relative">
-              {/* Icon + step number row */}
-              <div className="mb-5 flex items-center gap-3">
-                <div
-                  className="
-                    inline-flex
-                    h-10
-                    w-10
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-lg
-                    bg-indigo-500/10
-                    text-indigo-500
-                  "
-                >
-                  {step.icon}
-                </div>
-                <span className="text-xs font-bold tabular-nums tracking-widest text-neutral-300 dark:text-neutral-700">
-                  {step.number}
-                </span>
+            <div key={step.title} className="relative">
+              {/* Icon */}
+              <div
+                className="
+                  mb-5
+                  inline-flex
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-indigo-500/10
+                  text-indigo-500
+                "
+              >
+                {step.icon}
               </div>
 
               {/* Title */}

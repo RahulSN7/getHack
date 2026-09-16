@@ -86,6 +86,18 @@ export const teamService = {
     return handleResponse(response);
   },
 
+  // Delete team (Team Leader only)
+  async deleteTeam(id) {
+    const response = await fetch(`${API_BASE}/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+    return handleResponse(response);
+  },
+
   // Direct join team fallback
   async joinTeam(id) {
     const response = await fetch(`${API_BASE}/${id}/join`, {
