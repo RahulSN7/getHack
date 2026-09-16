@@ -592,6 +592,24 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   const attachmentButtonRef = useRef(null);
   const headerMenuRef = useRef(null);
   const headerMenuBtnRef = useRef(null);
+  const isSendingRef = useRef(false);
+
+  // Helper to clear pending attachment state, revoke blob preview URL, and reset file input
+  const clearAttachmentState = useCallback(() => {
+    setPendingAttachment((prev) => {
+      if (prev?.url && typeof prev.url === "string" && prev.url.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(prev.url);
+        } catch (e) {
+          console.error("Failed to revoke object URL:", e);
+        }
+      }
+      return null;
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
 
   // Close header options menu on click-outside or ESC key
   useEffect(() => {
@@ -1008,8 +1026,9 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
     return () => {
       isEffectActive = false;
+      clearAttachmentState();
     };
-  }, [channel?.cid, userId]);
+  }, [channel?.cid, userId, clearAttachmentState]);
 
   // Listen for events (ignoring events from blocked users)
   useEffect(() => {
@@ -1206,6 +1225,11 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     // Reset input value so selecting the same file again fires onChange
     if (fileInputRef.current) fileInputRef.current.value = "";
 
+    // Focus text input immediately so DOM focus moves away from attachment button
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
+
     const ext = "." + (file.name.split(".").pop() || "").toLowerCase();
     const disallowedExts = [".exe", ".bat", ".cmd", ".msi", ".scr", ".com", ".sh", ".vbs", ".app", ".jar"];
     if (disallowedExts.includes(ext)) {
@@ -1234,7 +1258,14 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       cdnUrl: null,
       error: null,
     };
-    setPendingAttachment(item);
+    setPendingAttachment((prev) => {
+      if (prev?.url && typeof prev.url === "string" && prev.url.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(prev.url);
+        } catch (e) {}
+      }
+      return item;
+    });
 
     try {
       let uploadedUrl = null;
@@ -1265,7 +1296,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       }
 
       setPendingAttachment((prev) => {
-        if (!prev || prev.file !== file) return prev;
+        if (!prev) return prev;
         return {
           ...prev,
           uploading: false,
@@ -1299,13 +1330,16 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       }
 
       showToast("Failed to upload file. Please try again.");
-      setPendingAttachment(null);
+      clearAttachmentState();
     }
   };
 
   // Send or Save Message
   const handleSend = async (e) => {
-    if (e) e.preventDefault();
+    if (e) {
+      if (typeof e.preventDefault === "function") e.preventDefault();
+      if (typeof e.stopPropagation === "function") e.stopPropagation();
+    }
     if (isNotConnected) {
       showToast("You are no longer connected with this user.");
       return;
@@ -1315,14 +1349,23 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       return;
     }
 
+    if (isSendingRef.current || sending) return;
+
     const text = inputText.trim();
-    if ((!text && !pendingAttachment) || sending || !channel || isBlocked || isRemovedFromGroup || isNotConnected) return;
+    if ((!text && !pendingAttachment) || !channel || isBlocked || isRemovedFromGroup || isNotConnected) return;
 
     if (pendingAttachment?.uploading) {
       showToast("Please wait for file upload to complete.");
       return;
     }
 
+    const cdnUrl = pendingAttachment?.cdnUrl;
+    if (pendingAttachment && !cdnUrl) {
+      showToast("File upload incomplete. Please try attaching the file again.");
+      return;
+    }
+
+    isSendingRef.current = true;
     setSending(true);
 
     try {
@@ -1373,13 +1416,13 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
         const payload = {};
         if (text) payload.text = text;
 
-        if (pendingAttachment && pendingAttachment.cdnUrl) {
+        if (pendingAttachment && cdnUrl) {
           payload.attachments = [
             {
               type: pendingAttachment.isImage ? "image" : "file",
-              asset_url: pendingAttachment.cdnUrl,
-              image_url: pendingAttachment.isImage ? pendingAttachment.cdnUrl : undefined,
-              thumb_url: pendingAttachment.isImage ? pendingAttachment.cdnUrl : undefined,
+              asset_url: cdnUrl,
+              image_url: pendingAttachment.isImage ? cdnUrl : undefined,
+              thumb_url: pendingAttachment.isImage ? cdnUrl : undefined,
               title: pendingAttachment.name,
               file_size: pendingAttachment.size,
               mime_type: pendingAttachment.mimeType,
@@ -1405,9 +1448,9 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             return [...prevMessages, sentMsg];
           });
         }
+        console.log("[ATTACHMENT DEBUG] message sent successfully, clearing composer attachment");
         setReplyingToMessage(null);
-        setPendingAttachment(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        clearAttachmentState();
       }
       setInputText("");
       setShowEmojiPicker(false);
@@ -1415,15 +1458,20 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       console.error("Failed to send/edit message:", err);
       showToast("Failed to send message");
     } finally {
+      isSendingRef.current = false;
       setSending(false);
-      inputRef.current?.focus();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 10);
     }
   };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
+      if (e.nativeEvent?.isComposing) return;
       e.preventDefault();
-      handleSend();
+      e.stopPropagation();
+      handleSend(e);
     }
   };
 
@@ -2925,10 +2973,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
               <button
                 type="button"
-                onClick={() => {
-                  setPendingAttachment(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
+                onClick={clearAttachmentState}
                 className="shrink-0 rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
                 title="Remove attachment"
               >
@@ -3016,6 +3061,13 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                 fileInputRef.current?.click();
                 setShowEmojiPicker(false);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  inputRef.current?.focus();
+                }
+              }}
               disabled={isNotConnected}
               className="
                 shrink-0 rounded-xl p-2.5 text-neutral-500 hover:bg-neutral-100
@@ -3051,7 +3103,11 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             {/* Send / Save Button */}
             <button
               type="button"
-              onClick={handleSend}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSend(e);
+              }}
               disabled={(!inputText.trim() && !pendingAttachment) || sending || pendingAttachment?.uploading || isNotConnected}
               className="
                 shrink-0 rounded-xl bg-indigo-500 p-2.5 text-white
