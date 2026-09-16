@@ -10,7 +10,7 @@ import HackathonCard from "../pages/hackathons/HackathonCard";
 import Logo from "../common/Logo";
 
 export default function GetHackAIWidget() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const location = useLocation();
   const params = useParams();
   const navigate = useNavigate();
@@ -236,8 +236,17 @@ export default function GetHackAIWidget() {
         });
       }
     } else if (!isDrawer) {
-      // Click/tap without dragging on collapsed button: open AI widget
-      handleOpenWidget();
+      // Click/tap without dragging on collapsed button:
+      // — authenticated → open AI panel
+      // — still initialising → wait (do nothing; avoids redirect during startup)
+      // — unauthenticated → go to login
+      if (authLoading) {
+        // Auth not resolved yet — ignore the tap
+      } else if (user) {
+        handleOpenWidget();
+      } else {
+        navigate("/login");
+      }
     }
   };
 
@@ -429,7 +438,7 @@ export default function GetHackAIWidget() {
     };
   };
 
-  if (!user) return null; // Only available for logged-in users
+  // Button is always rendered. Unauthenticated taps redirect to /login (see endDrag).
 
   return (
     <div className="font-sans">

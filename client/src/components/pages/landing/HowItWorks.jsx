@@ -1,5 +1,6 @@
 const steps = [
   {
+    number: "01",
     title: "Discover",
     description: "Discover hackathons and opportunities that match your interests and skills.",
     icon: (
@@ -10,6 +11,7 @@ const steps = [
     ),
   },
   {
+    number: "02",
     title: "Connect",
     description: "Find developers and designers with complementary skills and connect with the right people for your hackathon.",
     icon: (
@@ -22,6 +24,7 @@ const steps = [
     ),
   },
   {
+    number: "03",
     title: "Collaborate",
     description: "Build teams, communicate with your connections, and work together to turn ideas into projects.",
     icon: (
@@ -36,7 +39,7 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-20">
+    <section id="how-it-works" className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
       <div className="mx-auto max-w-7xl">
         {/* Heading */}
         <div className="max-w-2xl">
@@ -55,39 +58,38 @@ function HowItWorks() {
               dark:text-white
             "
           >
-            How getHack Works
+            How getHack works
           </h2>
+          <p className="mt-3 text-base leading-relaxed text-neutral-500 dark:text-neutral-400">
+            Three steps from discovery to shipping something real.
+          </p>
         </div>
 
         {/* Steps */}
-        <div
-          className="
-            mt-14
-            grid
-            gap-8
+        <div className="mt-14 grid gap-8 sm:grid-cols-3 sm:gap-12">
 
-            sm:grid-cols-3
-            sm:gap-12
-          "
-        >
           {steps.map((step) => (
-            <div key={step.title}>
-              {/* Icon */}
-              <div
-                className="
-                  mb-4
-                  inline-flex
-                  h-10
-                  w-10
-                  items-center
-                  justify-center
-                  rounded-lg
-
-                  bg-indigo-500/10
-                  text-indigo-500
-                "
-              >
-                {step.icon}
+            <div key={step.number} className="relative">
+              {/* Icon + step number row */}
+              <div className="mb-5 flex items-center gap-3">
+                <div
+                  className="
+                    inline-flex
+                    h-10
+                    w-10
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-indigo-500/10
+                    text-indigo-500
+                  "
+                >
+                  {step.icon}
+                </div>
+                <span className="text-xs font-bold tabular-nums tracking-widest text-neutral-300 dark:text-neutral-700">
+                  {step.number}
+                </span>
               </div>
 
               {/* Title */}

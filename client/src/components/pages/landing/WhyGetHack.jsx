@@ -80,7 +80,7 @@ const cards = [
 
 function WhyGetHack() {
   return (
-    <section id="why-gethack" className="px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-24 bg-slate-50/50 dark:bg-neutral-950/60 transition-colors">
+    <section id="why-gethack" className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-28 bg-slate-50/50 dark:bg-neutral-950/60 transition-colors border-y border-neutral-100 dark:border-neutral-900">
       <div className="mx-auto max-w-7xl">
         {/* Section Header */}
         <div className="max-w-3xl">
@@ -96,28 +96,26 @@ function WhyGetHack() {
         </div>
 
         {/* Responsive 4-Card Grid */}
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((card) => (
             <div
               key={card.title}
-              className="group flex flex-col justify-between rounded-xl border border-neutral-200/80 bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-xs dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:border-neutral-700 dark:hover:bg-neutral-900"
+              className="group flex flex-col rounded-xl border border-neutral-200/80 bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:border-neutral-700 dark:hover:bg-neutral-900"
             >
-              <div>
-                {/* Icon */}
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 dark:border-indigo-900/50 dark:bg-indigo-950/40">
-                  {card.icon}
-                </div>
-
-                {/* Title */}
-                <h3 className="mt-5 text-lg font-semibold tracking-tight text-neutral-950 dark:text-white">
-                  {card.title}
-                </h3>
-
-                {/* Description */}
-                <p className="mt-2.5 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-                  {card.description}
-                </p>
+              {/* Icon */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 dark:border-indigo-900/50 dark:bg-indigo-950/40">
+                {card.icon}
               </div>
+
+              {/* Title */}
+              <h3 className="mt-5 text-base font-semibold tracking-tight text-neutral-950 dark:text-white">
+                {card.title}
+              </h3>
+
+              {/* Description */}
+              <p className="mt-2 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
+                {card.description}
+              </p>
             </div>
           ))}
         </div>

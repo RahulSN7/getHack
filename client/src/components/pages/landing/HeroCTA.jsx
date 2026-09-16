@@ -2,8 +2,8 @@ function HeroCTA() {
   return (
     <div
       className="
-        mt-6
-        sm:mt-8
+        mt-7
+        sm:mt-9
         flex
         flex-col
         gap-3
@@ -13,7 +13,6 @@ function HeroCTA() {
       "
     >
       {/* Primary — Browse Hackathons */}
-
       <a
         href="#hackathons"
         className="
@@ -29,20 +28,26 @@ function HeroCTA() {
           rounded-lg
 
           bg-neutral-950
-          px-5
+          px-6
 
           text-sm
           font-semibold
           text-white
 
+          shadow-sm
+          shadow-black/10
+
           transition-all
           duration-150
 
           hover:bg-neutral-800
+          hover:shadow-md
+          hover:shadow-black/15
 
           dark:bg-white
           dark:text-neutral-950
-          dark:hover:bg-neutral-200
+          dark:shadow-white/5
+          dark:hover:bg-neutral-100
 
           focus-visible:outline-2
           focus-visible:outline-offset-2
@@ -55,8 +60,8 @@ function HeroCTA() {
           className="
             h-4 w-4
             transition-transform
-            duration-150
-            group-hover:translate-x-0.5
+            duration-200
+            group-hover:translate-x-1
           "
           viewBox="0 0 24 24"
           fill="none"
@@ -71,7 +76,6 @@ function HeroCTA() {
       </a>
 
       {/* Secondary — Find Teammates */}
-
       <a
         href="#teammates"
         className="
@@ -89,7 +93,10 @@ function HeroCTA() {
           border
           border-neutral-300
 
-          px-5
+          bg-white/60
+          backdrop-blur-sm
+
+          px-6
 
           text-sm
           font-semibold
@@ -99,11 +106,14 @@ function HeroCTA() {
           duration-150
 
           hover:border-neutral-400
+          hover:bg-white
           hover:text-neutral-950
 
           dark:border-neutral-700
+          dark:bg-neutral-900/60
           dark:text-neutral-300
           dark:hover:border-neutral-500
+          dark:hover:bg-neutral-900
           dark:hover:text-white
 
           focus-visible:outline-2
@@ -112,7 +122,7 @@ function HeroCTA() {
         "
       >
         <svg
-          className="h-4 w-4"
+          className="h-4 w-4 text-neutral-400 transition-colors duration-150 group-hover:text-neutral-600 dark:text-neutral-500 dark:group-hover:text-neutral-300"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
