@@ -39,7 +39,7 @@ async function getEligibleTeammateCandidates(currentUserId = null) {
   if (currStr) {
     const connections = await Connection.find({
       $or: [{ sender: currentUserId }, { receiver: currentUserId }],
-    });
+    }).select("sender receiver status");
 
     connections.forEach((c) => {
       const senderId = c.sender.toString();
@@ -67,7 +67,9 @@ async function getEligibleTeammateCandidates(currentUserId = null) {
   const users = await User.find({
     role: "participant",
     ...(excludedUserIds.length > 0 ? { _id: { $nin: excludedUserIds } } : {}),
-  }).sort({ createdAt: -1 });
+  })
+    .select("-password")
+    .sort({ createdAt: -1 });
 
   const eligibleUsers = users.filter((u) => {
     const isNotExcluded = currStr

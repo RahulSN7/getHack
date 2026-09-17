@@ -82,15 +82,15 @@ function formatDateOfBirth(dateStr) {
   }
 }
 
-export default function UserProfile() {
+export default function UserProfile({ initialData }) {
   const { id } = useParams();
   const { user: currentUser, isAuthenticated, updateUser } = useAuth();
 
-  const [profileUser, setProfileUser] = useState(null);
-  const [isOwner, setIsOwner] = useState(false);
-  const [connectionState, setConnectionState] = useState({ status: "none" });
+  const [profileUser, setProfileUser] = useState(() => initialData?.user || null);
+  const [isOwner, setIsOwner] = useState(() => Boolean(initialData?.isOwner));
+  const [connectionState, setConnectionState] = useState(() => initialData?.connectionState || { status: "none" });
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialData?.user);
   const [error, setError] = useState(null);
   const [isUnauthenticated, setIsUnauthenticated] = useState(false);
 
@@ -113,6 +113,18 @@ export default function UserProfile() {
 
   useEffect(() => {
     let isMounted = true;
+    if (initialData?.user) {
+      const userObj = initialData.user;
+      setProfileUser(userObj);
+      const targetUserIdStr = String(userObj.id || userObj._id || "");
+      const currentUserIdStr = currentUser ? String(currentUser.id || currentUser._id || "") : "";
+      setIsOwner(Boolean(initialData.isOwner || (currentUserIdStr && currentUserIdStr === targetUserIdStr)));
+      if (initialData.connectionState) {
+        setConnectionState(initialData.connectionState);
+      }
+      setLoading(false);
+      return;
+    }
     async function loadProfile() {
       setLoading(true);
       setError(null);
@@ -217,7 +229,7 @@ export default function UserProfile() {
       isMounted = false;
       window.removeEventListener("gethack:connection-changed", handleConnectionChanged);
     };
-  }, [targetId, currentUser, isAuthenticated]);
+  }, [targetId, currentUser, isAuthenticated, initialData]);
 
   // Handle saving profile changes
   const handleSaveProfile = async (updatedData) => {

@@ -149,12 +149,14 @@ const getPublicHackathons = async (req, res) => {
       }
     }
 
-    const total = await Hackathon.countDocuments(query);
-    const hackathons = await Hackathon.find(query)
-      .populate("organizer.ref", "name email profile")
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
+    const [total, hackathons] = await Promise.all([
+      Hackathon.countDocuments(query),
+      Hackathon.find(query)
+        .populate("organizer.ref", "name email profile")
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit),
+    ]);
 
     const formattedData = hackathons.map((h) => h.toJSON());
 

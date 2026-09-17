@@ -183,6 +183,10 @@ function HackathonCard({ hackathon }) {
                   src={logoUrl}
                   alt={organizer ? `${organizer} logo` : `${name} hackathon`}
                   onError={() => setImgError(true)}
+                  loading="lazy"
+                  decoding="async"
+                  width="36"
+                  height="36"
                   className="h-9 w-9 shrink-0 rounded-lg object-cover max-w-full"
                 />
               ) : (

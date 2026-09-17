@@ -28,6 +28,10 @@ function UserAvatar({ avatar, name }) {
           src={resolvedAvatar}
           alt={name ? `${name} profile photo` : "User profile photo"}
           onError={() => setImgError(true)}
+          loading="lazy"
+          decoding="async"
+          width="56"
+          height="56"
           className="h-[56px] w-[56px] rounded-full object-cover border border-[#232336]"
         />
       ) : (

@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const { user: currentUser, loading: authLoading } = useAuth();
 
   const [resolvedRole, setResolvedRole] = useState(null);
+  const [resolvedData, setResolvedData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -50,6 +51,7 @@ export default function ProfilePage() {
         if (isMounted) {
           const roleStr = String(currentUser.role).toLowerCase().trim();
           setResolvedRole(roleStr === "organizer" ? "organizer" : "participant");
+          setResolvedData({ user: currentUser, isOwner: true, connectionState: { status: "none" } });
           setLoading(false);
         }
         return;
@@ -80,6 +82,7 @@ export default function ProfilePage() {
         const roleStr = String(rawRole).toLowerCase().trim();
 
         if (isMounted) {
+          setResolvedData(res);
           setResolvedRole(roleStr === "organizer" ? "organizer" : "participant");
         }
       } catch (err) {
@@ -87,6 +90,7 @@ export default function ProfilePage() {
         try {
           const orgRes = await userService.getOrganizerProfile(targetId);
           if (isMounted && (orgRes?.profile || orgRes?.role === "organizer" || orgRes?.user?.role === "organizer")) {
+            setResolvedData(orgRes);
             setResolvedRole("organizer");
             return;
           }
@@ -98,6 +102,7 @@ export default function ProfilePage() {
           const partRes = await userService.getParticipantProfile(targetId);
           if (isMounted && partRes?.user) {
             const roleStr = String(partRes.user.role || partRes.role || "participant").toLowerCase().trim();
+            setResolvedData(partRes);
             setResolvedRole(roleStr === "organizer" ? "organizer" : "participant");
             return;
           }
@@ -173,8 +178,8 @@ export default function ProfilePage() {
 
   // Render profile UI based on profile owner's role
   if (resolvedRole === "organizer") {
-    return <OrganizerProfilePage />;
+    return <OrganizerProfilePage initialData={resolvedData} />;
   }
 
-  return <UserProfile />;
+  return <UserProfile initialData={resolvedData} />;
 }
