@@ -1131,9 +1131,12 @@ function Messages() {
   // Mobile back.
   
   const handleBack = useCallback(() => {
-      setMobileShowChat(false);
-      setActiveChannel(null);
-    }, []);
+    setMobileShowChat(false);
+    setActiveChannel(null);
+    if (targetUserIdParam) {
+      navigate("/messages", { replace: true });
+    }
+  }, [targetUserIdParam, navigate]);
 
  
   // Loading.

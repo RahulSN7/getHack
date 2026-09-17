@@ -919,10 +919,16 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       console.log("[CHAT RETRY START]", { conversationId: currentCid, requestId });
       try {
         let loadedMsgs = [];
-        if (typeof channel.query === "function") {
-          const queryRes = await channel.query({ messages: { limit: 100 } });
-          loadedMsgs = queryRes?.messages || channel.state?.messages || [];
-        } else {
+        try {
+          if (typeof channel.query === "function") {
+            const queryRes = await channel.query({ messages: { limit: 100 } });
+            loadedMsgs = queryRes?.messages || channel.state?.messages || [];
+          } else {
+            await channel.watch();
+            loadedMsgs = channel.state?.messages || [];
+          }
+        } catch (queryErr) {
+          console.warn("[CHAT RETRY QUERY FALLBACK TO WATCH]", { conversationId: currentCid, error: queryErr?.message });
           await channel.watch();
           loadedMsgs = channel.state?.messages || [];
         }
@@ -938,6 +944,17 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       } catch (retryErr) {
         console.error("[CHAT RETRY ERROR]", { conversationId: currentCid, requestId, error: retryErr.message });
         if (requestId === conversationLoadCounterRef.current && channel.cid === currentCid) {
+          try {
+            await channel.watch();
+            const fallbackMsgs = Array.isArray(channel.state?.messages) ? [...channel.state.messages] : [];
+            setMessages(fallbackMsgs);
+            setIsConversationLoading(false);
+            setConversationError(null);
+            return;
+          } catch (_wErr) {
+            // ignore
+          }
+
           const cached = Array.isArray(channel.state?.messages) ? [...channel.state.messages] : [];
           if (cached.length > 0) {
             setMessages(cached);
@@ -972,10 +989,16 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
 
       try {
         let loadedMsgs = [];
-        if (typeof channel.query === "function") {
-          const queryRes = await channel.query({ messages: { limit: 100 } });
-          loadedMsgs = queryRes?.messages || channel.state?.messages || [];
-        } else {
+        try {
+          if (typeof channel.query === "function") {
+            const queryRes = await channel.query({ messages: { limit: 100 } });
+            loadedMsgs = queryRes?.messages || channel.state?.messages || [];
+          } else {
+            await channel.watch();
+            loadedMsgs = channel.state?.messages || [];
+          }
+        } catch (queryErr) {
+          console.warn("[CHAT LOAD QUERY FALLBACK TO WATCH]", { conversationId: currentCid, error: queryErr?.message });
           await channel.watch();
           loadedMsgs = channel.state?.messages || [];
         }
@@ -1009,6 +1032,17 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       } catch (err) {
         console.warn("[CHAT LOAD ERROR]", { conversationId: currentCid, requestId, error: err?.message });
         if (isEffectActive && requestId === conversationLoadCounterRef.current && channel.cid === currentCid) {
+          try {
+            await channel.watch();
+            const fallbackMsgs = Array.isArray(channel.state?.messages) ? [...channel.state.messages] : [];
+            setMessages(fallbackMsgs);
+            setIsConversationLoading(false);
+            setConversationError(null);
+            return;
+          } catch (_wErr) {
+            // ignore
+          }
+
           const cached = Array.isArray(channel.state?.messages) ? [...channel.state.messages] : [];
           if (cached.length > 0) {
             setMessages(cached);
