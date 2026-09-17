@@ -8,8 +8,15 @@ import { useAuth } from "../../context/useAuth";
 import { hackathonService } from "../../services/hackathonService";
 import { chatService } from "../../services/chatService";
 import BackButton from "../../components/common/BackButton";
+import useSEO from "../../utils/useSEO";
 
 function CreateHackathonPage() {
+  useSEO(
+    "Create Hackathon — getHack",
+    "Create and publish a new hackathon on getHack.",
+    { noIndex: true }
+  );
+
   const navigate = useNavigate();
   const { user } = useAuth();
 

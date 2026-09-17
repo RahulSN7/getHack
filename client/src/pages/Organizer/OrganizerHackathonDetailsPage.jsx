@@ -13,6 +13,7 @@ import { useAuth } from "../../context/useAuth";
 import { hackathonService } from "../../services/hackathonService";
 import { getHackathonRegistrationStatus, formatLocation, getHackathonImage } from "../../utils/hackathonFormatters";
 import BackButton from "../../components/common/BackButton";
+import useSEO from "../../utils/useSEO";
 
 function formatTeamSize(min, max, customText) {
   if (customText) return customText;
@@ -51,6 +52,14 @@ function OrganizerHackathonDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imgError, setImgError] = useState(false);
+
+  useSEO(
+    hackathon?.name
+      ? `${hackathon.name} (Organizer View) — getHack`
+      : "Hackathon Management — getHack",
+    "Organizer management view for hackathon.",
+    { noIndex: true }
+  );
 
   useEffect(() => {
     window.scrollTo(0, 0);

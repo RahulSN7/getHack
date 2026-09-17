@@ -67,7 +67,8 @@ function getStatusBadge(status) {
 function OrganizerDashboardPage() {
   useSEO(
     "Organizer Dashboard — getHack",
-    "Manage your hackathons and organizer activities on getHack."
+    "Manage your hackathons and organizer activities on getHack.",
+    { noIndex: true }
   );
 
   const currentLocation = useLocation();

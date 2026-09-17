@@ -12,11 +12,6 @@ import OrganizerProfilePage from "../Organizer/OrganizerProfilePage";
 import useSEO from "../../utils/useSEO";
 
 export default function ProfilePage() {
-  useSEO(
-    "Profile — getHack",
-    "View and manage your getHack profile, skills, and professional information."
-  );
-
   const { id } = useParams();
   const { user: currentUser, loading: authLoading } = useAuth();
 
@@ -26,6 +21,23 @@ export default function ProfilePage() {
   const [error, setError] = useState(null);
 
   const targetId = id || "me";
+  const isPublicView = Boolean(id && id !== "me");
+
+  const profileUser = resolvedData?.user;
+  const userName = profileUser?.name || profileUser?.profile?.name || profileUser?.username;
+  const pageTitle = isPublicView && userName
+    ? `${userName}'s Profile | getHack`
+    : "Profile — getHack";
+  const pageDesc = isPublicView && userName
+    ? `View ${userName}'s profile, skills, and hackathon projects on getHack.`
+    : "View and manage your getHack profile, skills, and professional information.";
+
+  useSEO({
+    title: pageTitle,
+    description: pageDesc,
+    canonical: isPublicView ? `/profile/${id}` : "/profile",
+    noIndex: !isPublicView,
+  });
 
   useEffect(() => {
     let isMounted = true;

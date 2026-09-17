@@ -48,14 +48,15 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
 }
 
 export default function CreateTeamPage() {
-  useSEO(
-    "My Teams — getHack",
-    "Create, manage, and collaborate with your hackathon teams on getHack."
-  );
-
   const navigate = useNavigate();
   const { id: editTeamId } = useParams();
   const isEditMode = Boolean(editTeamId);
+
+  useSEO(
+    isEditMode ? "Edit Team — getHack" : "My Teams — getHack",
+    "Create, manage, and collaborate with your hackathon teams on getHack.",
+    { noIndex: true }
+  );
   const { user: currentUser } = useAuth();
 
   // Team Data & Member Fetching State

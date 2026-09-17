@@ -8,6 +8,7 @@ import { chatService } from "../../services/chatService";
 import { ORGANIZER_HACKATHONS } from "../../data/organizerData";
 import { getHackathonImage } from "../../utils/hackathonFormatters";
 import BackButton from "../../components/common/BackButton";
+import useSEO from "../../utils/useSEO";
 
 function formatDateForInput(dateVal) {
   if (!dateVal) return "";
@@ -36,6 +37,12 @@ function formatDateForInput(dateVal) {
 }
 
 function EditHackathonPage() {
+  useSEO(
+    "Edit Hackathon — getHack",
+    "Edit your hackathon details on getHack.",
+    { noIndex: true }
+  );
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();

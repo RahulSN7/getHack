@@ -65,7 +65,8 @@ function getStatusBadge(status) {
 function OrganizerHackathonsPage() {
   useSEO(
     "My Hackathons — getHack",
-    "Create, publish, and manage your hackathons on getHack."
+    "Create, publish, and manage your hackathons on getHack.",
+    { noIndex: true }
   );
 
   const currentLocation = useLocation();

@@ -8,6 +8,7 @@ import { useAuth } from "../../context/useAuth";
 import { userService } from "../../services/userService";
 import { ORGANIZER_PROFILE } from "../../data/organizerData";
 import BackButton from "../../components/common/BackButton";
+import useSEO from "../../utils/useSEO";
 
 // Helper for initials fallback
 function getInitials(name) {
@@ -33,6 +34,21 @@ function OrganizerProfilePage() {
     joinedDate: "Mar 2026",
   });
   const [isOwner, setIsOwner] = useState(false);
+
+  const orgName = profile?.organizationName || profile?.name;
+  const pageTitle = loading
+    ? "Organizer Profile — getHack"
+    : orgName
+      ? `${orgName} — Organizer Profile | getHack`
+      : "Organizer Profile — getHack";
+  const pageDesc = profile?.bio || "View organizer profile and published hackathons on getHack.";
+
+  useSEO({
+    title: pageTitle,
+    description: pageDesc,
+    canonical: id ? `/organizer/${id}/profile` : "/organizer/profile",
+    noIndex: isOrganizerPortal && !id,
+  });
 
   // Modals & Active Tab State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

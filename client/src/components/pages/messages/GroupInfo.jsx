@@ -11,8 +11,15 @@ import { useAuth } from "../../../context/useAuth";
 import { chatService } from "../../../services/chatService";
 import BackButton from "../../common/BackButton";
 import AddGroupMembersModal from "./AddGroupMembersModal";
+import useSEO from "../../../utils/useSEO";
 
 export default function GroupInfo() {
+  useSEO(
+    "Group Details — getHack",
+    "Group details and member management.",
+    { noIndex: true }
+  );
+
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();

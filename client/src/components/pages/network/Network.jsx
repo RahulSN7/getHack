@@ -55,7 +55,8 @@ function matchesUserSearch(user, query) {
 function Network() {
   useSEO(
     "My Network — getHack",
-    "Manage your connections and connect with people in the getHack community."
+    "Manage your connections and connect with people in the getHack community.",
+    { noIndex: true }
   );
 
   const navigate = useNavigate();

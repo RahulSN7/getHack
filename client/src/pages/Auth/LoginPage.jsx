@@ -23,7 +23,8 @@ function maskEmail(emailStr) {
 function LoginPage() {
   useSEO(
     "Sign In — getHack",
-    "Sign in to getHack to discover hackathons, connect with teammates, and collaborate."
+    "Sign in to getHack to discover hackathons, connect with teammates, and collaborate.",
+    { noIndex: true }
   );
 
   const navigate = useNavigate();

@@ -85,7 +85,8 @@ function getChannelUnreadCount(channel, currentUserId, isActive, clearedAt) {
 function Messages() {
   useSEO(
     "Messages — getHack",
-    "Connect and collaborate with your getHack connections through direct and team conversations."
+    "Connect and collaborate with your getHack connections through direct and team conversations.",
+    { noIndex: true }
   );
 
   const { user } = useAuth();

@@ -108,11 +108,6 @@ function TeamDetailsSkeleton() {
 }
 
 export default function TeamDetailsPage() {
-  useSEO(
-    "My Teams — getHack",
-    "Create, manage, and collaborate with your hackathon teams on getHack."
-  );
-
   const { id } = useParams();
   const { user: currentUser, isAuthenticated } = useAuth();
   const [hasRequested, setHasRequested] = useState(false);
@@ -125,6 +120,20 @@ export default function TeamDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [fetchedTeam, setFetchedTeam] = useState(null);
   const [fetchError, setFetchError] = useState(null);
+
+  const currentTeamName = fetchedTeam?.teamName || fetchedTeam?.name;
+  const pageTitle = loading
+    ? "Team Details — getHack"
+    : currentTeamName
+      ? `${currentTeamName} — Team Details | getHack`
+      : "Team Details — getHack";
+  const pageDesc = fetchedTeam?.description || "View team details and open positions on getHack.";
+
+  useSEO({
+    title: pageTitle,
+    description: pageDesc,
+    canonical: `/team/${id}`,
+  });
 
   useEffect(() => {
     let isMounted = true;

@@ -81,7 +81,93 @@ function HackathonDetailsPage() {
       ? hackathon.description || hackathon.shortDescription || "Discover hackathons, find teammates with the right skills, and build something meaningful."
       : "The page you're looking for doesn't exist or may have been moved.";
 
-  useSEO(pageTitle, pageDesc);
+  const hackImage = hackathon ? getHackathonImage(hackathon) : null;
+
+  useSEO({
+    title: pageTitle,
+    description: pageDesc,
+    canonical: `/hackathons/${id}`,
+    ogTitle: pageTitle,
+    ogDescription: pageDesc,
+    ogUrl: `https://gethack-tau.vercel.app/hackathons/${id}`,
+    ogImage: hackImage || "https://gethack-tau.vercel.app/gethack-icon.png",
+    twitterTitle: pageTitle,
+    twitterDescription: pageDesc,
+    twitterImage: hackImage || "https://gethack-tau.vercel.app/gethack-icon.png",
+  });
+
+  // Inject Schema.org Event JSON-LD structured data dynamically for Google search indexing
+  useEffect(() => {
+    if (!hackathon || loading) return;
+
+    const scriptId = "hackathon-jsonld-schema";
+    let script = document.getElementById(scriptId);
+    if (!script) {
+      script = document.createElement("script");
+      script.id = scriptId;
+      script.type = "application/ld+json";
+      document.head.appendChild(script);
+    }
+
+    const eventSchema = {
+      "@context": "https://schema.org",
+      "@type": "Event",
+      "name": hackathon.name || hackathon.title || "Hackathon",
+      "description": hackathon.description || hackathon.shortDescription || "Hackathon Event",
+      "url": `https://gethack-tau.vercel.app/hackathons/${id}`,
+      "eventAttendanceMode": hackathon.mode?.toLowerCase() === "online" || hackathon.mode?.toLowerCase() === "virtual"
+        ? "https://schema.org/OnlineEventAttendanceMode"
+        : hackathon.mode?.toLowerCase() === "hybrid"
+          ? "https://schema.org/MixedEventAttendanceMode"
+          : "https://schema.org/OfflineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+    };
+
+    if (hackImage) {
+      eventSchema["image"] = [hackImage];
+    }
+
+    if (hackathon.hackathonDate || hackathon.startDate) {
+      try {
+        const d = new Date(hackathon.hackathonDate || hackathon.startDate);
+        if (!isNaN(d.getTime())) eventSchema["startDate"] = d.toISOString();
+      } catch (_) {}
+    }
+
+    if (hackathon.eventEndDate || hackathon.endDate) {
+      try {
+        const d = new Date(hackathon.eventEndDate || hackathon.endDate);
+        if (!isNaN(d.getTime())) eventSchema["endDate"] = d.toISOString();
+      } catch (_) {}
+    }
+
+    if (hackathon.organizer) {
+      eventSchema["organizer"] = {
+        "@type": "Organization",
+        "name": typeof hackathon.organizer === "string" ? hackathon.organizer : hackathon.organizerName || "Hackathon Organizer",
+      };
+    }
+
+    if (hackathon.location && hackathon.mode?.toLowerCase() !== "online") {
+      eventSchema["location"] = {
+        "@type": "Place",
+        "name": hackathon.location,
+        "address": hackathon.address || hackathon.location,
+      };
+    } else {
+      eventSchema["location"] = {
+        "@type": "VirtualLocation",
+        "url": hackathon.url || hackathon.registrationUrl || `https://gethack-tau.vercel.app/hackathons/${id}`,
+      };
+    }
+
+    script.textContent = JSON.stringify(eventSchema, null, 2);
+
+    return () => {
+      const el = document.getElementById(scriptId);
+      if (el) el.remove();
+    };
+  }, [hackathon, loading, id, hackImage]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
