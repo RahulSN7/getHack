@@ -5,6 +5,7 @@
 
 
 import { TEAMMATES } from "../data/teammates";
+import { resolveAvatarUrl } from "./avatarUtils";
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
@@ -40,7 +41,8 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
     const profile = u.profile || {};
 
     const name = u.name && !isObjectId(u.name) ? u.name : "Team Member";
-    const avatar = profile.avatar || u.avatar || "";
+    const rawAvatar = profile.avatar || u.avatar || "";
+    const avatar = resolveAvatarUrl(rawAvatar);
     const role = profile.role || u.role || memberItem.role || "Member";
     const skills = Array.isArray(profile.skills) ? profile.skills : Array.isArray(u.skills) ? u.skills : [];
 
@@ -62,7 +64,7 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
     const profile = memberItem.profile || {};
 
     const name = memberItem.name && !isObjectId(memberItem.name) ? memberItem.name : "Team Member";
-    const avatar = profile.avatar || memberItem.avatar || "";
+    const avatar = resolveAvatarUrl(profile.avatar || memberItem.avatar || "");
     const role = profile.role || memberItem.role || "Member";
     const skills = Array.isArray(profile.skills) ? profile.skills : Array.isArray(memberItem.skills) ? memberItem.skills : [];
 
@@ -87,7 +89,7 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
     return {
       id: currentUserIdStr.toString(),
       name: currentUser.name || "Team Member",
-      avatar: p.avatar || currentUser.avatar || "",
+      avatar: resolveAvatarUrl(p.avatar || currentUser.avatar || ""),
       role: p.role || currentUser.role || "Member",
       skills: Array.isArray(p.skills) ? p.skills : Array.isArray(currentUser.skills) ? currentUser.skills : [],
       email: currentUser.email || "",
@@ -102,7 +104,7 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
     return {
       id: foundInTeammates.id,
       name: foundInTeammates.name,
-      avatar: foundInTeammates.avatar || p.avatar || "",
+      avatar: resolveAvatarUrl(foundInTeammates.avatar || p.avatar || ""),
       role: p.role || foundInTeammates.role || "Member",
       skills: Array.isArray(p.skills) ? p.skills : Array.isArray(foundInTeammates.skills) ? foundInTeammates.skills : [],
       email: foundInTeammates.email || "",

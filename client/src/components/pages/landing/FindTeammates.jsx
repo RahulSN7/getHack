@@ -36,7 +36,7 @@ function FindTeammates() {
             location: p.profile?.location || "",
             availability: p.profile?.availability || "",
             username: p.profile?.handle?.replace(/^@/, "") || `user_${(p.id || p._id || "").slice(-4)}`,
-            avatar: p.profile?.avatar || "",
+            avatar: p.avatar || p.profile?.avatar || "",
             interests: p.profile?.interests || [],
             domain: p.profile?.domain || "",
             profile: p.profile,

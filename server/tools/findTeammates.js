@@ -502,7 +502,7 @@ async function findTeammates(args = {}, context = {}) {
         name: safe.name,
         role: p.role || p.headline || "Developer",
         headline: p.headline || p.role || "Participant",
-        avatar: p.avatar || "",
+        avatar: p.avatar || safe.avatar || safe.profile?.avatar || "",
         skills: Array.isArray(p.skills) ? p.skills : [],
         interests: Array.isArray(p.interests) ? p.interests : [],
         location: p.location || "",

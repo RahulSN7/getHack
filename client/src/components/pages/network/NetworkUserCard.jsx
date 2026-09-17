@@ -4,25 +4,25 @@
 // Shared design system with TeammateCard.jsx
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { resolveAvatarUrl, getInitials } from "../../../utils/avatarUtils";
 
 function UserAvatar({ avatar, name }) {
   const [imgError, setImgError] = useState(false);
-  const initials = name
-    ? name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-    : "GH";
+  const resolvedAvatar = resolveAvatarUrl(avatar);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [resolvedAvatar]);
+
+  const initials = getInitials(name);
 
   return (
     <div className="relative shrink-0">
-      {avatar && !imgError ? (
+      {resolvedAvatar && !imgError ? (
         <img
-          src={avatar}
+          src={resolvedAvatar}
           alt={name ? `${name} profile photo` : "User profile photo"}
           onError={() => setImgError(true)}
           className="h-[56px] w-[56px] rounded-full object-cover border border-[#232336]"
@@ -67,7 +67,7 @@ export default function NetworkUserCard({
     availability = "available",
   } = person;
 
-  const avatar = person.avatar || person.profile?.avatar || "";
+  const avatar = person.avatar || person.profile?.avatar || person.user?.avatar || person.user?.profile?.avatar || "";
 
   const isIncoming = variant === "incoming-request";
   const isSent = variant === "sent-request";

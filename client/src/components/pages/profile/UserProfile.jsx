@@ -5,6 +5,7 @@ import { userService } from "../../../services/userService";
 import { TEAMMATES } from "../../../data/teammates";
 import EditProfileModal from "./EditProfileModal";
 import { isProfileComplete } from "../../../utils/profileValidation";
+import { resolveAvatarUrl, getInitials } from "../../../utils/avatarUtils";
 import BackButton from "../../common/BackButton";
 
 function AvailabilityBadge({ availability, isComplete }) {
@@ -38,23 +39,18 @@ function AvailabilityBadge({ availability, isComplete }) {
 
 function UserAvatar({ avatar, name, sizeClass = "h-24 w-24 text-2xl" }) {
   const [imgError, setImgError] = useState(false);
+  const resolvedAvatar = resolveAvatarUrl(avatar);
 
   useEffect(() => {
     setImgError(false);
-  }, [avatar]);
-  const initials = name
-    ? name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-    : "GH";
+  }, [resolvedAvatar]);
 
-  if (avatar && !imgError) {
+  const initials = getInitials(name);
+
+  if (resolvedAvatar && !imgError) {
     return (
       <img
-        src={avatar}
+        src={resolvedAvatar}
         alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-2xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}

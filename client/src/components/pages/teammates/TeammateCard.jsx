@@ -3,25 +3,27 @@
 // Matches exact getHack dark theme & reference design specifications
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { userService } from "../../../services/userService";
+import { resolveAvatarUrl, getInitials } from "../../../utils/avatarUtils";
 
 function UserAvatar({ avatar, name }) {
   const [imgError, setImgError] = useState(false);
-  const initials = name
-    ? name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-    : "GH";
+  const resolvedAvatar = resolveAvatarUrl(avatar);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [resolvedAvatar]);
+
+  const initials = getInitials(name);
 
   return (
     <div className="relative shrink-0">
-      {avatar && !imgError ? (
+      {resolvedAvatar && !imgError ? (
         <img
-          src={avatar}
+          src={resolvedAvatar}
           alt={name ? `${name} profile photo` : "User profile photo"}
           onError={() => setImgError(true)}
           className="h-[56px] w-[56px] rounded-full object-cover border border-[#232336]"
@@ -38,8 +40,21 @@ function UserAvatar({ avatar, name }) {
 export default function TeammateCard({ teammate, onConnect, connectionStatus }) {
   const currentLocation = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const [internalStatus, setInternalStatus] = useState(
+    connectionStatus || teammate?.connectionState?.status
+  );
+
+  useEffect(() => {
+    if (connectionStatus) {
+      setInternalStatus(connectionStatus);
+    }
+  }, [connectionStatus]);
 
   if (!teammate) return null;
+
+  const currentStatus = internalStatus || connectionStatus || teammate.connectionState?.status;
 
   const {
     name = "",
@@ -49,7 +64,7 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
     availability = "",
   } = teammate;
 
-  const avatar = teammate.avatar || teammate.profile?.avatar || "";
+  const avatar = teammate.avatar || teammate.profile?.avatar || teammate.user?.avatar || teammate.user?.profile?.avatar || "";
   const userId = teammate.id || teammate._id;
   const isOnline = availability === "available" || availability === "online" || availability === "Available";
 
@@ -250,10 +265,14 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
           <span>View Profile</span>
         </Link>
 
-        {connectionStatus === "accepted" || connectionStatus === "connected" ? (
+        {currentStatus === "accepted" || currentStatus === "connected" ? (
           <button
             type="button"
             disabled
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             className="
               group/btn
               flex-1
@@ -288,10 +307,14 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
             </svg>
             <span>Connected</span>
           </button>
-        ) : connectionStatus === "pending" ? (
+        ) : currentStatus === "pending" ? (
           <button
             type="button"
             disabled
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             className="
               group/btn
               flex-1
@@ -329,7 +352,24 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
         ) : (
           <button
             type="button"
-            onClick={() => (onConnect ? onConnect(teammate) : navigate(userId ? `/profile/${userId}` : "#", { state: { from: currentLocation } }))}
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onConnect) {
+                onConnect(teammate);
+              } else {
+                if (!isAuthenticated) {
+                  navigate("/login", { state: { from: currentLocation } });
+                  return;
+                }
+                try {
+                  await userService.sendConnectionRequest(userId);
+                  setInternalStatus("pending");
+                } catch (err) {
+                  console.error("Failed to send connection request from card:", err);
+                }
+              }
+            }}
             className="
               group/btn
               flex-1
