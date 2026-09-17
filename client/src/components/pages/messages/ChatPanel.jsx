@@ -771,6 +771,133 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     setActiveMessageMenu(msgId);
   };
 
+  // Mobile Long-Press Gesture State & Refs
+  const longPressTimerRef = useRef(null);
+  const touchStartPosRef = useRef(null);
+  const isLongPressActiveRef = useRef(false);
+  const longPressMsgIdRef = useRef(null);
+
+  // Clean up long press timers on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Reset active menu & gesture state on conversation switch
+  useEffect(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    touchStartPosRef.current = null;
+    isLongPressActiveRef.current = false;
+    longPressMsgIdRef.current = null;
+
+    setActiveMessageMenu(null);
+    setMenuAnchorRect(null);
+    setInitialMenuCoords(null);
+    setActiveReactionMsgId(null);
+    setShowExpandedReactionPickerId(null);
+  }, [channel?.cid]);
+
+  const handleTouchStart = (e, msg) => {
+    if (e.touches.length !== 1 || isBlocked) return;
+
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    isLongPressActiveRef.current = false;
+    longPressMsgIdRef.current = msg.id;
+
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+
+    const targetElement = e.currentTarget;
+
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressActiveRef.current = true;
+
+      if (typeof window !== "undefined" && window.navigator && typeof window.navigator.vibrate === "function") {
+        try {
+          window.navigator.vibrate(40);
+        } catch (_) {}
+      }
+
+      let rect = null;
+      if (targetElement && typeof targetElement.getBoundingClientRect === "function") {
+        const r = targetElement.getBoundingClientRect();
+        rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height };
+      }
+
+      handleToggleMessageMenu(msg, {
+        currentTarget: targetElement,
+        stopPropagation: () => {},
+        preventDefault: () => {},
+        getBoundingClientRect: () => rect || (menuBtnRefs.current[msg.id] ? menuBtnRefs.current[msg.id].getBoundingClientRect() : null),
+      });
+    }, 400);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchStartPosRef.current || !longPressTimerRef.current) return;
+
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const deltaX = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPosRef.current.y);
+
+    if (deltaX > 8 || deltaY > 8) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      touchStartPosRef.current = null;
+    }
+  };
+
+  const handleTouchEnd = (e, msg) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    if (isLongPressActiveRef.current && longPressMsgIdRef.current === msg.id) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      e.stopPropagation();
+      setTimeout(() => {
+        isLongPressActiveRef.current = false;
+        longPressMsgIdRef.current = null;
+      }, 300);
+    } else {
+      touchStartPosRef.current = null;
+      longPressMsgIdRef.current = null;
+    }
+  };
+
+  const handleTouchCancel = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    touchStartPosRef.current = null;
+    isLongPressActiveRef.current = false;
+    longPressMsgIdRef.current = null;
+  };
+
+  const handleContextMenu = (e, msg) => {
+    if (isLongPressActiveRef.current || longPressMsgIdRef.current === msg.id || activeMessageMenu === msg.id) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   // Extract user / group info
   const members = Object.values(channel?.state?.members || {});
   const otherMember = members.find(
@@ -2860,13 +2987,27 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                         </button>
                       )}
 
-                      <div className="relative max-w-full group/bubble">
+                      <div
+                        className={`relative max-w-full group/bubble transition-all duration-150 ${activeMessageMenu === msg.id ? "ring-2 ring-indigo-500/60 rounded-2xl shadow-md" : ""}`}
+                        onTouchStart={(e) => handleTouchStart(e, msg)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={(e) => handleTouchEnd(e, msg)}
+                        onTouchCancel={handleTouchCancel}
+                        onContextMenu={(e) => handleContextMenu(e, msg)}
+                      >
                         {renderBubbleContent()}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="relative max-w-[78%] group/bubble">
+                  <div
+                    className={`relative max-w-[78%] group/bubble transition-all duration-150 ${activeMessageMenu === msg.id ? "ring-2 ring-indigo-500/60 rounded-2xl shadow-md" : ""}`}
+                    onTouchStart={(e) => handleTouchStart(e, msg)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={(e) => handleTouchEnd(e, msg)}
+                    onTouchCancel={handleTouchCancel}
+                    onContextMenu={(e) => handleContextMenu(e, msg)}
+                  >
                     {renderBubbleContent()}
                   </div>
                 )}
