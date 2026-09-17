@@ -43,7 +43,7 @@ initSocketService(server);
 // Middleware
 app.use(
   cors({
-    origin: true, // Allow requesting origin in dev proxy
+    origin:process.env.CLIENT_URL,
     credentials: true,
   })
 );
@@ -79,9 +79,8 @@ app.post("/api/admin/hackathons/sync", (req, res) => {
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({
-    status: "ok",
+    success: true,
     message: "getHack API is running",
-    dbState: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
   });
 });
 
