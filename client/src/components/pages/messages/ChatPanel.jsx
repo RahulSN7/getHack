@@ -563,6 +563,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
   const typingTimeoutRef = useRef(null);
 
   // Message Interaction States
+  const [selectedMobileMsgId, setSelectedMobileMsgId] = useState(null); // msg.id active on mobile long press
   const [activeMessageMenu, setActiveMessageMenu] = useState(null); // msg.id
   const [menuAnchorRect, setMenuAnchorRect] = useState(null); // { top, bottom, left, right, width, height }
   const [initialMenuCoords, setInitialMenuCoords] = useState(null); // { top, left }
@@ -797,6 +798,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     isLongPressActiveRef.current = false;
     longPressMsgIdRef.current = null;
 
+    setSelectedMobileMsgId(null);
     setActiveMessageMenu(null);
     setMenuAnchorRect(null);
     setInitialMenuCoords(null);
@@ -827,18 +829,16 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
         } catch (_) {}
       }
 
-      let rect = null;
-      if (targetElement && typeof targetElement.getBoundingClientRect === "function") {
-        const r = targetElement.getBoundingClientRect();
-        rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height };
+      // Show Action Bar ONLY (React, Reply, More Actions)
+      // Do NOT open More Actions menu automatically!
+      setSelectedMobileMsgId(msg.id);
+      setActiveReactionMsgId(null);
+      setShowExpandedReactionPickerId(null);
+      if (activeMessageMenu && activeMessageMenu !== msg.id) {
+        setActiveMessageMenu(null);
+        setMenuAnchorRect(null);
+        setInitialMenuCoords(null);
       }
-
-      handleToggleMessageMenu(msg, {
-        currentTarget: targetElement,
-        stopPropagation: () => {},
-        preventDefault: () => {},
-        getBoundingClientRect: () => rect || (menuBtnRefs.current[msg.id] ? menuBtnRefs.current[msg.id].getBoundingClientRect() : null),
-      });
     }, 400);
   };
 
@@ -1649,6 +1649,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       showToast("Copied to clipboard");
     }
     setActiveMessageMenu(null);
+    setSelectedMobileMsgId(null);
   };
 
   // Start Edit Message
@@ -1662,6 +1663,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     setInputText(msg.text || "");
     setReplyingToMessage(null);
     setActiveMessageMenu(null);
+    setSelectedMobileMsgId(null);
     inputRef.current?.focus();
   };
 
@@ -1677,6 +1679,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     setReplyingToMessage(msg);
     setEditingMessage(null);
     setActiveMessageMenu(null);
+    setSelectedMobileMsgId(null);
     inputRef.current?.focus();
   };
 
@@ -1696,6 +1699,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     } finally {
       setDeleteConfirmMsg(null);
       setActiveMessageMenu(null);
+      setSelectedMobileMsgId(null);
     }
   };
 
@@ -1725,6 +1729,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
       setActiveReactionMsgId(null);
       setShowExpandedReactionPickerId(null);
       setActiveMessageMenu(null);
+      setSelectedMobileMsgId(null);
     }
   };
 
@@ -2403,8 +2408,10 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
         className="flex-1 overflow-y-auto px-4 py-4 space-y-2 bg-neutral-50 dark:bg-neutral-950"
         onScroll={() => {
           if (activeMessageMenu) setActiveMessageMenu(null);
+          if (selectedMobileMsgId) setSelectedMobileMsgId(null);
         }}
         onClick={() => {
+          setSelectedMobileMsgId(null);
           setActiveMessageMenu(null);
           setActiveReactionMsgId(null);
           setShowExpandedReactionPickerId(null);
@@ -2534,7 +2541,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                   <div
                     className={`
                       absolute -top-3 ${isMine ? "right-2" : "left-2"} z-10
-                      ${activeMessageMenu === msg.id || activeReactionMsgId === msg.id ? "flex" : "hidden group-hover/msg:flex"}
+                      ${selectedMobileMsgId === msg.id || activeMessageMenu === msg.id || activeReactionMsgId === msg.id ? "flex" : "hidden group-hover/msg:flex"}
                       items-center gap-0.5 rounded-full
                       bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700
                       px-1 py-0.5 shadow-md animate-in fade-in duration-100
@@ -2988,7 +2995,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                       )}
 
                       <div
-                        className={`relative max-w-full group/bubble transition-all duration-150 ${activeMessageMenu === msg.id ? "ring-2 ring-indigo-500/60 rounded-2xl shadow-md" : ""}`}
+                        className={`relative max-w-full group/bubble transition-all duration-150 ${selectedMobileMsgId === msg.id || activeMessageMenu === msg.id ? "ring-2 ring-indigo-500/60 rounded-2xl shadow-md" : ""}`}
                         onTouchStart={(e) => handleTouchStart(e, msg)}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={(e) => handleTouchEnd(e, msg)}
@@ -3001,7 +3008,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
                   </div>
                 ) : (
                   <div
-                    className={`relative max-w-[78%] group/bubble transition-all duration-150 ${activeMessageMenu === msg.id ? "ring-2 ring-indigo-500/60 rounded-2xl shadow-md" : ""}`}
+                    className={`relative max-w-[78%] group/bubble transition-all duration-150 ${selectedMobileMsgId === msg.id || activeMessageMenu === msg.id ? "ring-2 ring-indigo-500/60 rounded-2xl shadow-md" : ""}`}
                     onTouchStart={(e) => handleTouchStart(e, msg)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={(e) => handleTouchEnd(e, msg)}
