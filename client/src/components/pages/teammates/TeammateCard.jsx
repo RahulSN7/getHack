@@ -8,6 +8,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { userService } from "../../../services/userService";
 import { resolveAvatarUrl, getInitials } from "../../../utils/avatarUtils";
+import { isProfileComplete } from "../../../utils/profileValidation";
+import CompleteProfileModal from "../../common/CompleteProfileModal";
 
 function UserAvatar({ avatar, name }) {
   const [imgError, setImgError] = useState(false);
@@ -40,11 +42,13 @@ function UserAvatar({ avatar, name }) {
 export default function TeammateCard({ teammate, onConnect, connectionStatus }) {
   const currentLocation = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user: currentUser, isAuthenticated } = useAuth();
 
   const [internalStatus, setInternalStatus] = useState(
     connectionStatus || teammate?.connectionState?.status
   );
+  const [isCompletePromptOpen, setIsCompletePromptOpen] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (connectionStatus) {
@@ -65,7 +69,7 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
   } = teammate;
 
   const avatar = teammate.avatar || teammate.profile?.avatar || teammate.user?.avatar || teammate.user?.profile?.avatar || "";
-  const userId = teammate.id || teammate._id;
+  const userId = teammate.id || teammate._id || teammate.userId || teammate.user?._id || teammate.user?.id;
   const isOnline = availability === "available" || availability === "online" || availability === "Available";
 
   // Derive role dynamically from user object
@@ -89,190 +93,190 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
   const realBio = bio || teammate.profile?.bio || "";
   const realLocation = location || teammate.profile?.location || "";
 
+  const handleConnectClick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: currentLocation } });
+      return;
+    }
+
+    let userToCheck = currentUser;
+    try {
+      const ownData = await userService.getOwnProfile();
+      if (ownData?.user) userToCheck = ownData.user;
+    } catch {
+      // fallback to AuthContext user
+    }
+
+    if (!isProfileComplete(userToCheck)) {
+      setIsCompletePromptOpen(true);
+      return;
+    }
+
+    if (onConnect) {
+      onConnect(teammate);
+      return;
+    }
+
+    try {
+      setSending(true);
+      await userService.sendConnectionRequest(userId);
+      setInternalStatus("pending");
+    } catch (err) {
+      console.error("Failed to send connection request from card:", err);
+      if (err.code === "PROFILE_INCOMPLETE" || err.data?.code === "PROFILE_INCOMPLETE" || err.message?.toLowerCase().includes("complete your profile")) {
+        setIsCompletePromptOpen(true);
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
-    <article
-      className="
-        group
-        flex
-        flex-col
-        justify-between
-        rounded-[16px]
-        border
-        border-neutral-200
-        bg-white
-        shadow-xs
-        dark:border-neutral-800
-        dark:bg-neutral-900
-        p-[20px]
-        transition-shadow
-        duration-150
-        hover:border-neutral-300
-        dark:hover:border-neutral-700
-      "
-    >
-      <div className="space-y-4">
-        {/* ── Header: Avatar + Identity ── */}
-        <div className="flex items-center gap-3.5">
-          <Link
-            to={userId ? `/profile/${userId}` : "#"}
-            state={{ from: currentLocation }}
-            aria-label={`View ${name}'s profile`}
-            className="shrink-0 transition-opacity hover:opacity-90"
-          >
-            <UserAvatar avatar={avatar} name={name} />
-          </Link>
+    <>
+      <article
+        className="
+          group
+          flex
+          flex-col
+          justify-between
+          rounded-[16px]
+          border
+          border-neutral-200
+          bg-white
+          shadow-xs
+          dark:border-neutral-800
+          dark:bg-neutral-900
+          p-[20px]
+          transition-shadow
+          duration-150
+          hover:border-neutral-300
+          dark:hover:border-neutral-700
+        "
+      >
+        <div className="space-y-4">
+          {/* ── Header: Avatar + Identity ── */}
+          <div className="flex items-center gap-3.5">
+            <Link
+              to={userId ? `/profile/${userId}` : "#"}
+              state={{ from: currentLocation }}
+              aria-label={`View ${name}'s profile`}
+              className="shrink-0 transition-opacity hover:opacity-90"
+            >
+              <UserAvatar avatar={avatar} name={name} />
+            </Link>
 
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <h3 className="truncate text-[16px] font-semibold text-neutral-900 dark:text-white leading-tight">
-              <Link
-                to={userId ? `/profile/${userId}` : "#"}
-                state={{ from: currentLocation }}
-                className="hover:text-indigo-600 dark:hover:text-[#2563EB]"
-              >
-                {name}
-              </Link>
-            </h3>
-
-            <p className="truncate text-[14px] font-medium text-neutral-600 dark:text-neutral-400">
-              {role}
-            </p>
-
-            {realLocation && (
-              <p className="flex items-center gap-1 truncate text-[12px] font-normal text-neutral-500 dark:text-[#A1A1AA] pt-0.5">
-                <svg
-                  className="h-3 w-3 shrink-0 text-neutral-400 dark:text-[#A1A1AA]"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <h3 className="truncate text-[16px] font-semibold text-neutral-900 dark:text-white leading-tight">
+                <Link
+                  to={userId ? `/profile/${userId}` : "#"}
+                  state={{ from: currentLocation }}
+                  className="hover:text-indigo-600 dark:hover:text-[#2563EB]"
                 >
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <span className="truncate">{realLocation}</span>
+                  {name}
+                </Link>
+              </h3>
+
+              <p className="truncate text-[14px] font-medium text-neutral-600 dark:text-neutral-400">
+                {role}
               </p>
-            )}
-          </div>
-        </div>
 
-        {/* ── Bio Section (Real Data Only) ── */}
-        {realBio && (
-          <p className="text-[14px] font-normal text-neutral-600 dark:text-[#D1D5DB] leading-relaxed line-clamp-2">
-            {realBio}
-          </p>
-        )}
-
-        {/* ── Skills Section ── */}
-        {visibleSkills.length > 0 && (
-          <div className="space-y-1.5 pt-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-              Skills
-            </p>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {visibleSkills.map((skill) => (
-                <span
-                  key={skill}
-                  className="
-                    inline-flex
-                    items-center
-                    rounded-md
-                    border
-                    border-neutral-200/80
-                    bg-neutral-100/80
-                    px-2.5
-                    py-1
-                    text-[11px]
-                    font-medium
-                    text-neutral-700
-                    hover:border-indigo-500/30
-                    hover:text-indigo-600
-                    dark:border-neutral-700/50
-                    dark:bg-neutral-800/60
-                    dark:text-neutral-300
-                    dark:hover:border-indigo-500/30
-                    dark:hover:text-indigo-400
-                  "
-                >
-                  {skill}
-                </span>
-              ))}
-
-              {overflowSkillsCount > 0 && (
-                <span
-                  className="
-                    inline-flex
-                    items-center
-                    rounded-md
-                    border
-                    border-neutral-200/80
-                    bg-neutral-100/80
-                    px-2.5
-                    py-1
-                    text-[11px]
-                    font-medium
-                    text-neutral-500
-                    dark:border-neutral-700/50
-                    dark:bg-neutral-800/60
-                    dark:text-neutral-400
-                  "
-                >
-                  +{overflowSkillsCount}
-                </span>
+              {realLocation && (
+                <p className="flex items-center gap-1 truncate text-[12px] font-normal text-neutral-500 dark:text-[#A1A1AA] pt-0.5">
+                  <svg
+                    className="h-3 w-3 shrink-0 text-neutral-400 dark:text-[#A1A1AA]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  <span className="truncate">{realLocation}</span>
+                </p>
               )}
             </div>
           </div>
-        )}
-      </div>
 
-      {/* ── Footer Actions ── */}
-      <div className="mt-5 flex items-center gap-2.5 pt-2">
-        <Link
-          to={`/profile/${userId}`}
-          state={{ from: currentLocation }}
-          className="
-            group/btn
-            flex-1
-            h-10
-            inline-flex
-            items-center
-            justify-center
-            gap-2
-            rounded-lg
-            bg-indigo-600
-            px-4
-            text-xs
-            font-semibold
-            text-white
-            shadow-2xs
-            hover:bg-indigo-500
-            active:scale-[0.99]
-            dark:bg-indigo-500
-            dark:hover:bg-indigo-400
-          "
-        >
-          <svg
-            className="h-4 w-4 text-white/90 transition-transform duration-150 group-hover/btn:translate-x-0.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <span>View Profile</span>
-        </Link>
+          {/* ── Bio Section (Real Data Only) ── */}
+          {realBio && (
+            <p className="text-[14px] font-normal text-neutral-600 dark:text-[#D1D5DB] leading-relaxed line-clamp-2">
+              {realBio}
+            </p>
+          )}
 
-        {currentStatus === "accepted" || currentStatus === "connected" ? (
-          <button
-            type="button"
-            disabled
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
+          {/* ── Skills Section ── */}
+          {visibleSkills.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                Skills
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {visibleSkills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="
+                      inline-flex
+                      items-center
+                      rounded-md
+                      border
+                      border-neutral-200/80
+                      bg-neutral-100/80
+                      px-2.5
+                      py-1
+                      text-[11px]
+                      font-medium
+                      text-neutral-700
+                      hover:border-indigo-500/30
+                      hover:text-indigo-600
+                      dark:border-neutral-700/50
+                      dark:bg-neutral-800/60
+                      dark:text-neutral-300
+                      dark:hover:border-indigo-500/30
+                      dark:hover:text-indigo-400
+                    "
+                  >
+                    {skill}
+                  </span>
+                ))}
+
+                {overflowSkillsCount > 0 && (
+                  <span
+                    className="
+                      inline-flex
+                      items-center
+                      rounded-md
+                      border
+                      border-neutral-200/80
+                      bg-neutral-100/80
+                      px-2.5
+                      py-1
+                      text-[11px]
+                      font-medium
+                      text-neutral-500
+                      dark:border-neutral-700/50
+                      dark:bg-neutral-800/60
+                      dark:text-neutral-400
+                    "
+                  >
+                    +{overflowSkillsCount}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer Actions ── */}
+        <div className="mt-5 flex items-center gap-2.5 pt-2">
+          <Link
+            to={userId ? `/profile/${userId}` : "#"}
+            state={{ from: currentLocation }}
             className="
               group/btn
               flex-1
@@ -282,137 +286,172 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
               justify-center
               gap-2
               rounded-lg
-              border
-              border-neutral-200/90
-              bg-neutral-100/70
+              bg-indigo-600
               px-4
               text-xs
               font-semibold
-              text-emerald-600
-              cursor-not-allowed
-              opacity-90
-              dark:border-neutral-700/80
-              dark:bg-neutral-800/70
-              dark:text-emerald-400
+              text-white
+              shadow-2xs
+              hover:bg-indigo-500
+              active:scale-[0.99]
+              dark:bg-indigo-500
+              dark:hover:bg-indigo-400
             "
           >
             <svg
-              className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>Connected</span>
-          </button>
-        ) : currentStatus === "pending" ? (
-          <button
-            type="button"
-            disabled
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            className="
-              group/btn
-              flex-1
-              h-10
-              inline-flex
-              items-center
-              justify-center
-              gap-2
-              rounded-lg
-              border
-              border-neutral-200/90
-              bg-neutral-100/70
-              px-4
-              text-xs
-              font-semibold
-              text-neutral-500
-              cursor-not-allowed
-              opacity-80
-              dark:border-neutral-700/80
-              dark:bg-neutral-800/70
-              dark:text-neutral-400
-            "
-          >
-            <svg
-              className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>Request Sent</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={async (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (onConnect) {
-                onConnect(teammate);
-              } else {
-                if (!isAuthenticated) {
-                  navigate("/login", { state: { from: currentLocation } });
-                  return;
-                }
-                try {
-                  await userService.sendConnectionRequest(userId);
-                  setInternalStatus("pending");
-                } catch (err) {
-                  console.error("Failed to send connection request from card:", err);
-                }
-              }
-            }}
-            className="
-              group/btn
-              flex-1
-              h-10
-              inline-flex
-              items-center
-              justify-center
-              gap-2
-              rounded-lg
-              border
-              border-neutral-200/90
-              bg-neutral-100/70
-              px-4
-              text-xs
-              font-semibold
-              text-neutral-700
-              hover:border-indigo-500/40
-              hover:bg-indigo-500/10
-              hover:text-indigo-600
-              dark:border-neutral-700/80
-              dark:bg-neutral-800/70
-              dark:text-neutral-200
-              dark:hover:border-indigo-500/40
-              dark:hover:bg-indigo-500/15
-              dark:hover:text-indigo-300
-            "
-          >
-            <svg
-              className="h-4 w-4 text-neutral-500 transition-colors duration-150 group-hover/btn:text-indigo-600 dark:text-neutral-400 dark:group-hover/btn:text-indigo-300"
+              className="h-4 w-4 text-white/90 transition-transform duration-150 group-hover/btn:translate-x-0.5"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
             >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-              <line x1="20" y1="8" x2="20" y2="14" />
-              <line x1="23" y1="11" x2="17" y2="11" />
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
             </svg>
-            <span>Connect</span>
-          </button>
-        )}
-      </div>
-    </article>
+            <span>View Profile</span>
+          </Link>
+
+          {currentStatus === "accepted" || currentStatus === "connected" ? (
+            <button
+              type="button"
+              disabled
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="
+                group/btn
+                flex-1
+                h-10
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                rounded-lg
+                border
+                border-neutral-200/90
+                bg-neutral-100/70
+                px-4
+                text-xs
+                font-semibold
+                text-emerald-600
+                cursor-not-allowed
+                opacity-90
+                dark:border-neutral-700/80
+                dark:bg-neutral-800/70
+                dark:text-emerald-400
+              "
+            >
+              <svg
+                className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Connected</span>
+            </button>
+          ) : currentStatus === "pending" || currentStatus === "request_sent" ? (
+            <button
+              type="button"
+              disabled
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="
+                group/btn
+                flex-1
+                h-10
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                rounded-lg
+                border
+                border-neutral-200/90
+                bg-neutral-100/70
+                px-4
+                text-xs
+                font-semibold
+                text-neutral-500
+                cursor-not-allowed
+                opacity-80
+                dark:border-neutral-700/80
+                dark:bg-neutral-800/70
+                dark:text-neutral-400
+              "
+            >
+              <svg
+                className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Request Sent</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={sending}
+              onClick={handleConnectClick}
+              className="
+                group/btn
+                flex-1
+                h-10
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                rounded-lg
+                border
+                border-neutral-200/90
+                bg-neutral-100/70
+                px-4
+                text-xs
+                font-semibold
+                text-neutral-700
+                hover:border-indigo-500/40
+                hover:bg-indigo-500/10
+                hover:text-indigo-600
+                disabled:opacity-50
+                dark:border-neutral-700/80
+                dark:bg-neutral-800/70
+                dark:text-neutral-200
+                dark:hover:border-indigo-500/40
+                dark:hover:bg-indigo-500/15
+                dark:hover:text-indigo-300
+              "
+            >
+              <svg
+                className="h-4 w-4 text-neutral-500 transition-colors duration-150 group-hover/btn:text-indigo-600 dark:text-neutral-400 dark:group-hover/btn:text-indigo-300"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="20" y1="8" x2="20" y2="14" />
+                <line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
+              <span>{sending ? "Sending..." : "Connect"}</span>
+            </button>
+          )}
+        </div>
+      </article>
+
+      {/* Profile Completion Warning Modal */}
+      <CompleteProfileModal
+        isOpen={isCompletePromptOpen}
+        onClose={() => setIsCompletePromptOpen(false)}
+      />
+    </>
   );
 }
+

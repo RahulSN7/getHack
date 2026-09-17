@@ -45,6 +45,7 @@ async function request(endpoint, options = {}) {
     error.status =
       response.status;
 
+    error.code = data.code;
     error.data = data;
 
     throw error;
