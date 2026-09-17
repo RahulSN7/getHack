@@ -1259,21 +1259,26 @@ function Teammates() {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {/* Tab Switcher */}
-              <div className="inline-flex flex-wrap rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="grid w-full grid-cols-2 gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 p-1.5 sm:w-auto sm:inline-flex sm:flex-wrap sm:gap-0 sm:p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
                 <button
                   type="button"
                   onClick={() => handleTabSwitch("members")}
                   className={`
                     inline-flex
+                    w-full
                     items-center
+                    justify-center
                     gap-1.5
                     rounded-md
-                    px-3
-                    py-1.5
+                    px-2.5
+                    py-2
                     text-xs
                     font-semibold
                     transition-all
                     duration-150
+                    sm:w-auto
+                    sm:px-3
+                    sm:py-1.5
                     ${activeTab === "members"
                       ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
                       : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
@@ -1281,7 +1286,7 @@ function Teammates() {
                   `}
                 >
                   <svg
-                    className="h-3.5 w-3.5"
+                    className="h-3.5 w-3.5 shrink-0"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1294,7 +1299,7 @@ function Teammates() {
                     <line x1="19" y1="8" x2="19" y2="14" />
                     <line x1="22" y1="11" x2="16" y2="11" />
                   </svg>
-                  <span>Find Members</span>
+                  <span className="truncate">Find Members</span>
                 </button>
 
                 <button
@@ -1302,15 +1307,20 @@ function Teammates() {
                   onClick={() => handleTabSwitch("teams")}
                   className={`
                     inline-flex
+                    w-full
                     items-center
+                    justify-center
                     gap-1.5
                     rounded-md
-                    px-3
-                    py-1.5
+                    px-2.5
+                    py-2
                     text-xs
                     font-semibold
                     transition-all
                     duration-150
+                    sm:w-auto
+                    sm:px-3
+                    sm:py-1.5
                     ${activeTab === "teams"
                       ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
                       : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
@@ -1318,7 +1328,7 @@ function Teammates() {
                   `}
                 >
                   <svg
-                    className="h-3.5 w-3.5"
+                    className="h-3.5 w-3.5 shrink-0"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1331,7 +1341,7 @@ function Teammates() {
                     <path d="M23 21v-2a4 4 0 0 1 0 7.75" />
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
-                  <span>Join a Team</span>
+                  <span className="truncate">Join a Team</span>
                 </button>
 
                 <button
@@ -1339,25 +1349,30 @@ function Teammates() {
                   onClick={() => handleTabSwitch("my-teams")}
                   className={`
                     inline-flex
+                    w-full
                     items-center
+                    justify-center
                     gap-1.5
                     rounded-md
-                    px-3
-                    py-1.5
+                    px-2.5
+                    py-2
                     text-xs
                     font-semibold
                     transition-all
                     duration-150
+                    sm:w-auto
+                    sm:px-3
+                    sm:py-1.5
                     ${activeTab === "my-teams"
                       ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
                       : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
-                  <span>My Teams</span>
+                  <span className="truncate">My Teams</span>
                 </button>
 
                 <button
@@ -1365,26 +1380,31 @@ function Teammates() {
                   onClick={() => handleTabSwitch("requests")}
                   className={`
                     inline-flex
+                    w-full
                     items-center
+                    justify-center
                     gap-1.5
                     rounded-md
-                    px-3
-                    py-1.5
+                    px-2.5
+                    py-2
                     text-xs
                     font-semibold
                     transition-all
                     duration-150
+                    sm:w-auto
+                    sm:px-3
+                    sm:py-1.5
                     ${activeTab === "requests"
                       ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-white"
                       : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
                     }
                   `}
                 >
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                   </svg>
-                  <span>Team Requests</span>
+                  <span className="truncate">Team Requests</span>
                 </button>
               </div>
 

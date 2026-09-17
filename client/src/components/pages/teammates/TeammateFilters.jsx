@@ -205,7 +205,9 @@ function TeammateFilters({
             left-0
             top-[calc(100%+8px)]
             z-40
-            w-72
+            w-[calc(100vw-2.5rem)]
+            sm:w-72
+            max-w-[calc(100vw-2.5rem)]
             overflow-hidden
             rounded-xl
             border

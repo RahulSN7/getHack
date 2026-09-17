@@ -301,7 +301,7 @@ function Hackathons() {
           </div>
 
           {/* Toolbar: View Tabs, Filter Popover, Saved Toggle & Sort */}
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="relative mt-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {/* All / Saved View Tabs */}
               <div className="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 dark:border-neutral-800 dark:bg-neutral-900">

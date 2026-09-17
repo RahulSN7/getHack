@@ -98,7 +98,7 @@ function HackathonFilters({
   const accentBgSoft = ACCENT_BG_SOFT.indigo;
 
   return (
-    <div className="relative inline-block text-left">
+    <div className="static sm:relative inline-block text-left">
       {/* ── Trigger Button ── */}
       <button
         ref={triggerRef}
@@ -154,9 +154,13 @@ function HackathonFilters({
           className="
             absolute
             left-0
+            right-0
+            sm:right-auto
             z-30
             mt-2
-            w-80
+            w-[calc(100vw-2.5rem)]
+            sm:w-80
+            max-w-[calc(100vw-2.5rem)]
             max-h-[85vh]
             overflow-y-auto
             rounded-xl
@@ -215,9 +219,9 @@ function HackathonFilters({
                         }
                       `}
                     >
-                      <span>{option.label}</span>
+                      <span className="truncate">{option.label}</span>
                       {isSelected && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500 dark:bg-indigo-400" />
                       )}
                     </button>
                   );
@@ -239,6 +243,7 @@ function HackathonFilters({
                       type="button"
                       onClick={() => setDraftPlatform(option.id)}
                       className={`
+                        truncate
                         rounded-lg
                         px-2
                         py-1.5
