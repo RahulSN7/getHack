@@ -598,7 +598,7 @@ function OrganizerProfilePage() {
 
             <div>
               <span className="block font-medium text-neutral-400 mb-0.5">Category</span>
-              <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-0.5 font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+              <span className="font-semibold text-neutral-800 dark:text-neutral-200">
                 {profile.organizationType || "Student Club"}
               </span>
             </div>

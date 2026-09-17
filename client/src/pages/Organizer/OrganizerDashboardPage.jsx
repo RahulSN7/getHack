@@ -373,7 +373,7 @@ function OrganizerDashboardPage() {
                         </Link>
 
                         <Link
-                          to={`/organizer/hackathons/${h.id}/edit`}
+                          to={`/organizer/hackathons/${h.id || h._id}/edit`}
                           className="
                             inline-flex
                             items-center

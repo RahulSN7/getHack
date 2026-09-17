@@ -515,7 +515,7 @@ function OrganizerHeader() {
                   }}
                   className="mt-2 w-full rounded-lg bg-neutral-950 px-3 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
                 >
-                  Log out
+                  Sign Out
                 </button>
               </div>
             </nav>

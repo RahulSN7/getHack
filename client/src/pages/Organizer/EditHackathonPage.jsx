@@ -1,6 +1,4 @@
-
 // EditHackathonPage.jsx — Pre-filled Multi-Section Hackathon Edit Form
-
 
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
@@ -8,6 +6,7 @@ import { useAuth } from "../../context/useAuth";
 import { hackathonService } from "../../services/hackathonService";
 import { chatService } from "../../services/chatService";
 import { ORGANIZER_HACKATHONS } from "../../data/organizerData";
+import { getHackathonImage } from "../../utils/hackathonFormatters";
 import BackButton from "../../components/common/BackButton";
 
 function formatDateForInput(dateVal) {
@@ -65,6 +64,7 @@ function EditHackathonPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [errors, setErrors] = useState({});
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -104,13 +104,35 @@ function EditHackathonPage() {
     async function loadHackathon() {
       try {
         setLoading(true);
-        console.log("Hackathon ID:", id);
+        setErrorMessage("");
+
+        if (!id) {
+          if (isMounted) {
+            setErrorMessage("Invalid hackathon identifier.");
+            setLoading(false);
+          }
+          return;
+        }
 
         let h = null;
         try {
           const res = await hackathonService.getOrganizerHackathonById(id);
           h = res?.hackathon || res?.data;
-        } catch {
+        } catch (err) {
+          if (err?.status === 403) {
+            if (isMounted) {
+              setErrorMessage("Access denied. You do not have permission to edit this hackathon.");
+              setLoading(false);
+            }
+            return;
+          }
+          if (err?.status === 404) {
+            if (isMounted) {
+              setErrorMessage("Hackathon not found. It may have been deleted.");
+              setLoading(false);
+            }
+            return;
+          }
           try {
             const res = await hackathonService.getHackathonById(id);
             h = res?.hackathon || res?.data;
@@ -120,24 +142,21 @@ function EditHackathonPage() {
           }
         }
 
-        console.log("Fetched hackathon:", h);
+        if (isMounted) {
+          if (!h) {
+            setErrorMessage("Hackathon not found.");
+            return;
+          }
 
-        if (isMounted && h) {
           const startDateRaw = h.startDate || h.event?.startDate || h.eventStartDate;
           const endDateRaw = h.endDate || h.event?.endDate || h.eventEndDate;
           const regOpensRaw = h.registrationOpens || h.registration?.startDate || h.registrationStart;
           const regDeadlineRaw = h.registrationDeadline || h.registration?.deadline || h.deadline;
 
-          console.log("Saved start date:", startDateRaw);
-          console.log("Saved end date:", endDateRaw);
-
           const formattedStartDate = formatDateForInput(startDateRaw);
           const formattedEndDate = formatDateForInput(endDateRaw);
 
-          console.log("Edit form start date:", formattedStartDate);
-          console.log("Edit form end date:", formattedEndDate);
-
-          const existingImage = h.image || h.photo || h.logo || h.hackathonImage || "";
+          const existingImage = getHackathonImage(h) || "";
           setPhotoPreview(existingImage);
 
           setFormData({
@@ -146,6 +165,7 @@ function EditHackathonPage() {
             organizerName:
               h.organizerName ||
               (typeof h.organizer === "object" ? h.organizer?.name : h.organizer) ||
+              user?.name ||
               "",
             image: existingImage,
             hostedOn: h.hostedOn || h.platform || (typeof h.source === "object" ? h.source?.platform : "") || "",
@@ -178,11 +198,14 @@ function EditHackathonPage() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
     if (errorMessage) setErrorMessage("");
   };
 
@@ -225,30 +248,53 @@ function EditHackathonPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
+    const newErrors = {};
 
     if (!formData.title.trim()) {
-      setErrorMessage("Hackathon Name is required.");
-      return;
+      newErrors.title = "Hackathon Name is required.";
+    }
+
+    if (!formData.organizerName.trim()) {
+      newErrors.organizerName = "Organizer Name is required.";
     }
 
     if (!formData.description.trim()) {
-      setErrorMessage("Detailed Description is required.");
-      return;
+      newErrors.description = "Detailed Description is required.";
+    }
+
+    if (!formData.registrationDeadline) {
+      newErrors.registrationDeadline = "Registration Deadline is required.";
+    }
+
+    if (!formData.startDate) {
+      newErrors.startDate = "Start Date is required.";
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = "End Date is required.";
+    }
+
+    if (formData.format === "Offline" || formData.format === "Hybrid") {
+      if (!formData.venue.trim()) newErrors.venue = "Venue is required.";
+      if (!formData.city.trim()) newErrors.city = "City is required.";
+      if (!formData.country.trim()) newErrors.country = "Country is required.";
     }
 
     if (!formData.registrationUrl.trim()) {
-      setErrorMessage("External Registration Link is required.");
-      return;
-    }
-
-    if (!validateUrl(formData.registrationUrl.trim())) {
-      setErrorMessage("Please enter a valid Registration URL starting with http:// or https://");
-      return;
+      newErrors.registrationUrl = "External Registration Link is required.";
+    } else if (!validateUrl(formData.registrationUrl.trim())) {
+      newErrors.registrationUrl = "Please enter a valid Registration URL starting with http:// or https://";
     }
 
     const dateErr = validateDates();
-    if (dateErr) {
-      setErrorMessage(dateErr);
+
+    if (Object.keys(newErrors).length > 0 || dateErr) {
+      setErrors(newErrors);
+      if (dateErr && !newErrors.registrationOpens && !newErrors.registrationDeadline && !newErrors.startDate && !newErrors.endDate) {
+        setErrorMessage(dateErr);
+      } else {
+        setErrorMessage("Please fix the highlighted errors before saving.");
+      }
       return;
     }
 
@@ -291,7 +337,7 @@ function EditHackathonPage() {
         format: formData.format,
         location:
           formData.format === "Online"
-            ? { venue: "", city: "", country: "" }
+            ? { venue: "Online", city: "", country: "" }
             : {
               venue: formData.venue.trim(),
               city: formData.city.trim(),
@@ -343,6 +389,34 @@ function EditHackathonPage() {
             <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
           </svg>
           <span>Loading hackathon details...</span>
+        </div>
+      </main>
+    );
+  }
+
+  if (!loading && errorMessage && !formData.title) {
+    return (
+      <main className="mx-auto max-w-4xl px-5 py-16 sm:px-6 lg:px-8 text-center space-y-4">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-red-50 text-red-500 dark:bg-red-950/40">
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-neutral-900 dark:text-white">
+          Cannot Edit Hackathon
+        </h2>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
+          {errorMessage}
+        </p>
+        <div className="pt-2">
+          <Link
+            to="/organizer/hackathons"
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors"
+          >
+            Back to My Hackathons
+          </Link>
         </div>
       </main>
     );
@@ -406,8 +480,9 @@ function EditHackathonPage() {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="Enter hackathon name (e.g. India AI Innovation Challenge 2026)"
-                className={inputClass}
+                className={`${inputClass} ${errors.title ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
             </div>
 
             <div>
@@ -422,8 +497,9 @@ function EditHackathonPage() {
                 value={formData.organizerName}
                 onChange={handleChange}
                 placeholder="Enter organizer or organization name (e.g. Google Developer Student Club)"
-                className={inputClass}
+                className={`${inputClass} ${errors.organizerName ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {errors.organizerName && <p className="mt-1 text-xs text-red-500">{errors.organizerName}</p>}
             </div>
 
             {/* Hackathon Photo Section */}
@@ -436,13 +512,13 @@ function EditHackathonPage() {
                   <div className="relative group shrink-0">
                     <img
                       src={photoPreview}
-                      alt={title ? `${title} hackathon preview` : "Hackathon preview"}
+                      alt={formData.title ? `${formData.title} hackathon preview` : "Hackathon preview"}
                       className="h-20 w-20 rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
                     />
                     <button
                       type="button"
                       onClick={handleRemovePhoto}
-                      className="absolute -top-1.5 -right-1.5 grid h-5 w-5 place-items-center rounded-full bg-red-600 text-white text-[10px] shadow-sm hover:bg-red-700 transition-colors"
+                      className="absolute -top-1.5 -right-1.5 grid h-5 w-5 place-items-center rounded-full bg-red-600 text-white text-[10px] shadow-sm hover:bg-red-700 transition-colors cursor-pointer"
                       title="Remove Photo"
                     >
                       ✕
@@ -510,8 +586,9 @@ function EditHackathonPage() {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Describe your hackathon, problem statements, guidelines, and target participants"
-                className="w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400"
+                className={`w-full rounded-lg border border-neutral-200 bg-white p-3.5 text-sm text-neutral-900 outline-none transition-colors focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white dark:focus:border-indigo-400 ${errors.description ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description}</p>}
             </div>
           </div>
         </div>
@@ -553,8 +630,9 @@ function EditHackathonPage() {
                 required
                 value={formData.registrationDeadline}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.registrationDeadline ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {errors.registrationDeadline && <p className="mt-1 text-xs text-red-500">{errors.registrationDeadline}</p>}
             </div>
 
             <div>
@@ -568,8 +646,9 @@ function EditHackathonPage() {
                 required
                 value={formData.startDate}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.startDate ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {errors.startDate && <p className="mt-1 text-xs text-red-500">{errors.startDate}</p>}
             </div>
 
             <div>
@@ -583,8 +662,9 @@ function EditHackathonPage() {
                 required
                 value={formData.endDate}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.endDate ? "border-red-500 focus:border-red-500" : ""}`}
               />
+              {errors.endDate && <p className="mt-1 text-xs text-red-500">{errors.endDate}</p>}
             </div>
           </div>
         </div>
@@ -619,7 +699,7 @@ function EditHackathonPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
                 <div>
                   <label htmlFor="venue" className={labelClass}>
-                    Venue
+                    Venue <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="venue"
@@ -627,13 +707,14 @@ function EditHackathonPage() {
                     name="venue"
                     value={formData.venue}
                     onChange={handleChange}
-                    className={inputClass}
+                    className={`${inputClass} ${errors.venue ? "border-red-500 focus:border-red-500" : ""}`}
                   />
+                  {errors.venue && <p className="mt-1 text-xs text-red-500">{errors.venue}</p>}
                 </div>
 
                 <div>
                   <label htmlFor="city" className={labelClass}>
-                    City
+                    City <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="city"
@@ -641,13 +722,14 @@ function EditHackathonPage() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className={inputClass}
+                    className={`${inputClass} ${errors.city ? "border-red-500 focus:border-red-500" : ""}`}
                   />
+                  {errors.city && <p className="mt-1 text-xs text-red-500">{errors.city}</p>}
                 </div>
 
                 <div>
                   <label htmlFor="country" className={labelClass}>
-                    Country
+                    Country <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="country"
@@ -655,8 +737,9 @@ function EditHackathonPage() {
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className={inputClass}
+                    className={`${inputClass} ${errors.country ? "border-red-500 focus:border-red-500" : ""}`}
                   />
+                  {errors.country && <p className="mt-1 text-xs text-red-500">{errors.country}</p>}
                 </div>
               </div>
             )}
@@ -682,8 +765,9 @@ function EditHackathonPage() {
               required
               value={formData.registrationUrl}
               onChange={handleChange}
-              className={inputClass}
+              className={`${inputClass} ${errors.registrationUrl ? "border-red-500 focus:border-red-500" : ""}`}
             />
+            {errors.registrationUrl && <p className="mt-1 text-xs text-red-500">{errors.registrationUrl}</p>}
             <p className="mt-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
               Participants will be redirected to this link to complete registration.
             </p>
@@ -699,7 +783,6 @@ function EditHackathonPage() {
           </div>
 
           <div className="space-y-4">
-
             <div>
               <label htmlFor="prizes" className={labelClass}>
                 Prize Information
@@ -721,7 +804,7 @@ function EditHackathonPage() {
           <button
             type="button"
             disabled={submitting}
-            onClick={() => navigate("/organizer")}
+            onClick={() => navigate("/organizer/hackathons")}
             className="
               rounded-lg
               border
@@ -735,6 +818,7 @@ function EditHackathonPage() {
               transition-colors
               hover:bg-neutral-50
               disabled:opacity-50
+              cursor-pointer
               dark:border-neutral-800
               dark:bg-neutral-900
               dark:text-neutral-300
@@ -762,6 +846,7 @@ function EditHackathonPage() {
               transition-colors
               hover:bg-indigo-500
               disabled:opacity-60
+              cursor-pointer
               dark:bg-indigo-500
               dark:hover:bg-indigo-400
             "

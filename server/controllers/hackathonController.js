@@ -491,8 +491,8 @@ const updateHackathon = async (req, res) => {
       return res.status(404).json({ success: false, message: "Hackathon not found." });
     }
 
-    const orgId = hackathon.organizer?.ref?.toString();
-    if (orgId && orgId !== req.user._id.toString()) {
+    const orgId = hackathon.organizer?.ref?._id?.toString() || hackathon.organizer?.ref?.toString();
+    if (!orgId || orgId !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "Forbidden. You are not authorized to update this hackathon.",
@@ -500,6 +500,46 @@ const updateHackathon = async (req, res) => {
     }
 
     Object.assign(hackathon, req.body);
+
+    if (req.body.title) {
+      hackathon.title = req.body.title.trim();
+    }
+    if (req.body.description) {
+      hackathon.description = req.body.description.trim();
+    }
+    if (req.body.organizerName) {
+      hackathon.organizerName = req.body.organizerName.trim();
+      if (!hackathon.organizer) hackathon.organizer = {};
+      hackathon.organizer.name = req.body.organizerName.trim();
+    }
+    if (req.body.image !== undefined) {
+      hackathon.image = String(req.body.image).trim();
+    }
+    if (req.body.hostedOn !== undefined) {
+      hackathon.hostedOn = String(req.body.hostedOn).trim();
+    }
+    if (req.body.registrationUrl) {
+      hackathon.registrationUrl = req.body.registrationUrl.trim();
+      if (!hackathon.registration) hackathon.registration = {};
+      hackathon.registration.url = req.body.registrationUrl.trim();
+      if (!hackathon.source) hackathon.source = {};
+      hackathon.source.externalUrl = req.body.registrationUrl.trim();
+    }
+    if (req.body.format) {
+      hackathon.format = req.body.format;
+      if (!hackathon.event) hackathon.event = {};
+      hackathon.event.mode = req.body.format;
+    }
+    if (req.body.location) {
+      hackathon.location = req.body.location;
+      if (!hackathon.event) hackathon.event = {};
+      if (req.body.location.venue) hackathon.event.venue = req.body.location.venue;
+    }
+    if (req.body.prizes !== undefined) {
+      hackathon.prizes = req.body.prizes;
+      if (!hackathon.prizePool) hackathon.prizePool = {};
+      hackathon.prizePool.description = req.body.prizes;
+    }
 
     // Explicitly sync nested date & event structures if date strings are provided in payload
     if (req.body.startDate) {

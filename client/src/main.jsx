@@ -39,6 +39,28 @@ function AppErrorBoundary() {
   const error = useRouteError();
   console.error("Route Error Caught:", error);
 
+  const pathname = typeof window !== "undefined" ? window.location.pathname || "" : "";
+  const isOrganizer = pathname.startsWith("/organizer");
+  const isMessages = pathname.startsWith("/messages");
+
+  const handleBack = () => {
+    if (isOrganizer) {
+      window.location.href = "/organizer/hackathons";
+    } else if (isMessages) {
+      window.location.href = "/messages";
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = "/";
+    }
+  };
+
+  const backLabel = isOrganizer
+    ? "Back to My Hackathons"
+    : isMessages
+      ? "Back to Messages"
+      : "Back";
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 border border-neutral-200 dark:border-neutral-800 text-center space-y-4 shadow-xl">
@@ -63,10 +85,10 @@ function AppErrorBoundary() {
           </button>
           <button
             type="button"
-            onClick={() => (window.location.href = "/messages")}
+            onClick={handleBack}
             className="px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-pointer"
           >
-            Back to Messages
+            {backLabel}
           </button>
         </div>
       </div>
