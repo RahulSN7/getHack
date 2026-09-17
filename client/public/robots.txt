@@ -15,4 +15,4 @@ Disallow: /login
 Disallow: /signup
 Disallow: /forgot-password
 
-Sitemap: https://gethack.com/sitemap.xml
+Sitemap: https://gethack-tau.vercel.app/sitemap.xml

@@ -2,13 +2,19 @@
 
 const Hackathon = require("../models/hackathon");
 
+const DEFAULT_SITE_URL = "https://gethack-tau.vercel.app";
+
 function getBaseUrl() {
-  let url = process.env.SITE_URL || process.env.CLIENT_URL || "https://gethack.com";
-  url = url.trim().replace(/\/$/, "");
-  if (/^http:\/\/localhost/i.test(url) || /^http:\/\/127\.0\.0\.1/i.test(url)) {
-    return "https://gethack.com";
+  let url = process.env.SITE_URL || process.env.CLIENT_URL;
+  if (url && typeof url === "string") {
+    url = url.trim().replace(/\/$/, "");
+    const isLocalhost = /^http:\/\/localhost/i.test(url) || /^http:\/\/127\.0\.0\.1/i.test(url);
+    const isObsoleteDomain = /^https?:\/\/(www\.)?gethack\.com$/i.test(url);
+    if (!isLocalhost && !isObsoleteDomain) {
+      return url;
+    }
   }
-  return url;
+  return DEFAULT_SITE_URL;
 }
 
 function escapeXml(str) {

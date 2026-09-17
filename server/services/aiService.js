@@ -1897,7 +1897,7 @@ function generateFallbackResponse(messages, context) {
 
   if (isExternalRegQuery) {
     const refHack = previousSelectedHackathon || (previousHackathons ? previousHackathons[0] : null);
-    const regUrl = refHack?.registrationUrl || refHack?.url || "https://gethack.com/hackathons";
+    const regUrl = refHack?.registrationUrl || refHack?.url || "https://gethack-tau.vercel.app/hackathons";
     const hackTitle = refHack ? (refHack.title || refHack.name) : "the hackathon";
     return {
       text: `I can't complete external registration directly from getHack. You can continue through the official registration page for **${hackTitle}**: ${regUrl}`,
