@@ -183,6 +183,33 @@ function getNotificationIconConfig(type) {
   };
 }
 
+function HeaderUserAvatar({ user }) {
+  const [imgError, setImgError] = useState(false);
+  const avatarUrl = resolveAvatarUrl(user?.profile?.avatar || user?.avatar, user?.updatedAt);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [avatarUrl]);
+
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        key={avatarUrl}
+        src={avatarUrl}
+        alt={user?.name ? `${user.name} profile photo` : "User profile photo"}
+        onError={() => setImgError(true)}
+        className="h-full w-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <span className="h-full w-full flex items-center justify-center">
+      {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+    </span>
+  );
+}
+
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1107,24 +1134,7 @@ function Header() {
                   "
                   >
                     <span className="relative grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
-                      {resolveAvatarUrl(user?.profile?.avatar || user?.avatar) ? (
-                        <img
-                          src={resolveAvatarUrl(user?.profile?.avatar || user?.avatar, user?.updatedAt)}
-                          alt={user?.name ? `${user.name} profile photo` : "User profile photo"}
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                            const fallback = e.currentTarget.nextElementSibling;
-                            if (fallback) fallback.style.display = "flex";
-                          }}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : null}
-                      <span
-                        style={{ display: resolveAvatarUrl(user?.profile?.avatar || user?.avatar) ? "none" : "flex" }}
-                        className="h-full w-full items-center justify-center"
-                      >
-                        {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                      </span>
+                      <HeaderUserAvatar user={user} />
                     </span>
                   </button>
 

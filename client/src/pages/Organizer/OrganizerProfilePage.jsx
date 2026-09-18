@@ -21,6 +21,35 @@ function getInitials(name) {
   return name.slice(0, 2).toUpperCase();
 }
 
+function OrganizerAvatar({ avatar, name, updatedAt }) {
+  const [imgError, setImgError] = useState(false);
+  const resolvedAvatar = resolveAvatarUrl(avatar, updatedAt);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [resolvedAvatar]);
+
+  const initials = getInitials(name);
+
+  if (resolvedAvatar && !imgError) {
+    return (
+      <img
+        key={resolvedAvatar}
+        src={resolvedAvatar}
+        alt={name ? `${name} profile photo` : "Organizer profile photo"}
+        onError={() => setImgError(true)}
+        className="h-16 w-16 shrink-0 rounded-2xl object-cover ring-1 ring-neutral-200 dark:ring-neutral-800"
+      />
+    );
+  }
+
+  return (
+    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-indigo-600/10 text-xl font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+      {initials}
+    </div>
+  );
+}
+
 function OrganizerProfilePage() {
   const { id } = useParams();
   const routerLocation = useLocation();
@@ -361,36 +390,7 @@ function OrganizerProfilePage() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
             {/* Logo / Avatar */}
-            {resolveAvatarUrl(profile.avatar) ? (
-              <img
-                src={resolveAvatarUrl(profile.avatar)}
-                alt={profile.name ? `${profile.name} profile photo` : "Organizer profile photo"}
-                className="h-16 w-16 shrink-0 rounded-2xl object-cover ring-1 ring-neutral-200 dark:ring-neutral-800"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                  e.target.nextSibling.style.display = "flex";
-                }}
-              />
-            ) : null}
-            <div
-              className={`
-                grid
-                h-16
-                w-16
-                shrink-0
-                place-items-center
-                rounded-2xl
-                bg-indigo-600/10
-                text-xl
-                font-bold
-                text-indigo-600
-                dark:bg-indigo-500/20
-                dark:text-indigo-400
-                ${profile.avatar ? "hidden" : ""}
-              `}
-            >
-              {getInitials(profile.organizationName || profile.name)}
-            </div>
+            <OrganizerAvatar avatar={profile.avatar} name={profile.organizationName || profile.name} updatedAt={profile.updatedAt} />
 
             {/* Identity Info */}
             <div className="space-y-1">

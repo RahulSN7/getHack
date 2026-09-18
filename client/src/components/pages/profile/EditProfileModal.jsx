@@ -96,7 +96,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
 
   // Profile Photo File & Preview state
   const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(resolveAvatarUrl(profile.avatar || currentUser?.avatar || ""));
+  const [photoPreview, setPhotoPreview] = useState(resolveAvatarUrl(profile.avatar || currentUser?.avatar || "", currentUser?.updatedAt));
   const [photoError, setPhotoError] = useState(false);
   const [removePhoto, setRemovePhoto] = useState(false);
 
@@ -140,7 +140,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       setBio(prof.bio || "");
       setAvailability(prof.availability || "");
       setPhotoFile(null);
-      setPhotoPreview(resolveAvatarUrl(prof.avatar || currentUser?.avatar || ""));
+      setPhotoPreview(resolveAvatarUrl(prof.avatar || currentUser?.avatar || "", currentUser?.updatedAt));
       setPhotoError(false);
       setRemovePhoto(false);
       setSkills(normalizeTagArray(prof.skills));
@@ -545,9 +545,10 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             </h3>
             <div className="flex items-center gap-4">
               <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800">
-                {resolveAvatarUrl(photoPreview) && !photoError ? (
+                {resolveAvatarUrl(photoPreview, currentUser?.updatedAt) && !photoError ? (
                   <img
-                    src={resolveAvatarUrl(photoPreview)}
+                    key={resolveAvatarUrl(photoPreview, currentUser?.updatedAt)}
+                    src={resolveAvatarUrl(photoPreview, currentUser?.updatedAt)}
                     alt={name ? `${name} profile photo preview` : "Profile photo preview"}
                     onError={() => setPhotoError(true)}
                     className="h-full w-full object-cover"

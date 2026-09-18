@@ -127,6 +127,7 @@ userSchema.methods.toSafeUser = function () {
       handle: typeof p.handle === "string" && p.handle ? p.handle : `GH-${this._id.toString().slice(-6).toUpperCase()}`,
     },
     createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
   };
 };
 

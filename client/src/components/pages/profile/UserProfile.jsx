@@ -37,9 +37,9 @@ function AvailabilityBadge({ availability, isComplete }) {
   );
 }
 
-function UserAvatar({ avatar, name, sizeClass = "h-24 w-24 text-2xl" }) {
+function UserAvatar({ avatar, name, updatedAt, sizeClass = "h-24 w-24 text-2xl" }) {
   const [imgError, setImgError] = useState(false);
-  const resolvedAvatar = resolveAvatarUrl(avatar);
+  const resolvedAvatar = resolveAvatarUrl(avatar, updatedAt);
 
   useEffect(() => {
     setImgError(false);
@@ -50,6 +50,7 @@ function UserAvatar({ avatar, name, sizeClass = "h-24 w-24 text-2xl" }) {
   if (resolvedAvatar && !imgError) {
     return (
       <img
+        key={resolvedAvatar}
         src={resolvedAvatar}
         alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
@@ -413,7 +414,7 @@ export default function UserProfile({ initialData }) {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col sm:flex-row items-start gap-5">
               {/* Large Avatar */}
-              <UserAvatar avatar={avatar} name={name} sizeClass="h-24 w-24 text-2xl" />
+              <UserAvatar avatar={avatar} name={name} updatedAt={profileUser?.updatedAt} sizeClass="h-24 w-24 text-2xl" />
 
               {/* Name & Identity */}
               <div className="space-y-1.5">
