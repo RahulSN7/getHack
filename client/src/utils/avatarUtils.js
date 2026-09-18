@@ -6,10 +6,15 @@
  * Handles relative paths (/uploads/...), Google URLs, stripping localhost/127.0.0.1,
  * and ensuring leading slashes for uploads paths.
  */
-export function resolveAvatarUrl(avatar) {
+export function resolveAvatarUrl(avatar, updatedAt) {
   if (!avatar || typeof avatar !== "string") return "";
   let clean = avatar.trim();
   if (!clean) return "";
+
+  // Blob URLs are temporary local preview URLs — return as is
+  if (clean.startsWith("blob:")) {
+    return clean;
+  }
 
   // Strip localhost / 127.0.0.1 origin if present (e.g. http://localhost:5000/uploads/foo.png -> /uploads/foo.png)
   clean = clean.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, "");
@@ -17,6 +22,18 @@ export function resolveAvatarUrl(avatar) {
   // If path starts with uploads/ (missing leading slash), prepend /
   if (clean.startsWith("uploads/")) {
     clean = `/${clean}`;
+  }
+
+  // If stable timestamp/updatedAt is provided and clean URL does not already have a query string, append ?v=
+  if (updatedAt && !clean.includes("?")) {
+    try {
+      const ts = typeof updatedAt === "number" ? updatedAt : new Date(updatedAt).getTime();
+      if (!isNaN(ts) && ts > 0) {
+        clean = `${clean}?v=${ts}`;
+      }
+    } catch {
+      // Ignore timestamp parsing errors
+    }
   }
 
   return clean;

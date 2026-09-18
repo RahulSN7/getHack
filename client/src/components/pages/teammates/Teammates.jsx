@@ -16,6 +16,7 @@ import { isProfileComplete } from "../../../utils/profileValidation";
 import { TEAMMATES } from "../../../data/teammates";
 import { TEAMS } from "../../../data/teams";
 import { teamService } from "../../../services/teamService";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 import TeammateSearch from "./TeammateSearch";
 import TeammateFilters from "./TeammateFilters";
 import TeammateCard from "./TeammateCard";
@@ -602,6 +603,7 @@ function MyTeamsView({ currentUser, onShowToast }) {
 
 function RequestUserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
+  const resolvedAvatar = resolveAvatarUrl(avatar);
   const initials = name
     ? name
       .split(" ")
@@ -611,10 +613,10 @@ function RequestUserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
       .slice(0, 2)
     : "U";
 
-  if (avatar && !imgError) {
+  if (resolvedAvatar && !imgError) {
     return (
       <img
-        src={avatar}
+        src={resolvedAvatar}
         alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
@@ -1036,7 +1038,7 @@ function Teammates() {
             location: p.profile?.location || "",
             availability: p.profile?.availability || "",
             username: p.profile?.handle?.replace(/^@/, "") || `user_${p.id.slice(-4)}`,
-            avatar: p.avatar || p.profile?.avatar || "",
+            avatar: resolveAvatarUrl(p.avatar || p.profile?.avatar || ""),
             education: p.profile?.education || {},
             connectionState: p.connectionState || { status: "none" },
             profile: p.profile,

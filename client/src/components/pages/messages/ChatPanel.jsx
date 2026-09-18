@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { chatService } from "../../../services/chatService";
 import TeamInvitationCard from "./TeamInvitationCard";
 import MessageStatus, { getMessageStatusDetails } from "./MessageStatus";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 function formatMessageTime(dateStr) {
   if (!dateStr) return "";
@@ -919,9 +920,10 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
     ? (channel?.data?.name || "Group Chat")
     : (otherUser.name || channel?.data?.targetName || "Participant");
 
-  const avatar = isGroup
+  const rawAvatar = isGroup
     ? (channel?.data?.image || channel?.data?.avatar || "")
     : (otherUser.image || channel?.data?.targetAvatar || "");
+  const avatar = resolveAvatarUrl(rawAvatar);
 
   const userId = isGroup ? "" : (otherUser.id || otherMember?.user_id || "");
   const isOnline = isGroup ? false : (otherMember?.user?.online || false);
@@ -2524,7 +2526,7 @@ function ChatPanel({ channel, currentUserId, onBack, onRemoveChannel, isFavourit
             // Group messages consecutive sequence detection
             const isFirstInSequence = !prevMsg || prevSenderId !== senderId;
             const senderName = msg.user?.name || msg.user?.username || msg.user_name || "Participant";
-            const msgUserAvatar = msg.user?.image || msg.user?.avatar || msg.user?.profile?.avatar || "";
+            const msgUserAvatar = resolveAvatarUrl(msg.user?.image || msg.user?.avatar || msg.user?.profile?.avatar || "");
             const userInitials = (senderName || "Participant")
               .split(" ")
               .map((n) => n[0])

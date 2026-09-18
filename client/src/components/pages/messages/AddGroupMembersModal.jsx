@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import { userService } from "../../../services/userService";
 import { chatService } from "../../../services/chatService";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 export default function AddGroupMembersModal({
   isOpen,
@@ -240,9 +241,9 @@ export default function AddGroupMembersModal({
                       </div>
 
                       {/* Avatar */}
-                      {conn.avatar ? (
+                      {resolveAvatarUrl(conn.avatar) ? (
                         <img
-                          src={conn.avatar}
+                          src={resolveAvatarUrl(conn.avatar)}
                           alt={conn.name ? `${conn.name} profile photo` : "Connection profile photo"}
                           className="h-8 w-8 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
                         />

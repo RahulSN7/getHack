@@ -10,9 +10,11 @@ import { userService } from "../../../services/userService";
 import { chatService } from "../../../services/chatService";
 import { invitationService } from "../../../services/invitationService";
 import { TEAMMATES } from "../../../data/teammates";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
+  const resolvedAvatar = resolveAvatarUrl(avatar);
   const initials = name
     ? name
       .split(" ")
@@ -22,10 +24,10 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
       .slice(0, 2)
     : "GH";
 
-  if (avatar && !imgError) {
+  if (resolvedAvatar && !imgError) {
     return (
       <img
-        src={avatar}
+        src={resolvedAvatar}
         alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}
@@ -44,11 +46,12 @@ function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
 
 function GroupAvatar({ avatar, name, sizeClass = "h-10 w-10 text-sm" }) {
   const [imgError, setImgError] = useState(false);
+  const resolvedAvatar = resolveAvatarUrl(avatar);
 
-  if (avatar && !imgError) {
+  if (resolvedAvatar && !imgError) {
     return (
       <img
-        src={avatar}
+        src={resolvedAvatar}
         alt={name ? `${name} group avatar` : "Group avatar"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}

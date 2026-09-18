@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { userService } from "../../../services/userService";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 export default function StartNewChatModal({ isOpen, onClose, onSelectConnection }) {
   const [connections, setConnections] = useState([]);
@@ -176,9 +177,9 @@ export default function StartNewChatModal({ isOpen, onClose, onSelectConnection 
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left hover:bg-indigo-50/60 dark:hover:bg-neutral-800/60 transition-colors group cursor-pointer"
                   >
                     {/* Avatar */}
-                    {conn.avatar ? (
+                    {resolveAvatarUrl(conn.avatar) ? (
                       <img
-                        src={conn.avatar}
+                        src={resolveAvatarUrl(conn.avatar)}
                         alt={conn.name ? `${conn.name} profile photo` : "Connection profile photo"}
                         className="h-10 w-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
                       />

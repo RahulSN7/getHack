@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { isProfileComplete } from "../../../utils/profileValidation";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 function formatDateForInput(dateStr) {
   if (!dateStr) return "";
@@ -95,7 +96,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
 
   // Profile Photo File & Preview state
   const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(profile.avatar || "");
+  const [photoPreview, setPhotoPreview] = useState(resolveAvatarUrl(profile.avatar || currentUser?.avatar || ""));
   const [photoError, setPhotoError] = useState(false);
   const [removePhoto, setRemovePhoto] = useState(false);
 
@@ -139,7 +140,7 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
       setBio(prof.bio || "");
       setAvailability(prof.availability || "");
       setPhotoFile(null);
-      setPhotoPreview(prof.avatar || "");
+      setPhotoPreview(resolveAvatarUrl(prof.avatar || currentUser?.avatar || ""));
       setPhotoError(false);
       setRemovePhoto(false);
       setSkills(normalizeTagArray(prof.skills));
@@ -544,9 +545,9 @@ export default function EditProfileModal({ isOpen, onClose, currentProfile, curr
             </h3>
             <div className="flex items-center gap-4">
               <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800">
-                {photoPreview && !photoError ? (
+                {resolveAvatarUrl(photoPreview) && !photoError ? (
                   <img
-                    src={photoPreview}
+                    src={resolveAvatarUrl(photoPreview)}
                     alt={name ? `${name} profile photo preview` : "Profile photo preview"}
                     onError={() => setPhotoError(true)}
                     className="h-full w-full object-cover"

@@ -8,6 +8,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/useAuth";
 import Logo from "../common/Logo";
+import { resolveAvatarUrl } from "../../utils/avatarUtils";
 
 function OrganizerHeader() {
   const navigate = useNavigate();
@@ -305,9 +306,9 @@ function OrganizerHeader() {
                   "
                   >
                     <span className="relative grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
-                      {user?.profile?.avatar || user?.avatar ? (
+                      {resolveAvatarUrl(user?.profile?.avatar || user?.avatar) ? (
                         <img
-                          src={user.profile?.avatar || user.avatar}
+                          src={resolveAvatarUrl(user?.profile?.avatar || user?.avatar, user?.updatedAt)}
                           alt={user?.name ? `${user.name} profile photo` : "Organizer profile photo"}
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
@@ -318,7 +319,7 @@ function OrganizerHeader() {
                         />
                       ) : null}
                       <span
-                        style={{ display: user?.profile?.avatar || user?.avatar ? "none" : "flex" }}
+                        style={{ display: resolveAvatarUrl(user?.profile?.avatar || user?.avatar) ? "none" : "flex" }}
                         className="h-full w-full items-center justify-center"
                       >
                         {user?.name ? user.name.charAt(0).toUpperCase() : "O"}

@@ -86,7 +86,9 @@ userSchema.methods.toSafeUser = function () {
   const rawAvailability = typeof p.availability === "string" ? p.availability : "";
   const safeAvailability = !complete && rawAvailability === "Available" ? "" : rawAvailability;
 
-  const userAvatar = typeof p.avatar === "string" ? p.avatar : "";
+  const rawProfileAvatar = typeof p.avatar === "string" ? p.avatar.trim() : "";
+  const rawRootAvatar = typeof this.avatar === "string" ? this.avatar.trim() : "";
+  const userAvatar = rawProfileAvatar || rawRootAvatar || "";
 
   return {
     id: this._id.toString(),

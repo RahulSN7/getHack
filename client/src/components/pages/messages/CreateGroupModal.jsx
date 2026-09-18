@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { userService } from "../../../services/userService";
 import { chatService } from "../../../services/chatService";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 export default function CreateGroupModal({ isOpen, onClose, onCreateGroup }) {
   const [groupName, setGroupName] = useState("");
@@ -215,9 +216,9 @@ export default function CreateGroupModal({ isOpen, onClose, onCreateGroup }) {
                 title={avatarPreview ? "Change group photo" : "Add group photo"}
               >
                 <div className="h-20 w-20 rounded-full border-2 border-dashed border-indigo-300 dark:border-neutral-700 bg-indigo-50/70 dark:bg-neutral-800 flex items-center justify-center overflow-hidden transition-all group-hover:border-indigo-500 group-hover:shadow-md">
-                  {avatarPreview ? (
+                  {resolveAvatarUrl(avatarPreview) ? (
                     <img
-                      src={avatarPreview}
+                      src={resolveAvatarUrl(avatarPreview)}
                       alt={groupName ? `${groupName} group photo preview` : "Group photo preview"}
                       className="h-full w-full object-cover"
                     />
@@ -378,9 +379,9 @@ export default function CreateGroupModal({ isOpen, onClose, onCreateGroup }) {
                       </div>
 
                       {/* Avatar */}
-                      {conn.avatar ? (
+                      {resolveAvatarUrl(conn.avatar) ? (
                         <img
-                          src={conn.avatar}
+                          src={resolveAvatarUrl(conn.avatar)}
                           alt={conn.name ? `${conn.name} profile photo` : "Connection profile photo"}
                           className="h-8 w-8 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0"
                         />

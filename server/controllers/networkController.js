@@ -186,14 +186,15 @@ function extractSafeUser(userDoc) {
     }
   }
   const p = userDoc.profile || {};
+  const userAvatar = (typeof p.avatar === "string" && p.avatar.trim()) ? p.avatar.trim() : (typeof userDoc.avatar === "string" ? userDoc.avatar.trim() : "");
   return {
     id: (userDoc._id || userDoc.id)?.toString() || "",
     name: userDoc.name || "Participant",
     email: userDoc.email || "",
     role: userDoc.role || "participant",
-    avatar: typeof p.avatar === "string" ? p.avatar : "",
+    avatar: userAvatar,
     profile: {
-      avatar: typeof p.avatar === "string" ? p.avatar : "",
+      avatar: userAvatar,
       role: typeof p.role === "string" ? p.role : "Developer",
       bio: typeof p.bio === "string" ? p.bio : "",
       skills: Array.isArray(p.skills) ? p.skills : [],
@@ -232,7 +233,7 @@ const getNetworkRequests = async (req, res) => {
         userId: safePartner.id,
         name: safePartner.name || "Participant",
         role: safePartner.profile?.role || "Developer",
-        avatar: safePartner.profile?.avatar || "",
+        avatar: safePartner.profile?.avatar || safePartner.avatar || "",
         bio: safePartner.profile?.bio || "",
         skills: safePartner.profile?.skills || [],
         location: safePartner.profile?.location || "",
@@ -257,7 +258,7 @@ const getNetworkRequests = async (req, res) => {
         senderId: safeSender.id,
         name: safeSender.name || "Participant",
         role: safeSender.profile?.role || "Developer",
-        avatar: safeSender.profile?.avatar || "",
+        avatar: safeSender.profile?.avatar || safeSender.avatar || "",
         bio: safeSender.profile?.bio || "",
         skills: safeSender.profile?.skills || [],
         location: safeSender.profile?.location || "",
@@ -283,7 +284,7 @@ const getNetworkRequests = async (req, res) => {
         receiverId: safeReceiver.id,
         name: safeReceiver.name || "Participant",
         role: safeReceiver.profile?.role || "Developer",
-        avatar: safeReceiver.profile?.avatar || "",
+        avatar: safeReceiver.profile?.avatar || safeReceiver.avatar || "",
         bio: safeReceiver.profile?.bio || "",
         skills: safeReceiver.profile?.skills || [],
         location: safeReceiver.profile?.location || "",
@@ -292,6 +293,7 @@ const getNetworkRequests = async (req, res) => {
         createdAt: c.createdAt,
       };
     });
+
 
     return res.status(200).json({
       success: true,

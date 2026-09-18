@@ -8,6 +8,7 @@ import { useAuth } from "../../context/useAuth";
 import { userService } from "../../services/userService";
 import { ORGANIZER_PROFILE } from "../../data/organizerData";
 import BackButton from "../../components/common/BackButton";
+import { resolveAvatarUrl } from "../../utils/avatarUtils";
 import useSEO from "../../utils/useSEO";
 
 // Helper for initials fallback
@@ -360,9 +361,9 @@ function OrganizerProfilePage() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
             {/* Logo / Avatar */}
-            {profile.avatar ? (
+            {resolveAvatarUrl(profile.avatar) ? (
               <img
-                src={profile.avatar}
+                src={resolveAvatarUrl(profile.avatar)}
                 alt={profile.name ? `${profile.name} profile photo` : "Organizer profile photo"}
                 className="h-16 w-16 shrink-0 rounded-2xl object-cover ring-1 ring-neutral-200 dark:ring-neutral-800"
                 onError={(e) => {

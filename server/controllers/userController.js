@@ -11,6 +11,7 @@ const User = require("../models/user");
 const Hackathon = require("../models/hackathon");
 const Connection = require("../models/connection");
 const { isProfileComplete } = require("../utils/profileValidation");
+const { upsertStreamUser } = require("../services/streamService");
 
 // ==========
 // DATE FORMATTER
@@ -546,6 +547,11 @@ const updateOwnParticipantProfile = async (req, res) => {
       });
     }
 
+    // Synchronize updated user profile image to Stream Chat
+    upsertStreamUser(user).catch((e) =>
+      console.warn("Failed to sync updated participant user to Stream Chat:", e.message)
+    );
+
     // ======
     // RETURN UPDATED USER
     // ======
@@ -1036,8 +1042,12 @@ const updateOwnOrganizerProfile = async (
     ) {
       const oldFilename = path.basename(oldAvatar);
       const oldFilePath = path.join(__dirname, "../public/uploads", oldFilename);
-      fs.unlink(oldFilePath, () => { });
     }
+
+    // Synchronize updated user profile image to Stream Chat
+    upsertStreamUser(user).catch((e) =>
+      console.warn("Failed to sync updated organizer user to Stream Chat:", e.message)
+    );
 
     return res.status(200).json({
       success: true,

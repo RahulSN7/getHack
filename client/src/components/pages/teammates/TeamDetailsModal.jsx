@@ -10,10 +10,12 @@ import { HACKATHONS } from "../../../data/hackathons";
 import { teamService } from "../../../services/teamService";
 import { invitationService } from "../../../services/invitationService";
 import { resolveTeamMembers, resolveTeamLeader, getTeamActionState } from "../../../utils/teamMemberResolver";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 import InviteConnectionsModal from "./InviteConnectionsModal";
 
 function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
   const [imgError, setImgError] = useState(false);
+  const resolvedAvatar = resolveAvatarUrl(avatar);
   const initials = name
     ? name
       .split(" ")
@@ -23,10 +25,10 @@ function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
       .slice(0, 2)
     : "GH";
 
-  if (avatar && !imgError) {
+  if (resolvedAvatar && !imgError) {
     return (
       <img
-        src={avatar}
+        src={resolvedAvatar}
         alt={name ? `${name} profile photo` : "User profile photo"}
         onError={() => setImgError(true)}
         className={`${sizeClass} shrink-0 rounded-xl object-cover border border-neutral-200 shadow-2xs dark:border-neutral-800`}

@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 function formatTime(dateStr) {
   if (!dateStr) return "";
@@ -57,9 +58,10 @@ function ConversationItem({ channel, currentUserId, isActive, isFavourite, isClo
     ? (channel.data?.name || "Group Chat")
     : (otherUser.name || channel.data?.targetName || "Participant");
 
-  const avatar = isGroup
+  const rawAvatar = isGroup
     ? (channel.data?.image || channel.data?.avatar || "")
     : (otherUser.image || channel.data?.targetAvatar || "");
+  const avatar = resolveAvatarUrl(rawAvatar);
 
   const userId = isGroup ? "" : (otherUser.id || otherMember?.user_id || "");
 

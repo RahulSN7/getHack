@@ -12,6 +12,7 @@ import { chatService } from "../../../services/chatService";
 import BackButton from "../../common/BackButton";
 import AddGroupMembersModal from "./AddGroupMembersModal";
 import useSEO from "../../../utils/useSEO";
+import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
 export default function GroupInfo() {
   useSEO(
@@ -336,9 +337,9 @@ export default function GroupInfo() {
                 className="group relative cursor-pointer select-none rounded-full"
                 title="Change group photo"
               >
-                {group.avatar ? (
+                {resolveAvatarUrl(group.avatar) ? (
                   <img
-                    src={group.avatar}
+                    src={resolveAvatarUrl(group.avatar)}
                     alt={`${group.name || "Group"} group avatar`}
                     className="h-24 w-24 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700 shadow-md transition-all group-hover:brightness-75"
                   />
@@ -373,9 +374,9 @@ export default function GroupInfo() {
             ) : (
               /* Non-Admin Avatar - Plain & Non-interactive */
               <div className="relative select-none rounded-full">
-                {group.avatar ? (
+                {resolveAvatarUrl(group.avatar) ? (
                   <img
-                    src={group.avatar}
+                    src={resolveAvatarUrl(group.avatar)}
                     alt={`${group.name || "Group"} group avatar`}
                     className="h-24 w-24 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700 shadow-md"
                   />
@@ -607,9 +608,9 @@ export default function GroupInfo() {
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       {/* Avatar */}
-                      {memberAvatar ? (
+                      {resolveAvatarUrl(memberAvatar) ? (
                         <img
-                          src={memberAvatar}
+                          src={resolveAvatarUrl(memberAvatar)}
                           alt={member.name ? `${member.name} profile photo` : "Member profile photo"}
                           className="h-10 w-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 shrink-0 group-hover:opacity-90 transition-opacity"
                         />

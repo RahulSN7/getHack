@@ -5,6 +5,7 @@ import { useAuth } from "../../context/useAuth";
 import { useNotifications } from "../../context/NotificationContext";
 import Logo from "../common/Logo";
 import OrganizerHeader from "../organizer/OrganizerHeader";
+import { resolveAvatarUrl } from "../../utils/avatarUtils";
 
 function formatRelativeTime(dateString) {
   if (!dateString) return "";
@@ -861,7 +862,7 @@ function Header() {
 
                             {group.items.map((n) => {
                               const iconConfig = getNotificationIconConfig(n.type);
-                              const senderAvatar = n.sender?.avatar || n.sender?.profile?.avatar;
+                              const senderAvatar = resolveAvatarUrl(n.sender?.profile?.avatar || n.sender?.avatar);
                               const senderName = n.sender?.name;
                               const initials = senderName
                                 ? senderName
@@ -1106,9 +1107,9 @@ function Header() {
                   "
                   >
                     <span className="relative grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-[10px] font-bold text-white overflow-hidden shrink-0">
-                      {user?.profile?.avatar || user?.avatar ? (
+                      {resolveAvatarUrl(user?.profile?.avatar || user?.avatar) ? (
                         <img
-                          src={user.profile?.avatar || user.avatar}
+                          src={resolveAvatarUrl(user?.profile?.avatar || user?.avatar, user?.updatedAt)}
                           alt={user?.name ? `${user.name} profile photo` : "User profile photo"}
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
@@ -1119,7 +1120,7 @@ function Header() {
                         />
                       ) : null}
                       <span
-                        style={{ display: user?.profile?.avatar || user?.avatar ? "none" : "flex" }}
+                        style={{ display: resolveAvatarUrl(user?.profile?.avatar || user?.avatar) ? "none" : "flex" }}
                         className="h-full w-full items-center justify-center"
                       >
                         {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
