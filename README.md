@@ -1,582 +1,629 @@
-# getHack 🚀
+# getHack
 
-> **Discover hackathons. Find the right teammates. Build better projects.**
+getHack is a full-stack web platform that helps developers discover
+hackathons, find teammates with relevant skills, connect with other
+participants, and collaborate on projects.
 
-**getHack** is a hackathon discovery and team-building platform designed for students, developers, and aspiring innovators. It helps users discover upcoming hackathons, check registration status, find teammates with complementary skills, send team invitations, communicate with accepted teammates, and use AI-powered guidance to build stronger teams.
+The platform supports both participants and organizers. Participants can
+discover hackathons, build their network, find teammates, create teams,
+send connection requests, and communicate with accepted connections.
+Organizers can add, publish, and manage hackathon listings.
 
----
+## Live Project
 
-## ✨ Why getHack?
+-   Frontend: https://gethack-tau.vercel.app/
+-   Backend API: https://gethack.onrender.com/
+-   Health Check: https://gethack.onrender.com/api/health
 
-Finding a hackathon is easy. Finding the **right hackathon and the right team** is much harder.
+## Core Idea
 
-getHack brings both together in one platform.
+getHack follows a simple product journey:
 
-```text
-Discover Hackathons
-        ↓
-Choose the Right Opportunity
-        ↓
-Build Your Team
-        ↓
-Find Missing Skills
-        ↓
-Invite Teammates
-        ↓
-Chat & Collaborate
-        ↓
-Use AI Guidance
-        ↓
-Build & Compete 🚀
-```
+**Discover → Connect → Collaborate**
 
----
+### Discover
 
-## 🎯 Core Features
+-   Explore upcoming hackathons
+-   Search and filter hackathons
+-   View hackathon details
+-   Save hackathons
+-   Sort hackathons by deadline
+-   Open external hackathon registration links
 
-### 🔎 Hackathon Discovery
-- Browse upcoming and ongoing hackathons.
-- Search and filter hackathons based on relevant criteria.
-- View important information such as:
-  - Hackathon name
-  - Registration deadline
-  - Event date
-  - Online/offline mode
-  - Location
-  - Required skills
-  - Eligibility
-  - Prize information
-  - Registration status
-- Clearly identify whether registration is:
-  - 🟢 Open
-  - 🟡 Coming Soon
-  - 🔴 Closed
+### Connect
 
-### 👥 Team Building
-- Create and manage a hackathon team.
-- Define the skills your team already has.
-- Identify skills that are missing.
-- Search for students based on skills and interests.
-- View relevant candidate profiles.
-- Invite suitable students to join your team.
+-   Find developers, designers, and other participants
+-   Search teammates based on skills and profile information
+-   View public profiles
+-   Send and receive connection requests
+-   Build a personal network
 
-### 🤝 Team Invitations
-- Send team invitations.
-- Accept or reject invitations.
-- Track invitation status.
-- Automatically connect accepted members to the team.
+### Collaborate
 
-### 💬 Personal Chat
-After an invitation is accepted, users can communicate privately.
+-   Create and manage teams
+-   Send team requests
+-   Connect with accepted users through chat
+-   Communicate with teammates and connections
+-   Manage notifications and network activity
 
-Planned/implemented communication capabilities can include:
-- One-to-one messaging
-- Team conversations
-- Message timestamps
-- Online/offline presence
-- Notifications
+## Features
 
-### 🤖 AI Team Assistant
-getHack uses AI to help users make better team-building decisions.
+### Participant Features
 
-The AI can help answer questions such as:
+-   User registration and login
+-   Email OTP verification
+-   Google OAuth authentication
+-   Profile creation and editing
+-   Profile photo upload
+-   Unique getHack user ID
+-   Skill-based teammate discovery
+-   Connection requests
+-   My Network
+-   My Teams
+-   Team creation and management
+-   Hackathon discovery
+-   Hackathon search and filtering
+-   Saved hackathons
+-   Deadline-based sorting
+-   External hackathon registration
+-   Real-time messaging
+-   Notifications
+-   getHack AI assistant
 
-> "Which teammate should I choose?"
+### Organizer Features
 
-> "What skill is missing from my team?"
+Organizers have a dedicated organizer portal for:
 
-> "Which candidate is the best fit for our project?"
+-   Adding hackathons
+-   Publishing hackathons
+-   Editing hackathons
+-   Managing hackathons
+-   Adding hackathon images
+-   Managing organizer profile information
+-   Viewing organizer-owned hackathons
 
-> "Do we have too many people with the same skill?"
+Organizer and participant accounts use separate roles:
 
-> "What type of project would suit our team's skills?"
+-   `participant`
+-   `organizer`
 
-The goal is **decision support**, not replacing the user's final decision.
+## getHack AI
 
-### 💡 Smart Suggestions
-getHack can provide recommendations such as:
-- Relevant hackathons based on user skills/interests.
-- Potential teammates with complementary skills.
-- Missing skills in a team.
-- Suggested team composition.
-- Project ideas based on team capabilities.
-- Areas where the team can improve.
+getHack includes an AI assistant designed to help users interact with
+the platform.
 
----
+The assistant can help with:
 
-## 🧩 Example Team-Matching Logic
+-   Finding relevant hackathons
+-   Finding teammates based on skills
+-   Checking hackathon deadlines
+-   Understanding skill requirements
+-   Connecting users with relevant teammates
+-   Handling natural-language searches
 
-Suppose a team already has:
+getHack AI is implemented as a global floating widget rather than a
+separate route.
 
-```text
-Frontend Developer
-Backend Developer
-Python Developer
-```
-
-The platform can identify that the team may benefit from:
-
-```text
-UI/UX Designer
-OR
-ML/AI Developer
-OR
-Cloud/DevOps Developer
-```
-
-Instead of simply showing the most popular users, getHack aims to find **complementary skills** that improve the overall team.
-
----
-
-## 👤 User Journey
-
-```text
-Sign Up / Log In
-      ↓
-Create Profile
-      ↓
-Add Skills & Interests
-      ↓
-Explore Hackathons
-      ↓
-Select a Hackathon
-      ↓
-Create / Join a Team
-      ↓
-Search for Teammates
-      ↓
-Send Invitation
-      ↓
-Invitation Accepted
-      ↓
-Start Chatting
-      ↓
-AI Team Analysis
-      ↓
-Build Project
-      ↓
-Compete 🚀
-```
-
----
-
-## 🏗️ Platform Modules
-
-| Module | Purpose |
-|---|---|
-| Authentication | User registration and login |
-| User Profile | Skills, interests, experience and portfolio |
-| Hackathon Discovery | Search and explore hackathons |
-| Hackathon Details | View complete event information |
-| Team Management | Create and manage teams |
-| Skill Matching | Find users with relevant/complementary skills |
-| Invitations | Send and manage team invitations |
-| Chat | Communicate with teammates |
-| AI Assistant | Team analysis and recommendations |
-| Notifications | Important platform and team updates |
-| Admin Panel | Manage users, hackathons and platform data |
-
----
-
-## 🧠 AI Recommendation Concept
-
-The AI recommendation system can consider multiple factors:
-
-```text
-User Skills
-     +
-Experience
-     +
-Interests
-     +
-Hackathon Requirements
-     +
-Current Team Skills
-     +
-Missing Skills
-     +
-Candidate Skills
-     +
-Project Requirements
-     ↓
-AI Recommendation
-```
-
-A future matching score could be represented as:
-
-```text
-Match Score =
-    Skill Compatibility
-  + Skill Complementarity
-  + Project Relevance
-  + Experience
-  + Interest Alignment
-  + Team Balance
-```
-
-The exact weighting can be improved as the project evolves.
-
----
-
-## 🎨 Design Philosophy
-
-getHack should feel:
-
-- Modern
-- Developer-friendly
-- Fast
-- Intelligent
-- Youthful
-- Professional
-- Competitive
-- Easy to navigate
-
-### Brand
-
-**Name:** getHack
-
-**Suggested tagline:**
-
-> **Discover. Team Up. Build.**
-
-Alternative:
-
-> **Find Your Hackathon. Build Your Team.**
-
-### UI Direction
-
-The interface should prioritize:
-- Clear information hierarchy
-- Strong search and filtering
-- Responsive layouts
-- Accessible typography
-- Consistent spacing
-- Meaningful animations
-- Clear status indicators
-- Fast interactions
-- Mobile-friendly design
-
----
-
-## 🛠️ Technology Stack
-
-> Update this section to match the technologies actually used in your implementation.
+## Technology Stack
 
 ### Frontend
-- React
-- JavaScript
-- HTML5
-- CSS / Tailwind CSS / Bootstrap
+
+-   React
+-   Vite
+-   Tailwind CSS
+-   React Router
+-   Socket.IO client
+-   Stream Chat client
 
 ### Backend
-- Node.js
-- Express.js
 
-### Database
-- MongoDB
-- Mongoose
+-   Node.js
+-   Express.js
+-   MongoDB
+-   Mongoose
+-   JWT authentication
+-   Socket.IO
+-   Google OAuth
+-   Email OTP
+-   Resend or configured SMTP email service
 
-### Authentication
-- Session-based authentication / JWT *(depending on implementation)*
+### Infrastructure and Services
 
-### Real-time Communication
-- Socket.IO / WebSocket *(if implemented)*
+-   MongoDB Atlas
+-   Vercel
+-   Render
+-   Stream Chat
+-   Google OAuth
+-   Email delivery service
 
-### AI
-- AI/LLM API integration *(provider can be configured according to the project)*
+## Project Structure
 
-### Development Tools
-- Git
-- GitHub
-- VS Code
-- npm
-
----
-
-## 📁 Suggested Project Structure
-
-```text
+``` text
 getHack/
+├── client/
+│   ├── public/
+│   └── src/
+│       ├── components/
+│       ├── contexts/
+│       ├── pages/
+│       ├── services/
+│       ├── utils/
+│       └── App.jsx
 │
-├── client/                 # Frontend application
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── hooks/
-│   │   ├── context/
-│   │   └── utils/
-│   └── package.json
-│
-├── server/                 # Backend application
+├── server/
 │   ├── controllers/
+│   ├── middleware/
 │   ├── models/
 │   ├── routes/
-│   ├── middleware/
 │   ├── services/
-│   ├── utils/
-│   └── package.json
+│   └── app.js
 │
-├── .env.example
-├── .gitignore
+├── package.json
 └── README.md
 ```
 
-Adapt the structure to your actual project.
+## Getting Started
 
----
+### Prerequisites
 
-## 🚀 Getting Started
+Make sure the following are installed:
 
-### 1. Clone the repository
+-   Node.js
+-   npm
+-   MongoDB Atlas account or MongoDB instance
+-   Google OAuth credentials if Google login is enabled
+-   Stream Chat credentials if chat is enabled
+-   Email service credentials for OTP and transactional emails
 
-```bash
-git clone https://github.com/YOUR_USERNAME/getHack.git
-```
+### Clone the Repository
 
-```bash
+``` bash
+git clone https://github.com/RahulSN7/getHack.git
 cd getHack
 ```
 
-### 2. Install dependencies
+### Install Dependencies
 
-If frontend and backend are separate:
+Install root dependencies:
 
-```bash
+``` bash
+npm install
+```
+
+Install frontend dependencies:
+
+``` bash
 cd client
 npm install
 ```
 
-```bash
+Install backend dependencies:
+
+``` bash
 cd ../server
 npm install
 ```
 
-### 3. Configure environment variables
+Return to the project root:
 
-Create a `.env` file in the backend directory.
+``` bash
+cd ..
+```
+
+## Environment Variables
+
+Do not commit environment files or secret credentials to GitHub.
+
+### Backend
+
+Create a backend environment file according to the variables used by the
+server configuration.
+
+Typical production configuration includes values for:
+
+``` env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+CLIENT_URL=https://gethack-tau.vercel.app
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=https://gethack-tau.vercel.app/api/auth/google/callback
+
+STREAM_CHAT_API_KEY=your_stream_chat_api_key
+STREAM_CHAT_API_SECRET=your_stream_chat_api_secret
+
+RESEND_API_KEY=your_resend_api_key
+```
+
+Use the exact environment variable names required by the current server
+implementation.
+
+Never publish real secret values in the repository.
+
+### Frontend
+
+The frontend uses relative `/api` requests in production.
+
+The Vercel deployment rewrites API requests to the Render backend.
+
+Public client-side configuration such as the Stream Chat public API key
+can be configured through the appropriate Vite environment variable.
 
 Example:
 
-```env
-PORT=7777
-MONGODB_URI=your_mongodb_connection_string
-SESSION_SECRET=your_session_secret
-AI_API_KEY=your_ai_api_key
+``` env
+VITE_STREAM_API_KEY=your_stream_public_api_key
 ```
 
-> Never commit real API keys, passwords, database credentials, or session secrets to GitHub.
+Do not put private backend secrets in frontend environment variables.
 
-### 4. Start the backend
+## Running Locally
 
-```bash
+The project uses the root development script to run the frontend and
+backend together.
+
+From the project root:
+
+``` bash
 npm run dev
 ```
 
-### 5. Start the frontend
+The development setup uses:
 
-In a separate terminal:
+-   Frontend: Vite development server
+-   Backend: Express server on port `5000`
 
-```bash
+The Vite development server proxies backend-related requests to the
+local Express server.
+
+## Backend Health Check
+
+The backend provides a health endpoint:
+
+``` text
+GET /api/health
+```
+
+Example response:
+
+``` json
+{
+  "success": true,
+  "message": "getHack API is running"
+}
+```
+
+## Authentication
+
+getHack supports:
+
+-   Email and password authentication
+-   Email OTP verification
+-   Google OAuth
+-   JWT-based authentication
+-   HTTP-only authentication cookies
+
+Authentication routes include:
+
+``` text
+POST /api/auth/signup
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/me
+GET  /api/auth/google/callback
+```
+
+## Database
+
+getHack uses MongoDB with Mongoose.
+
+The primary user collection is:
+
+``` text
+users
+```
+
+The production database is hosted through MongoDB Atlas.
+
+The application stores information such as:
+
+-   User accounts
+-   Roles
+-   Profiles
+-   Skills
+-   Profile photos
+-   Hackathons
+-   Teams
+-   Connections
+-   Notifications
+-   Other application data
+
+The database name used by production configuration is:
+
+``` text
+getHack
+```
+
+## API Architecture
+
+The frontend communicates with the backend using relative API paths:
+
+``` text
+/api/...
+```
+
+In production:
+
+``` text
+Vercel
+   |
+   v
+getHack Frontend
+   |
+   v
+Vercel Rewrite
+   |
+   v
+Render
+   |
+   v
+Express API
+   |
+   v
+MongoDB Atlas
+```
+
+Uploads are served through the `/uploads` path and proxied to the
+backend in production.
+
+## Chat
+
+getHack uses Stream Chat for messaging.
+
+Chat access is intended for users who have an accepted connection.
+
+The application supports:
+
+-   Direct conversations
+-   Group conversations
+-   Unread messages
+-   Favorites
+-   Message reactions
+-   Replies
+-   Message actions
+-   Message editing within the allowed time
+-   Message deletion
+-   Message copying
+-   Mobile long-press message actions
+
+## Notifications
+
+The application provides notifications for relevant user activity such
+as:
+
+-   Connection requests
+-   Connection updates
+-   Team-related activity
+-   Other application events
+
+Socket-based functionality is used where real-time updates are required.
+
+## SEO
+
+getHack includes a dedicated SEO implementation for its public pages.
+
+### Public Page SEO
+
+The main indexable pages include:
+
+-   `/`
+-   `/hackathons`
+-   `/teammates`
+-   Public hackathon detail pages
+-   Public team pages
+-   Public participant profiles
+-   Public organizer profiles
+
+### Private Page Protection
+
+Private/authenticated pages use `noindex` where appropriate, including:
+
+-   `/login`
+-   `/signup`
+-   `/messages`
+-   `/network`
+-   `/create-team`
+-   `/organizer`
+-   Organizer management pages
+-   Private profile pages
+
+### SEO Features
+
+-   Page-specific titles
+-   Meta descriptions
+-   Canonical URLs
+-   Open Graph metadata
+-   Twitter Card metadata
+-   WebSite JSON-LD
+-   Event JSON-LD for hackathons
+-   robots.txt
+-   Dynamic sitemap.xml
+-   Google Search Console verification
+-   Production-domain SEO URLs
+
+Production SEO domain:
+
+``` text
+https://gethack-tau.vercel.app/
+```
+
+## Deployment
+
+### Frontend
+
+The frontend is deployed on Vercel.
+
+The Vercel configuration handles rewrites for:
+
+``` text
+/api/*
+/uploads/*
+/sitemap.xml
+/robots.txt
+```
+
+These routes are forwarded to the Render backend where required.
+
+### Backend
+
+The Express backend is deployed on Render.
+
+Production backend:
+
+``` text
+https://gethack.onrender.com
+```
+
+### Database
+
+Production database:
+
+``` text
+MongoDB Atlas
+```
+
+### Production Flow
+
+``` text
+User
+ |
+ v
+Vercel
+ |
+ +---- Frontend
+ |
+ +---- /api/* ------> Render
+ |                      |
+ |                      v
+ |                  Express API
+ |                      |
+ |                      v
+ |                 MongoDB Atlas
+ |
+ +---- /uploads/* ----> Render
+ |
+ +---- /sitemap.xml --> Render
+ |
+ +---- /robots.txt ---> Render
+```
+
+## Security
+
+Important security practices used by the project include:
+
+-   HTTP-only authentication cookies
+-   Secure cookies in production
+-   Environment variables for secrets
+-   Backend-only private credentials
+-   Role-based access
+-   Authenticated private routes
+-   Protected API endpoints
+-   No production secrets committed to Git
+
+Never commit:
+
+``` text
+.env
+.env.local
+private API keys
+JWT secrets
+OAuth client secrets
+database passwords
+Stream Chat private secrets
+```
+
+If a secret is accidentally exposed, rotate it immediately.
+
+## Development Guidelines
+
+When modifying the project:
+
+1.  Inspect the existing implementation before making changes.
+2.  Reuse existing components, services, utilities, and API patterns
+    where possible.
+3.  Avoid unnecessary architectural changes.
+4.  Keep participant and organizer roles separate.
+5.  Preserve the existing Vercel-to-Render deployment architecture.
+6.  Use relative `/api` paths from the frontend.
+7.  Do not hardcode localhost URLs into production-facing code.
+8.  Do not expose backend secrets to the frontend.
+9.  Test both desktop and mobile layouts.
+10. Run the production build before committing significant frontend
+    changes.
+
+## Production Build
+
+Build the frontend:
+
+``` bash
 cd client
-npm run dev
+npm run build
 ```
 
-Then open the local URL shown by your frontend development server.
+A successful build should complete without compilation errors.
 
----
+## Project Goals
 
-## 🔐 Environment Variables
+getHack is designed to make it easier for developers and creators to:
 
-| Variable | Description |
-|---|---|
-| `PORT` | Backend server port |
-| `MONGODB_URI` | MongoDB connection string |
-| `SESSION_SECRET` | Secret used for session security |
-| `AI_API_KEY` | API key for the selected AI service |
+-   Discover opportunities
+-   Find people with complementary skills
+-   Build teams
+-   Connect with other participants
+-   Collaborate on projects
+-   Participate in hackathons
+-   Help organizers publish and manage hackathons
 
-Add other variables required by your implementation.
+## Roadmap
 
----
+Potential future improvements include:
 
-## 🔒 Security Considerations
+-   Better search and recommendation systems
+-   Improved AI teammate matching
+-   Advanced hackathon discovery
+-   Better team collaboration tools
+-   Performance optimization and route-level code splitting
+-   Improved analytics for organizers
+-   Additional collaboration features
+-   Custom production domain and expanded brand presence
 
-getHack should follow good security practices:
+## Contributing
 
-- Hash user passwords before storing them.
-- Never expose passwords through API responses.
-- Validate and sanitize user input.
-- Protect authenticated routes.
-- Secure session cookies.
-- Use environment variables for secrets.
-- Apply rate limiting to sensitive endpoints.
-- Validate uploaded files if file uploads are supported.
-- Restrict unauthorized access to private chats.
-- Never expose private user information unnecessarily.
-- Keep AI/API credentials on the server side.
+Contributions and improvements should follow the existing project
+architecture and coding patterns.
 
----
+Before submitting changes:
 
-## 🧪 Testing
+1.  Test the affected feature.
+2.  Check desktop and mobile behavior.
+3.  Run the frontend production build.
+4.  Verify that no secrets or environment files are included.
+5.  Review the Git diff for unrelated changes.
 
-Recommended testing areas:
+## License
 
-### Authentication
-- Registration
-- Login
-- Logout
-- Invalid credentials
-- Duplicate accounts
+Add the project's chosen license here before publishing the repository
+as an open-source project.
 
-### Hackathons
-- Search
-- Filtering
-- Details
-- Registration status
-- Deadlines
+## Author
 
-### Teams
-- Team creation
-- Joining teams
-- Invitations
-- Accept/reject flow
-- Skill matching
+**Rahul Singh Negi**
 
-### Chat
-- Message delivery
-- Authorization
-- Conversation privacy
+GitHub: https://github.com/RahulSN7
 
-### AI
-- Skill analysis
-- Team recommendations
-- Missing-skill detection
-- Recommendation quality
-- Handling incomplete user data
+------------------------------------------------------------------------
 
----
-
-## 🗺️ Roadmap
-
-### Phase 1 — Foundation
-- [ ] User authentication
-- [ ] User profiles
-- [ ] Skill management
-- [ ] Hackathon listing
-- [ ] Hackathon details
-
-### Phase 2 — Team Building
-- [ ] Team creation
-- [ ] Team member management
-- [ ] Skill-based user search
-- [ ] Team invitations
-- [ ] Invitation notifications
-
-### Phase 3 — Communication
-- [ ] Personal chat
-- [ ] Team chat
-- [ ] Real-time messaging
-- [ ] Message notifications
-
-### Phase 4 — AI
-- [ ] AI assistant
-- [ ] Hackathon recommendations
-- [ ] Teammate recommendations
-- [ ] Missing-skill analysis
-- [ ] Team compatibility analysis
-- [ ] Project suggestions
-
-### Phase 5 — Advanced Features
-- [ ] AI-powered team scoring
-- [ ] Personalized hackathon feed
-- [ ] Hackathon deadline reminders
-- [ ] Team performance insights
-- [ ] Project collaboration tools
-- [ ] Leaderboards / achievements
-- [ ] Admin analytics
-
----
-
-## 🌟 Future Vision
-
-getHack can evolve from a hackathon listing platform into a complete **hackathon ecosystem**.
-
-The long-term vision is:
-
-```text
-Discover
-   ↓
-Match
-   ↓
-Team
-   ↓
-Plan
-   ↓
-Build
-   ↓
-Collaborate
-   ↓
-Compete
-   ↓
-Improve
-```
-
-Instead of asking users to visit multiple platforms for hackathons, teammates, communication, and planning, getHack aims to bring these experiences together.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-### Basic workflow
-
-```bash
-git checkout -b feature/your-feature
-```
-
-Make your changes, test them, and then:
-
-```bash
-git add .
-git commit -m "feat: add your feature"
-git push origin feature/your-feature
-```
-
-Then open a Pull Request.
-
-### Suggested commit style
-
-```text
-feat: add team invitation system
-fix: resolve chat authorization issue
-refactor: improve teammate matching service
-docs: update setup instructions
-style: improve hackathon card UI
-```
-
----
-
-## 📄 License
-
-This project is currently intended as a learning/project implementation.
-
-If you plan to publish getHack publicly, add an appropriate license such as MIT after deciding how you want others to use and modify the project.
-
----
-
-## 👨‍💻 Author
-
-**getHack**
-
-> **Discover. Team Up. Build.**
-
-Built to make finding hackathons and building high-quality teams simpler, smarter, and more accessible.
-
----
-
-## ⭐ Support
-
-If you find the project useful, consider giving the repository a ⭐ on GitHub.
-
-**getHack — Find the opportunity. Find the people. Build something great.**
+Built with React, Node.js, Express, MongoDB, and a focus on making
+hackathon discovery and team collaboration easier.
