@@ -78,7 +78,7 @@ export function useSEO(optionsOrTitle, descriptionParam, extraOptions = {}) {
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
     const resolvedCanonical = canonical
       ? (canonical.startsWith("http") ? canonical : `${SITE_BASE_URL}${canonical.startsWith("/") ? "" : "/"}${canonical}`)
-      : `${SITE_BASE_URL}${currentPath === "/" ? "" : currentPath}`;
+      : `${SITE_BASE_URL}${currentPath === "/" ? "/" : currentPath}`;
 
     let canonicalEl = document.querySelector('link[rel="canonical"]');
     if (!canonicalEl) {

@@ -35,7 +35,7 @@ async function getSitemapXml(req, res) {
   try {
     const baseUrl = getBaseUrl();
     const staticPages = [
-      { path: "", priority: "1.0", changefreq: "daily" },
+      { path: "/", priority: "1.0", changefreq: "daily" },
       { path: "/hackathons", priority: "0.9", changefreq: "daily" },
       { path: "/teammates", priority: "0.8", changefreq: "daily" },
     ];
