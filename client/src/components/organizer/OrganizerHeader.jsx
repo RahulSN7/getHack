@@ -8,6 +8,8 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/useAuth";
 import Logo from "../common/Logo";
+import { resolveAvatarUrl } from "../../utils/avatarUtils";
+
 function OrganizerHeaderUserAvatar({ user }) {
   const [imgError, setImgError] = useState(false);
   const avatarUrl = resolveAvatarUrl(user?.profile?.avatar || user?.avatar, user?.updatedAt);

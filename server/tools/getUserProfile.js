@@ -78,7 +78,7 @@ async function getUserProfile(args = {}, context = {}) {
         name: safeUser.name,
         role: safeUser.role,
         headline: p.role || safeUser.role || "Developer",
-        avatar: p.avatar || "",
+        avatar: p.avatar || safeUser.avatar || "",
         skills: Array.isArray(p.skills) ? p.skills : [],
         interests: Array.isArray(p.interests) ? p.interests : [],
         experienceLevel: p.experienceLevel || "Intermediate",

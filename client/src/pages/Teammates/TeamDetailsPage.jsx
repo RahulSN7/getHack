@@ -18,9 +18,9 @@ import { resolveTeamMembers, resolveTeamLeader, getTeamActionState } from "../..
 import { resolveAvatarUrl } from "../../utils/avatarUtils";
 import useSEO from "../../utils/useSEO";
 
-function UserAvatar({ avatar, name, sizeClass = "h-11 w-11 text-xs" }) {
+function UserAvatar({ avatar, name, updatedAt, sizeClass = "h-11 w-11 text-xs" }) {
   const [imgError, setImgError] = useState(false);
-  const resolvedAvatar = resolveAvatarUrl(avatar);
+  const resolvedAvatar = resolveAvatarUrl(avatar, updatedAt);
   const initials = name
     ? name
       .split(" ")

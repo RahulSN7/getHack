@@ -14,12 +14,12 @@ import { useAuth } from "../../context/useAuth";
 import { teamService } from "../../services/teamService";
 import { invitationService } from "../../services/invitationService";
 import { resolveTeamMembers } from "../../utils/teamMemberResolver";
-import { resolveAvatarUrl } from "../../utils/avatarUtils";
+import { resolveAvatarUrl, getCanonicalAvatar } from "../../utils/avatarUtils";
 import useSEO from "../../utils/useSEO";
 
-function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
+function UserAvatar({ avatar, name, updatedAt, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
-  const resolvedAvatar = resolveAvatarUrl(avatar);
+  const resolvedAvatar = resolveAvatarUrl(avatar, updatedAt);
   const initials = name
     ? name
       .split(" ")
@@ -218,7 +218,7 @@ export default function CreateTeamPage() {
   // Authenticated Creator profile info
   const creatorName = currentUser?.name || "Team Owner";
   const creatorRole = currentUser?.profile?.role || currentUser?.role || "";
-  const creatorAvatar = currentUser?.avatar || currentUser?.profile?.avatar || "";
+  const creatorAvatar = getCanonicalAvatar(currentUser);
   const creatorId = currentUser?.id || currentUser?._id || "user-current";
 
   // Resolve team members dynamically

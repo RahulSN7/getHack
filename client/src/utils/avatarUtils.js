@@ -9,7 +9,7 @@
 export function resolveAvatarUrl(avatar, updatedAt) {
   if (!avatar || typeof avatar !== "string") return "";
   let clean = avatar.trim();
-  if (!clean) return "";
+  if (!clean || clean === "undefined" || clean === "null") return "";
 
   // Blob URLs are temporary local preview URLs — return as is
   if (clean.startsWith("blob:")) {
@@ -38,6 +38,35 @@ export function resolveAvatarUrl(avatar, updatedAt) {
 
   return clean;
 }
+
+/**
+ * Extracts the single canonical profile photo URL from any user object
+ * strictly following canonical precedence:
+ * 1. user.profile.avatar when valid
+ * 2. user.avatar only when profile.avatar is genuinely unavailable
+ * 3. empty string when neither exists
+ */
+export function getCanonicalAvatar(userObj) {
+  if (!userObj) return "";
+  const profAvatar = typeof userObj.profile?.avatar === "string" ? userObj.profile.avatar.trim() : "";
+  if (profAvatar && profAvatar !== "undefined" && profAvatar !== "null") {
+    return profAvatar;
+  }
+  const rootAvatar = typeof userObj.avatar === "string" ? userObj.avatar.trim() : "";
+  if (rootAvatar && rootAvatar !== "undefined" && rootAvatar !== "null") {
+    return rootAvatar;
+  }
+  const nestedUserProf = typeof userObj.user?.profile?.avatar === "string" ? userObj.user.profile.avatar.trim() : "";
+  if (nestedUserProf && nestedUserProf !== "undefined" && nestedUserProf !== "null") {
+    return nestedUserProf;
+  }
+  const nestedUserRoot = typeof userObj.user?.avatar === "string" ? userObj.user.avatar.trim() : "";
+  if (nestedUserRoot && nestedUserRoot !== "undefined" && nestedUserRoot !== "null") {
+    return nestedUserRoot;
+  }
+  return "";
+}
+
 
 /**
  * Derives 1-2 character uppercase initials from a user's full name.

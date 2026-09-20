@@ -12,9 +12,9 @@ import { invitationService } from "../../../services/invitationService";
 import { TEAMMATES } from "../../../data/teammates";
 import { resolveAvatarUrl } from "../../../utils/avatarUtils";
 
-function UserAvatar({ avatar, name, sizeClass = "h-10 w-10 text-xs" }) {
+function UserAvatar({ avatar, name, updatedAt, sizeClass = "h-10 w-10 text-xs" }) {
   const [imgError, setImgError] = useState(false);
-  const resolvedAvatar = resolveAvatarUrl(avatar);
+  const resolvedAvatar = resolveAvatarUrl(avatar, updatedAt);
   const initials = name
     ? name
       .split(" ")

@@ -5,7 +5,7 @@
 
 
 import { TEAMMATES } from "../data/teammates";
-import { resolveAvatarUrl } from "./avatarUtils";
+import { resolveAvatarUrl, getCanonicalAvatar } from "./avatarUtils";
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
@@ -41,8 +41,8 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
     const profile = u.profile || {};
 
     const name = u.name && !isObjectId(u.name) ? u.name : "Team Member";
-    const rawAvatar = profile.avatar || u.avatar || "";
-    const avatar = resolveAvatarUrl(rawAvatar);
+    const rawAvatar = getCanonicalAvatar(u);
+    const avatar = resolveAvatarUrl(rawAvatar, u.updatedAt);
     const role = profile.role || u.role || memberItem.role || "Member";
     const skills = Array.isArray(profile.skills) ? profile.skills : Array.isArray(u.skills) ? u.skills : [];
 
@@ -64,7 +64,8 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
     const profile = memberItem.profile || {};
 
     const name = memberItem.name && !isObjectId(memberItem.name) ? memberItem.name : "Team Member";
-    const avatar = resolveAvatarUrl(profile.avatar || memberItem.avatar || "");
+    const rawAvatar = getCanonicalAvatar(memberItem);
+    const avatar = resolveAvatarUrl(rawAvatar, memberItem.updatedAt);
     const role = profile.role || memberItem.role || "Member";
     const skills = Array.isArray(profile.skills) ? profile.skills : Array.isArray(memberItem.skills) ? memberItem.skills : [];
 
@@ -86,10 +87,11 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
   // C1: Matches current logged in user
   if (currentUser && (mId === currentUserIdStr || mId === currentUserIdStr?.toString())) {
     const p = currentUser.profile || {};
+    const rawAvatar = getCanonicalAvatar(currentUser);
     return {
       id: currentUserIdStr.toString(),
       name: currentUser.name || "Team Member",
-      avatar: resolveAvatarUrl(p.avatar || currentUser.avatar || ""),
+      avatar: resolveAvatarUrl(rawAvatar, currentUser.updatedAt),
       role: p.role || currentUser.role || "Member",
       skills: Array.isArray(p.skills) ? p.skills : Array.isArray(currentUser.skills) ? currentUser.skills : [],
       email: currentUser.email || "",
@@ -101,10 +103,11 @@ export function resolveTeamMember(memberItem, currentUser, createdById) {
   const foundInTeammates = TEAMMATES.find((item) => item.id === mId || item.username === mId);
   if (foundInTeammates) {
     const p = foundInTeammates.profile || {};
+    const rawAvatar = getCanonicalAvatar(foundInTeammates);
     return {
       id: foundInTeammates.id,
       name: foundInTeammates.name,
-      avatar: resolveAvatarUrl(foundInTeammates.avatar || p.avatar || ""),
+      avatar: resolveAvatarUrl(rawAvatar),
       role: p.role || foundInTeammates.role || "Member",
       skills: Array.isArray(p.skills) ? p.skills : Array.isArray(foundInTeammates.skills) ? foundInTeammates.skills : [],
       email: foundInTeammates.email || "",

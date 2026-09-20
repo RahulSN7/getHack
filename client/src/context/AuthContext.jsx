@@ -7,11 +7,29 @@ import { useEffect, useState } from "react";
 import { authService } from "../services/authService";
 import { AuthContext } from "./AuthContext";
 
+function normalizeUserAvatar(userData) {
+  if (!userData) return null;
+  const profAvatar = typeof userData.profile?.avatar === "string" ? userData.profile.avatar.trim() : "";
+  const rootAvatar = typeof userData.avatar === "string" ? userData.avatar.trim() : "";
+  const canonicalAvatar = (profAvatar && profAvatar !== "undefined" && profAvatar !== "null")
+    ? profAvatar
+    : ((rootAvatar && rootAvatar !== "undefined" && rootAvatar !== "null") ? rootAvatar : "");
+
+  return {
+    ...userData,
+    avatar: canonicalAvatar,
+    profile: {
+      ...(userData.profile || {}),
+      avatar: canonicalAvatar,
+    },
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem("gethack_user");
-      return stored ? JSON.parse(stored) : null;
+      return stored ? normalizeUserAvatar(JSON.parse(stored)) : null;
     } catch {
       return null;
     }
@@ -19,10 +37,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const saveUser = (userData) => {
-    setUser(userData);
+    const normalized = normalizeUserAvatar(userData);
+    setUser(normalized);
     try {
-      if (userData) {
-        localStorage.setItem("gethack_user", JSON.stringify(userData));
+      if (normalized) {
+        localStorage.setItem("gethack_user", JSON.stringify(normalized));
       } else {
         localStorage.removeItem("gethack_user");
       }
@@ -112,7 +131,7 @@ export function AuthProvider({ children }) {
   const updateUser = (updatedUser) => {
     if (updatedUser) {
       setUser((prev) => {
-        const next = {
+        const merged = {
           ...prev,
           ...updatedUser,
           profile: {
@@ -120,6 +139,7 @@ export function AuthProvider({ children }) {
             ...(updatedUser?.profile || {}),
           },
         };
+        const next = normalizeUserAvatar(merged);
         try {
           localStorage.setItem("gethack_user", JSON.stringify(next));
         } catch { }

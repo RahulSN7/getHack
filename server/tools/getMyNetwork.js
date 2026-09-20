@@ -77,7 +77,7 @@ async function getMyNetwork(args = {}, context = {}) {
           name: safe.name,
           role: p.role || safe.role || "Developer",
           headline: p.role || "Network Connection",
-          avatar: p.avatar || "",
+          avatar: p.avatar || safe.avatar || "",
           skills: Array.isArray(p.skills) ? p.skills : [],
           interests: Array.isArray(p.interests) ? p.interests : [],
           location: p.location || "",

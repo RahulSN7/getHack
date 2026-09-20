@@ -7,13 +7,13 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { userService } from "../../../services/userService";
-import { resolveAvatarUrl, getInitials } from "../../../utils/avatarUtils";
+import { resolveAvatarUrl, getInitials, getCanonicalAvatar } from "../../../utils/avatarUtils";
 import { isProfileComplete } from "../../../utils/profileValidation";
 import CompleteProfileModal from "../../common/CompleteProfileModal";
 
-function UserAvatar({ avatar, name }) {
+function UserAvatar({ avatar, name, updatedAt }) {
   const [imgError, setImgError] = useState(false);
-  const resolvedAvatar = resolveAvatarUrl(avatar);
+  const resolvedAvatar = resolveAvatarUrl(avatar, updatedAt);
 
   useEffect(() => {
     setImgError(false);
@@ -72,7 +72,8 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
     availability = "",
   } = teammate;
 
-  const avatar = teammate.avatar || teammate.profile?.avatar || teammate.user?.avatar || teammate.user?.profile?.avatar || "";
+  const avatar = getCanonicalAvatar(teammate);
+  const updatedAt = teammate.updatedAt || teammate.user?.updatedAt;
   const userId = teammate.id || teammate._id || teammate.userId || teammate.user?._id || teammate.user?.id;
   const isOnline = availability === "available" || availability === "online" || availability === "Available";
 
@@ -169,7 +170,7 @@ export default function TeammateCard({ teammate, onConnect, connectionStatus }) 
               aria-label={`View ${name}'s profile`}
               className="shrink-0 transition-opacity hover:opacity-90"
             >
-              <UserAvatar avatar={avatar} name={name} />
+              <UserAvatar avatar={avatar} name={name} updatedAt={updatedAt} />
             </Link>
 
             <div className="min-w-0 flex-1 space-y-0.5">

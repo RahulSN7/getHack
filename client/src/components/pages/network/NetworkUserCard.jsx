@@ -6,11 +6,11 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { resolveAvatarUrl, getInitials } from "../../../utils/avatarUtils";
+import { resolveAvatarUrl, getInitials, getCanonicalAvatar } from "../../../utils/avatarUtils";
 
-function UserAvatar({ avatar, name }) {
+function UserAvatar({ avatar, name, updatedAt }) {
   const [imgError, setImgError] = useState(false);
-  const resolvedAvatar = resolveAvatarUrl(avatar);
+  const resolvedAvatar = resolveAvatarUrl(avatar, updatedAt);
 
   useEffect(() => {
     setImgError(false);
@@ -67,7 +67,8 @@ export default function NetworkUserCard({
     availability = "available",
   } = person;
 
-  const avatar = person.avatar || person.profile?.avatar || person.user?.avatar || person.user?.profile?.avatar || "";
+  const avatar = getCanonicalAvatar(person);
+  const updatedAt = person.updatedAt || person.user?.updatedAt;
 
   const isIncoming = variant === "incoming-request";
   const isSent = variant === "sent-request";
@@ -130,7 +131,7 @@ export default function NetworkUserCard({
             aria-label={`View ${name}'s profile`}
             className="shrink-0 transition-opacity hover:opacity-90"
           >
-            <UserAvatar avatar={avatar} name={name} />
+            <UserAvatar avatar={avatar} name={name} updatedAt={updatedAt} />
           </Link>
 
           <div className="min-w-0 flex-1 space-y-0.5">
