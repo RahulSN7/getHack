@@ -19,12 +19,17 @@ export function resolveAvatarUrl(avatar, updatedAt) {
   // Strip localhost / 127.0.0.1 origin if present (e.g. http://localhost:5000/uploads/foo.png -> /uploads/foo.png)
   clean = clean.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, "");
 
+  // If URL is an absolute HTTPS / HTTP URL (e.g. Cloudinary, Google, external), return as is
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    return clean;
+  }
+
   // If path starts with uploads/ (missing leading slash), prepend /
   if (clean.startsWith("uploads/")) {
     clean = `/${clean}`;
   }
 
-  // If stable timestamp/updatedAt is provided and clean URL does not already have a query string, append ?v=
+  // For legacy local upload paths, append cache-busting timestamp if provided
   if (updatedAt && !clean.includes("?")) {
     try {
       const ts = typeof updatedAt === "number" ? updatedAt : new Date(updatedAt).getTime();

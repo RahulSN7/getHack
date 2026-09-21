@@ -12,6 +12,8 @@ const Hackathon = require("../models/hackathon");
 const Connection = require("../models/connection");
 const { isProfileComplete } = require("../utils/profileValidation");
 const { upsertStreamUser } = require("../services/streamService");
+const { isCloudinaryConfigured, cloudinary } = require("../config/cloudinary");
+const { uploadAvatarToCloudinary, deleteAvatarFromCloudinary } = require("../utils/cloudinaryHelper");
 
 // ==========
 // DATE FORMATTER
@@ -410,11 +412,33 @@ const updateOwnParticipantProfile = async (req, res) => {
     // ======
 
     const oldAvatar = currentProfile.avatar || "";
-
     let newAvatar = oldAvatar;
+    let uploadedCloudinaryResult = null;
 
     if (req.file) {
-      newAvatar = `/uploads/${req.file.filename}`;
+      // FAILURE MODE C: Cloudinary credentials missing or invalid
+      if (!isCloudinaryConfigured()) {
+        console.warn("[Upload Blocked] Cloudinary is not configured. Preserving existing avatar.");
+        return res.status(500).json({
+          success: false,
+          message: "Image storage service is not configured or unavailable.",
+        });
+      }
+
+      try {
+        uploadedCloudinaryResult = await uploadAvatarToCloudinary(req.file.buffer);
+        if (!uploadedCloudinaryResult || !uploadedCloudinaryResult.secure_url) {
+          throw new Error("Failed to receive secure URL from Cloudinary upload.");
+        }
+        newAvatar = uploadedCloudinaryResult.secure_url;
+      } catch (uploadErr) {
+        console.error("Cloudinary Avatar Upload Error:", uploadErr.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload profile photo.",
+          error: uploadErr.message,
+        });
+      }
     } else if (
       removePhoto === "true" ||
       removePhoto === true
@@ -490,8 +514,13 @@ const updateOwnParticipantProfile = async (req, res) => {
 
     // Reject Available selection if candidate profile is incomplete
     if (cleanAvailability === "Available" && !isProfileComplete(user)) {
-      if (req.file?.path) {
-        fs.unlink(req.file.path, () => { });
+      if (uploadedCloudinaryResult && uploadedCloudinaryResult.public_id) {
+        try {
+          console.warn("[Rollback] Profile incomplete validation failed. Deleting uploaded Cloudinary asset:", uploadedCloudinaryResult.public_id);
+          await cloudinary.uploader.destroy(uploadedCloudinaryResult.public_id);
+        } catch (rollbackErr) {
+          console.warn("[Rollback Warning] Failed to delete Cloudinary asset during validation rollback:", rollbackErr.message);
+        }
       }
       return res.status(400).json({
         success: false,
@@ -508,42 +537,33 @@ const updateOwnParticipantProfile = async (req, res) => {
       user.markModified("profile");
       await user.save();
     } catch (saveError) {
-      // If DB save fails, remove newly uploaded image.
-      if (req.file?.path) {
-        fs.unlink(req.file.path, () => { });
+      // FAILURE MODE A: Cloudinary upload succeeded, but MongoDB save failed
+      if (uploadedCloudinaryResult && uploadedCloudinaryResult.public_id) {
+        try {
+          console.warn("[Rollback] MongoDB save failed. Deleting uploaded Cloudinary asset:", uploadedCloudinaryResult.public_id);
+          await cloudinary.uploader.destroy(uploadedCloudinaryResult.public_id);
+        } catch (rollbackErr) {
+          console.warn("[Rollback Warning] Failed to delete Cloudinary asset during rollback:", rollbackErr.message);
+        }
       }
 
-      throw saveError;
+      return res.status(500).json({
+        success: false,
+        message: "Failed to save profile. Upload rolled back.",
+        error: saveError.message,
+      });
     }
 
     // ======
-    // DELETE OLD AVATAR AFTER SUCCESSFUL SAVE
+    // DELETE OLD AVATAR AFTER SUCCESSFUL SAVE (FAILURE MODE B)
     // ======
 
-    if (
-      req.file &&
-      oldAvatar &&
-      oldAvatar !== newAvatar &&
-      oldAvatar.startsWith("/uploads/")
-    ) {
-      const oldFilename = path.basename(oldAvatar);
-
-      const oldFilePath = path.join(
-        __dirname,
-        "../public/uploads",
-        oldFilename
-      );
-
-      fs.unlink(oldFilePath, (error) => {
-        if (
-          error &&
-          error.code !== "ENOENT"
-        ) {
-          console.warn(
-            "Unable to delete old avatar:",
-            error.message
-          );
-        }
+    if (oldAvatar && oldAvatar !== newAvatar) {
+      deleteAvatarFromCloudinary(oldAvatar).catch((error) => {
+        console.warn(
+          "[Avatar Cleanup Warning] Failed to remove old avatar:",
+          error.message
+        );
       });
     }
 
@@ -935,11 +955,34 @@ const updateOwnOrganizerProfile = async (
     const oldAvatar = currentProfile.avatar || "";
 
     let newAvatar = oldAvatar;
+    let uploadedCloudinaryResult = null;
+
     if (req.file) {
-      newAvatar = `/uploads/${req.file.filename}`;
+      if (!isCloudinaryConfigured()) {
+        console.warn("[Upload Blocked] Cloudinary is not configured. Preserving existing avatar.");
+        return res.status(500).json({
+          success: false,
+          message: "Image storage service is not configured or unavailable.",
+        });
+      }
+
+      try {
+        uploadedCloudinaryResult = await uploadAvatarToCloudinary(req.file.buffer);
+        if (!uploadedCloudinaryResult || !uploadedCloudinaryResult.secure_url) {
+          throw new Error("Failed to receive secure URL from Cloudinary upload.");
+        }
+        newAvatar = uploadedCloudinaryResult.secure_url;
+      } catch (uploadErr) {
+        console.error("Cloudinary Avatar Upload Error:", uploadErr.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload profile photo.",
+          error: uploadErr.message,
+        });
+      }
     } else if (req.body?.removePhoto === "true" || req.body?.removePhoto === true) {
       newAvatar = "";
-    } else if (avatar !== undefined) {
+    } else if (avatar !== undefined && typeof avatar === "string" && avatar.trim()) {
       newAvatar = String(avatar).trim();
     }
 
@@ -1031,17 +1074,33 @@ const updateOwnOrganizerProfile = async (
         false,
     };
 
-    user.markModified("profile");
-    await user.save();
+    try {
+      user.markModified("profile");
+      await user.save();
+    } catch (saveError) {
+      if (uploadedCloudinaryResult && uploadedCloudinaryResult.public_id) {
+        try {
+          console.warn("[Rollback] MongoDB save failed. Deleting uploaded Cloudinary asset:", uploadedCloudinaryResult.public_id);
+          await cloudinary.uploader.destroy(uploadedCloudinaryResult.public_id);
+        } catch (rollbackErr) {
+          console.warn("[Rollback Warning] Failed to delete Cloudinary asset during rollback:", rollbackErr.message);
+        }
+      }
 
-    if (
-      req.file &&
-      oldAvatar &&
-      oldAvatar !== newAvatar &&
-      oldAvatar.startsWith("/uploads/")
-    ) {
-      const oldFilename = path.basename(oldAvatar);
-      const oldFilePath = path.join(__dirname, "../public/uploads", oldFilename);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to save profile. Upload rolled back.",
+        error: saveError.message,
+      });
+    }
+
+    if (oldAvatar && oldAvatar !== newAvatar) {
+      deleteAvatarFromCloudinary(oldAvatar).catch((error) => {
+        console.warn(
+          "[Avatar Cleanup Warning] Failed to remove old avatar:",
+          error.message
+        );
+      });
     }
 
     // Synchronize updated user profile image to Stream Chat

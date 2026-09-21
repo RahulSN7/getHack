@@ -131,12 +131,25 @@ export function AuthProvider({ children }) {
   const updateUser = (updatedUser) => {
     if (updatedUser) {
       setUser((prev) => {
+        const prevAvatar = prev?.profile?.avatar || prev?.avatar || "";
+        const hasUpdatedProfAvatar = updatedUser.profile && typeof updatedUser.profile.avatar === "string";
+        const hasUpdatedRootAvatar = typeof updatedUser.avatar === "string";
+
+        let targetAvatar = prevAvatar;
+        if (hasUpdatedProfAvatar) {
+          targetAvatar = updatedUser.profile.avatar.trim();
+        } else if (hasUpdatedRootAvatar) {
+          targetAvatar = updatedUser.avatar.trim();
+        }
+
         const merged = {
           ...prev,
           ...updatedUser,
+          avatar: targetAvatar,
           profile: {
             ...(prev?.profile || {}),
             ...(updatedUser?.profile || {}),
+            avatar: targetAvatar,
           },
         };
         const next = normalizeUserAvatar(merged);
