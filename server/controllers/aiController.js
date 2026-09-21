@@ -3,8 +3,10 @@
 
 
 const crypto = require("crypto");
+const User = require("../models/user");
 const AiConversation = require("../models/aiConversation");
 const { runAgentLoop } = require("../services/agentEngine");
+const { isProfileComplete } = require("../utils/profileValidation");
 
 /**
  * POST /api/ai/chat — Primary AI Chat & Goal Execution Endpoint
@@ -13,6 +15,16 @@ const chatWithAI = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ success: false, message: "Unauthenticated. Please log in." });
+    }
+
+    // Verify current user profile completeness from MongoDB
+    const currentUser = await User.findById(req.user._id);
+    if (!currentUser || !isProfileComplete(currentUser)) {
+      return res.status(403).json({
+        success: false,
+        code: "PROFILE_INCOMPLETE",
+        message: "Complete your profile first to use getHack AI Assistant.",
+      });
     }
 
     const { message, conversationId: reqConvId, context } = req.body || {};

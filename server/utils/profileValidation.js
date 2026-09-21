@@ -7,6 +7,32 @@ function isProfileComplete(user) {
   if (!user) return false;
   const p = user.profile || {};
 
+  const userRole = String(user.role || p.role || "").toLowerCase().trim();
+
+  // ORGANIZER ROLE VALIDATION
+  if (userRole === "organizer") {
+    const nameValid = Boolean(user.name && String(user.name).trim());
+    const orgNameValid = Boolean((p.organizationName || user.name) && String(p.organizationName || user.name).trim());
+    const locationValid = Boolean(p.location && String(p.location).trim());
+    const bioValid = Boolean(
+      (p.bio || p.organizationDescription) &&
+      String(p.bio || p.organizationDescription).trim()
+    );
+    const websiteStr = String(p.website || "").trim();
+    const githubStr = String(p.github || "").trim();
+    const linkedinStr = String(p.linkedin || "").trim();
+    const twitterStr = String(p.twitter || "").trim();
+    const portfolioStr = String(p.portfolio || "").trim();
+    const instagramStr = String(p.instagram || "").trim();
+    const discordStr = String(p.discord || "").trim();
+    const linksValid = Boolean(
+      websiteStr || githubStr || linkedinStr || twitterStr || portfolioStr || instagramStr || discordStr
+    );
+
+    return nameValid && orgNameValid && locationValid && bioValid && linksValid;
+  }
+
+  // PARTICIPANT ROLE VALIDATION
   const nameValid = Boolean(user.name && String(user.name).trim());
   const roleValid = Boolean(p.role && String(p.role).trim());
   const genderValid = Boolean(p.gender && String(p.gender).trim());
