@@ -1259,7 +1259,7 @@ function Teammates() {
 
           {/* Toolbar: Tabs + Filters */}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="w-full flex flex-wrap items-center gap-2 sm:w-auto">
               {/* Tab Switcher */}
               <div className="grid w-full grid-cols-2 gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 p-1.5 sm:w-auto sm:inline-flex sm:flex-wrap sm:gap-0 sm:p-0.5 dark:border-neutral-800 dark:bg-neutral-900">
                 <button
@@ -1268,6 +1268,7 @@ function Teammates() {
                   className={`
                     inline-flex
                     w-full
+                    min-w-0
                     items-center
                     justify-center
                     gap-1.5
@@ -1310,6 +1311,7 @@ function Teammates() {
                   className={`
                     inline-flex
                     w-full
+                    min-w-0
                     items-center
                     justify-center
                     gap-1.5
@@ -1352,6 +1354,7 @@ function Teammates() {
                   className={`
                     inline-flex
                     w-full
+                    min-w-0
                     items-center
                     justify-center
                     gap-1.5
@@ -1383,6 +1386,7 @@ function Teammates() {
                   className={`
                     inline-flex
                     w-full
+                    min-w-0
                     items-center
                     justify-center
                     gap-1.5
