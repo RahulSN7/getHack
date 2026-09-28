@@ -220,7 +220,7 @@ function Header() {
 
   // SCROLL STATE & DETECTION FOR GLASSMORPHISM NAVBAR
 
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(() => typeof window !== "undefined" && window.scrollY > 25);
 
   useEffect(() => {
     let tick = false;
@@ -341,21 +341,87 @@ function Header() {
   }
 
   if (authLoading && !user) {
+    const isScrolledInitial = typeof window !== "undefined" && window.scrollY > 25;
     return (
-      <header className="fixed top-0 left-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-neutral-200/60 dark:bg-neutral-950/80 dark:border-neutral-800/60">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center">
-              <Logo className="h-7 w-auto" />
-            </Link>
-            <div className="hidden md:flex gap-4">
-              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
-              <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
-              <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+      <header
+        className={`
+          fixed
+          top-0
+          left-0
+          right-0
+          z-50
+          flex
+          justify-center
+          pointer-events-none
+          transition-all
+          duration-300
+          ease-out
+          ${isScrolledInitial
+            ? "pt-3.5 sm:pt-4 px-3.5 sm:px-6 lg:px-8"
+            : "pt-0 px-0"
+          }
+        `}
+      >
+        <div
+          className={`
+            pointer-events-auto
+            w-full
+            transition-all
+            duration-300
+            ease-out
+            overflow-visible
+            ${isScrolledInitial
+              ? `
+                  max-w-6xl
+                  rounded-full
+                  border
+                  border-neutral-200/80
+                  bg-white/80
+                  backdrop-blur-md
+                  shadow-md
+                  shadow-neutral-950/5
+                  dark:border-neutral-800/80
+                  dark:bg-neutral-950/80
+                  dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]
+                `
+              : `
+                  max-w-7xl
+                  rounded-none
+                  border-b
+                  border-transparent
+                  bg-transparent
+                  shadow-none
+                  backdrop-blur-none
+                `
+            }
+          `}
+        >
+          <div
+            className={`
+              mx-auto
+              flex
+              h-14
+              w-full
+              items-center
+              justify-between
+              transition-all
+              duration-300
+              ${isScrolledInitial ? "px-4 sm:px-6" : "px-5 sm:px-6 lg:px-8"}
+            `}
+          >
+            <div className="flex items-center gap-8">
+              <Link to="/" className="flex items-center">
+                <Logo className="h-7 w-auto" />
+              </Link>
+              <div className="hidden md:flex gap-4">
+                <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+                <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+                <div className="h-4 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
+            </div>
           </div>
         </div>
       </header>

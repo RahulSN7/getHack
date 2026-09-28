@@ -47,7 +47,7 @@ function OrganizerHeader() {
   const isAddHackathonActive = location.pathname.startsWith("/organizer/create");
   const isMyHackathonsActive = location.pathname.startsWith("/organizer/hackathons");
 
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(() => typeof window !== "undefined" && window.scrollY > 25);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
