@@ -190,44 +190,76 @@ async function sendOtpEmail(email, otp) {
 //            googleAuth / googleCallback (only inside the new-user branch after User.create)
 // MUST NOT be called during OTP generation or Sign In.
 // -------------------------------------------------------------------------------
-async function sendWelcomeEmail(email, name) {
-  console.log("[BREVO DEBUG] Welcome email send started");
+async function sendWelcomeEmail(email, name, role = "participant") {
+  console.log(`[BREVO DEBUG] Welcome email send started for role: ${role}`);
   const firstName = (name || "").trim().split(" ")[0] || "there";
-  const subject = "Welcome to getHack! 🚀";
-  const text =
-    "Hi " + firstName + ",\n\n" +
-    "Welcome to getHack!\n\n" +
-    "Your account has been successfully created.\n\n" +
-    "With getHack, you can:\n" +
-    "- Discover hackathons and opportunities\n" +
-    "- Find developers and teammates\n" +
-    "- Build your network\n" +
-    "- Collaborate with your team\n\n" +
-    "We are excited to have you here!\n\n" +
-    "Best regards,\n" +
-    "The getHack Team";
+  let subject = "Welcome to getHack! 🚀";
+  let text = "";
+  let html = "";
 
-  const html =
-    '<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff">' +
-      '<div style="margin-bottom:24px">' +
-        '<h1 style="color:#4f46e5;font-size:24px;font-weight:800;margin:0;letter-spacing:-0.5px">getHack</h1>' +
-      '</div>' +
-      '<h2 style="color:#111827;font-size:20px;font-weight:700;margin-top:0;margin-bottom:16px">Hi ' + firstName + ',</h2>' +
-      '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:16px">Welcome to getHack!</p>' +
-      '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:20px">Your account has been successfully created. getHack helps developers discover hackathons, connect with teammates, and collaborate.</p>' +
-      '<div style="background:#f9fafb;border-left:4px solid #4f46e5;border-radius:4px;padding:16px;margin-bottom:24px">' +
-        '<p style="color:#111827;font-size:14px;font-weight:600;margin-top:0;margin-bottom:8px">With getHack, you can:</p>' +
-        '<ul style="color:#4b5563;font-size:13px;line-height:1.6;margin:0;padding-left:20px">' +
-          '<li style="margin-bottom:4px">Discover hackathons and opportunities</li>' +
-          '<li style="margin-bottom:4px">Find developers and teammates</li>' +
-          '<li style="margin-bottom:4px">Build your network</li>' +
-          '<li>Collaborate with your team</li>' +
-        '</ul>' +
-      '</div>' +
-      '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:24px">We are excited to have you here!</p>' +
-      '<p style="color:#111827;font-size:14px;font-weight:600;margin:0">Best regards,</p>' +
-      '<p style="color:#4f46e5;font-size:14px;font-weight:700;margin-top:4px;margin-bottom:0">The getHack Team</p>' +
-    '</div>';
+  if (role === "organizer") {
+    subject = "Welcome to getHack — Start Hosting 🚀";
+    text =
+      "Welcome to getHack, " + firstName + "!\n\n" +
+      "Your Organizer account is ready.\n\n" +
+      "You can now create and publish hackathons, manage your events, and connect with talented participants on getHack.\n\n" +
+      "Create → Publish → Manage\n\n" +
+      "We're excited to have you as an organizer on getHack!\n\n" +
+      "Best regards,\n" +
+      "The getHack Team";
+
+    html =
+      '<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff">' +
+        '<div style="margin-bottom:24px">' +
+          '<h1 style="color:#4f46e5;font-size:24px;font-weight:800;margin:0;letter-spacing:-0.5px">getHack</h1>' +
+        '</div>' +
+        '<h2 style="color:#111827;font-size:20px;font-weight:700;margin-top:0;margin-bottom:16px">Welcome to getHack, ' + firstName + '!</h2>' +
+        '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:16px">Your Organizer account is ready.</p>' +
+        '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:20px">You can now create and publish hackathons, manage your events, and connect with talented participants on getHack.</p>' +
+        '<div style="background:#f9fafb;border-left:4px solid #4f46e5;border-radius:4px;padding:16px;margin-bottom:24px;text-align:center;">' +
+          '<p style="color:#4f46e5;font-size:16px;font-weight:700;margin:0;letter-spacing:1px">Create → Publish → Manage</p>' +
+        '</div>' +
+        '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:24px">We\'re excited to have you as an organizer on getHack!</p>' +
+        '<p style="color:#111827;font-size:14px;font-weight:600;margin:0">Best regards,</p>' +
+        '<p style="color:#4f46e5;font-size:14px;font-weight:700;margin-top:4px;margin-bottom:0">The getHack Team</p>' +
+      '</div>';
+  } else {
+    // Participant Email
+    text =
+      "Hi " + firstName + ",\n\n" +
+      "Welcome to getHack!\n\n" +
+      "Your account has been successfully created.\n\n" +
+      "With getHack, you can:\n" +
+      "- Discover hackathons and opportunities\n" +
+      "- Find developers and teammates\n" +
+      "- Build your network\n" +
+      "- Collaborate with your team\n\n" +
+      "We are excited to have you here!\n\n" +
+      "Best regards,\n" +
+      "The getHack Team";
+
+    html =
+      '<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff">' +
+        '<div style="margin-bottom:24px">' +
+          '<h1 style="color:#4f46e5;font-size:24px;font-weight:800;margin:0;letter-spacing:-0.5px">getHack</h1>' +
+        '</div>' +
+        '<h2 style="color:#111827;font-size:20px;font-weight:700;margin-top:0;margin-bottom:16px">Hi ' + firstName + ',</h2>' +
+        '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:16px">Welcome to getHack!</p>' +
+        '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:20px">Your account has been successfully created. getHack helps developers discover hackathons, connect with teammates, and collaborate.</p>' +
+        '<div style="background:#f9fafb;border-left:4px solid #4f46e5;border-radius:4px;padding:16px;margin-bottom:24px">' +
+          '<p style="color:#111827;font-size:14px;font-weight:600;margin-top:0;margin-bottom:8px">With getHack, you can:</p>' +
+          '<ul style="color:#4b5563;font-size:13px;line-height:1.6;margin:0;padding-left:20px">' +
+            '<li style="margin-bottom:4px">Discover hackathons and opportunities</li>' +
+            '<li style="margin-bottom:4px">Find developers and teammates</li>' +
+            '<li style="margin-bottom:4px">Build your network</li>' +
+            '<li>Collaborate with your team</li>' +
+          '</ul>' +
+        '</div>' +
+        '<p style="color:#374151;font-size:14px;line-height:1.6;margin-bottom:24px">We are excited to have you here!</p>' +
+        '<p style="color:#111827;font-size:14px;font-weight:600;margin:0">Best regards,</p>' +
+        '<p style="color:#4f46e5;font-size:14px;font-weight:700;margin-top:4px;margin-bottom:0">The getHack Team</p>' +
+      '</div>';
+  }
 
   return await module.exports.sendEmail({ to: email, subject, html, text });
 }

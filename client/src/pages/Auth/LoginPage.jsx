@@ -4,7 +4,7 @@
 
 
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams, Navigate } from "react-router-dom";
 import AuthInput from "../../components/auth/AuthInput";
 import OtpInput from "../../components/auth/OtpInput";
 import { useAuth } from "../../context/useAuth";
@@ -28,7 +28,15 @@ function LoginPage() {
   );
 
   const navigate = useNavigate();
+  const { role: urlRole } = useParams();
+  const role = urlRole?.toLowerCase();
   const { sendOtp, verifyOtp, googleAuth } = useAuth();
+
+  if (role !== "participant" && role !== "organizer") {
+    return <Navigate to="/login" replace />;
+  }
+
+  const displayRole = role === "organizer" ? "Organizer" : "Participant";
 
   // Local card theme state
   const [isCardDark, setIsCardDark] = useState(false);
@@ -49,7 +57,7 @@ function LoginPage() {
   const handleGoogleSignIn = () => {
     setGeneralError("");
     setIsGoogleLoading(true);
-    window.location.href = "/api/auth/google";
+    window.location.href = `/api/auth/google?role=${encodeURIComponent(role)}`;
   };
 
   // Read redirect error parameters from URL query string if Google OAuth fails
@@ -117,7 +125,7 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      await sendOtp({ email: email.trim() });
+      await sendOtp({ email: email.trim(), role });
       setIsLoading(false);
       setStep(2);
       setResendCooldown(30); // Start 30s resend cooldown
@@ -134,7 +142,7 @@ function LoginPage() {
     setIsResending(true);
 
     try {
-      await sendOtp({ email: email.trim() });
+      await sendOtp({ email: email.trim(), role });
       setIsResending(false);
       setResendCooldown(30);
       setOtp("");
@@ -158,7 +166,7 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      const loggedUser = await verifyOtp({ email: email.trim(), otp: cleanOtp });
+      const loggedUser = await verifyOtp({ email: email.trim(), otp: cleanOtp, role });
       setIsLoading(false);
 
       // Redirect based on account role
@@ -234,7 +242,7 @@ function LoginPage() {
             className={`text-2xl font-bold tracking-tight sm:text-3xl ${isCardDark ? "text-white" : "text-neutral-900"
               }`}
           >
-            {step === 1 ? "Sign In" : "Verify your email"}
+            {step === 1 ? `${displayRole} Sign In` : "Verify your email"}
           </h1>
           <p
             className={`text-xs font-medium ${isCardDark ? "text-neutral-400" : "text-neutral-500"
@@ -266,7 +274,7 @@ function LoginPage() {
               <span>
                 {generalError.split("Sign Up")[0]}
                 <Link
-                  to="/signup"
+                  to={`/signup/${role}`}
                   className="font-bold underline transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
                 >
                   Sign Up
@@ -498,7 +506,7 @@ function LoginPage() {
           <p className={isCardDark ? "text-neutral-400" : "text-neutral-500"}>
             Don&apos;t have an account?{" "}
             <Link
-              to="/signup"
+              to={`/signup/${role}`}
               className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
             >
               Sign Up

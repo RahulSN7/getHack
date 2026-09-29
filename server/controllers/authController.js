@@ -49,7 +49,7 @@ const triggerWelcomeEmail = async (user) => {
   console.log(`[AUTH] Sending welcome email to ${maskedEmail}`);
 
   try {
-    const result = await sendWelcomeEmail(userEmail, user.name);
+    const result = await sendWelcomeEmail(userEmail, user.name, user.role);
     if (result && result.success) {
       console.log(`[AUTH] Welcome email sent successfully to ${maskedEmail} | Message ID: ${result.messageId}`);
       user.welcomeEmailSent = true;
@@ -190,7 +190,13 @@ const sendOtp = async (req, res) => {
 
     // Determine if this is a signup request (has role, isSignup flag, intent, or purpose)
     const { isSignup, intent, purpose, role } = req.body || {};
-    const isSignupRequest = Boolean(isSignup || intent === "signup" || purpose === "signup" || role);
+    
+    const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "";
+    if (normalizedRole !== "participant" && normalizedRole !== "organizer") {
+      return res.status(400).json({ success: false, code: "INVALID_ROLE", message: "Invalid account role." });
+    }
+
+    const isSignupRequest = Boolean(isSignup || intent === "signup" || purpose === "signup");
 
     if (isSignupRequest) {
       console.log("[OTP TRACE] SIGNUP OTP endpoint reached");
@@ -221,21 +227,43 @@ const sendOtp = async (req, res) => {
       });
     }
 
-    // 3. Existing-user check — enforce signup/login intent
+    // 3. Existing-user check — enforce signup/login intent & role checks
     const existingUser = await User.findOne({ email: normalizedEmail });
 
-    if (existingUser && isSignupRequest) {
-      return res.status(409).json({
-        message: "An account with this email already exists. Please Sign In instead.",
-        isExistingUser: true,
-      });
-    }
+    if (existingUser) {
+      const existingRole = existingUser.role;
+      const requestedRole = normalizedRole;
+      const existingRoleCapitalized = existingRole.charAt(0).toUpperCase() + existingRole.slice(1);
 
-    if (!existingUser && !isSignupRequest) {
-      return res.status(404).json({
-        message: "No account found with this email. Please Sign Up first.",
-        isExistingUser: false,
-      });
+      if (isSignupRequest) {
+        if (requestedRole && requestedRole !== existingRole) {
+          return res.status(409).json({
+            code: "ACCOUNT_ROLE_MISMATCH",
+            message: `This account is already registered as a ${existingRoleCapitalized}. You cannot create an ${requestedRole === 'organizer' ? 'Organizer' : 'Participant'} account with this email.`
+          });
+        } else {
+          return res.status(409).json({
+            code: "ACCOUNT_ALREADY_EXISTS",
+            message: `This email is already registered as a ${existingRoleCapitalized}. Please log in instead.`,
+            isExistingUser: true,
+          });
+        }
+      } else {
+        // Login Request
+        if (requestedRole && requestedRole !== existingRole) {
+          return res.status(403).json({
+            code: "ACCOUNT_ROLE_MISMATCH",
+            message: `This account is registered as a ${existingRoleCapitalized}. Please use ${existingRoleCapitalized} Login.`
+          });
+        }
+      }
+    } else {
+      if (!isSignupRequest) {
+        return res.status(404).json({
+          message: "No account found with this email. Please Sign Up first.",
+          isExistingUser: false,
+        });
+      }
     }
 
     // 4. Server-Side Rate Limiting Checks (60s minimum cooldown, max 5 requests per hour)
@@ -329,6 +357,11 @@ const verifyOtp = async (req, res) => {
   try {
     const { email, otp, name, role } = req.body || {};
 
+    const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "";
+    if (normalizedRole !== "participant" && normalizedRole !== "organizer") {
+      return res.status(400).json({ success: false, code: "INVALID_ROLE", message: "Invalid account role." });
+    }
+
     if (!email || !otp) {
       return res.status(400).json({ message: "Please provide both email and verification code." });
     }
@@ -343,25 +376,46 @@ const verifyOtp = async (req, res) => {
     const isSignupRequest = Boolean(
       req.body?.isSignup ||
       req.body?.intent === "signup" ||
-      req.body?.purpose === "signup" ||
-      req.body?.role
+      req.body?.purpose === "signup"
     );
 
     // Re-confirm existing user state at verify time
     const existingUser = await User.findOne({ email: normalizedEmail });
 
-    if (existingUser && isSignupRequest) {
-      return res.status(409).json({
-        message: "An account with this email already exists. Please Sign In instead.",
-        isExistingUser: true,
-      });
-    }
+    if (existingUser) {
+      const existingRole = existingUser.role;
+      const requestedRole = normalizedRole;
+      const existingRoleCapitalized = existingRole.charAt(0).toUpperCase() + existingRole.slice(1);
 
-    if (!existingUser && !isSignupRequest) {
-      return res.status(404).json({
-        message: "No account found with this email. Please Sign Up first.",
-        isExistingUser: false,
-      });
+      if (isSignupRequest) {
+        if (requestedRole && requestedRole !== existingRole) {
+          return res.status(409).json({
+            code: "ACCOUNT_ROLE_MISMATCH",
+            message: `This account is already registered as a ${existingRoleCapitalized}. You cannot create an ${requestedRole === 'organizer' ? 'Organizer' : 'Participant'} account with this email.`
+          });
+        } else {
+          return res.status(409).json({
+            code: "ACCOUNT_ALREADY_EXISTS",
+            message: `This email is already registered as a ${existingRoleCapitalized}. Please log in instead.`,
+            isExistingUser: true,
+          });
+        }
+      } else {
+        // Login Request
+        if (requestedRole && requestedRole !== existingRole) {
+          return res.status(403).json({
+            code: "ACCOUNT_ROLE_MISMATCH",
+            message: `This account is registered as a ${existingRoleCapitalized}. Please use ${existingRoleCapitalized} Login.`
+          });
+        }
+      }
+    } else {
+      if (!isSignupRequest) {
+        return res.status(404).json({
+          message: "No account found with this email. Please Sign Up first.",
+          isExistingUser: false,
+        });
+      }
     }
 
     if (cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
@@ -417,8 +471,7 @@ const verifyOtp = async (req, res) => {
       console.log(`[AUTH] Existing user authenticated via OTP`);
     } else {
       // New user — create account then send welcome email
-      const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "participant";
-      const validRole = normalizedRole === "organizer" ? "organizer" : "participant";
+      const validRole = normalizedRole;
       const userName = name && typeof name === "string" && name.trim() ? name.trim() : "Developer";
 
       user = await User.create({
@@ -498,6 +551,11 @@ const googleAuth = async (req, res) => {
   try {
     const { credential, code, role } = req.body || {};
 
+    const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "";
+    if (normalizedRole !== "participant" && normalizedRole !== "organizer") {
+      return res.status(400).json({ success: false, code: "INVALID_ROLE", message: "Invalid account role." });
+    }
+
     if (!credential && !code) {
       return res.status(400).json({ message: "Google authentication token or authorization code is required." });
     }
@@ -537,8 +595,18 @@ const googleAuth = async (req, res) => {
 
     // Find existing user by googleId or email
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    const requestedRole = normalizedRole;
 
     if (user) {
+      const existingRole = user.role;
+      const existingRoleCapitalized = existingRole.charAt(0).toUpperCase() + existingRole.slice(1);
+
+      if (requestedRole && requestedRole !== existingRole) {
+        return res.status(403).json({
+          code: "ACCOUNT_ROLE_MISMATCH",
+          message: `This account is registered as a ${existingRoleCapitalized}. Please use ${existingRoleCapitalized} Login.`
+        });
+      }
       // Existing Google user — update fields if needed, no welcome email
       let modified = false;
       if (!user.googleId) { user.googleId = googleId; modified = true; }
@@ -552,8 +620,7 @@ const googleAuth = async (req, res) => {
       console.log(`[AUTH] Existing user authenticated via Google OAuth`);
     } else {
       // New user via Google — create account then send welcome email
-      const normalizedRole = typeof role === "string" ? role.toLowerCase().trim() : "participant";
-      const validRole = normalizedRole === "organizer" ? "organizer" : "participant";
+      const validRole = normalizedRole;
 
       user = await User.create({
         name,
@@ -600,7 +667,12 @@ const googleRedirect = (req, res) => {
     return res.redirect(`${CLIENT_URL}/login?error=Google OAuth is not configured in backend .env`);
   }
 
-  const role = req.query.role || "participant";
+  const roleParam = req.query.role;
+  const role = typeof roleParam === "string" ? roleParam.toLowerCase().trim() : "";
+  if (role !== "participant" && role !== "organizer") {
+    return res.status(400).json({ success: false, code: "INVALID_ROLE", message: "Invalid account role." });
+  }
+
   const state = Buffer.from(JSON.stringify({ role })).toString("base64");
 
   const authorizeUrl = oauth2Client.generateAuthUrl({
@@ -622,16 +694,20 @@ const googleCallback = async (req, res) => {
       return res.redirect(`${CLIENT_URL}/login?error=Google authentication was cancelled.`);
     }
 
-    let signupRole = "participant";
+    let signupRole = "";
     if (state) {
       try {
         const decoded = JSON.parse(Buffer.from(state, "base64").toString());
         if (decoded && decoded.role) {
-          signupRole = decoded.role.toLowerCase() === "organizer" ? "organizer" : "participant";
+          signupRole = typeof decoded.role === "string" ? decoded.role.toLowerCase().trim() : "";
         }
       } catch (stateErr) {
         console.warn("OAuth state decode warning:", stateErr.message);
       }
+    }
+
+    if (signupRole !== "participant" && signupRole !== "organizer") {
+      return res.status(400).json({ success: false, code: "INVALID_ROLE", message: "Invalid account role." });
     }
 
     const { tokens } = await oauth2Client.getToken(code);
@@ -653,6 +729,13 @@ const googleCallback = async (req, res) => {
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
 
     if (user) {
+      const existingRole = user.role;
+      const existingRoleCapitalized = existingRole.charAt(0).toUpperCase() + existingRole.slice(1);
+
+      if (signupRole && signupRole !== existingRole) {
+        return res.redirect(`${CLIENT_URL}/login/${signupRole}?error=This account is registered as a ${existingRoleCapitalized}. Please use ${existingRoleCapitalized} Login.`);
+      }
+
       // Existing user via Google callback — no welcome email
       let modified = false;
       if (!user.googleId) { user.googleId = googleId; modified = true; }

@@ -3,12 +3,13 @@
 // Renders page-level "Back to landing page" navigation link & brand logo.
 
 
-import { Link, Outlet, Navigate } from "react-router-dom";
+import { Link, Outlet, Navigate, useLocation } from "react-router-dom";
 import Logo from "../common/Logo";
 import { useAuth } from "../../context/useAuth";
 
 function AuthLayout() {
   const { user, isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   // If already authenticated, redirect immediately to role-specific experience
   if (!loading && isAuthenticated && user) {
@@ -19,10 +20,14 @@ function AuthLayout() {
     return <Navigate to="/" replace />;
   }
 
+  // Use a wider layout for the role selection page
+  const isRoleSelection = location.pathname === "/login" || location.pathname === "/login/";
+  const maxWidthClass = isRoleSelection ? "max-w-4xl" : "max-w-[440px]";
+
   return (
     <div className="min-h-screen bg-slate-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
       {/* ── Top Header Navigation Bar ── */}
-      <header className="mx-auto w-full max-w-[440px] pt-2">
+      <header className={`mx-auto w-full ${maxWidthClass} pt-2 transition-all duration-300`}>
         <div className="flex items-center justify-between gap-4">
           <Link
             to="/"
@@ -76,12 +81,12 @@ function AuthLayout() {
       </header>
 
       {/* ── Center Auth Content Area ── */}
-      <main className="mx-auto w-full max-w-[440px] my-auto py-6">
+      <main className={`mx-auto w-full ${maxWidthClass} my-auto py-6 transition-all duration-300`}>
         <Outlet />
       </main>
 
       {/* ── Bottom Subtle Footer ── */}
-      <footer className="mx-auto w-full max-w-[440px] text-center text-[11px] font-medium tracking-wider text-neutral-400 dark:text-neutral-600">
+      <footer className={`mx-auto w-full ${maxWidthClass} text-center text-[11px] font-medium tracking-wider text-neutral-400 dark:text-neutral-600 transition-all duration-300`}>
         DISCOVER · CONNECT · COLLABORATE
       </footer>
     </div>

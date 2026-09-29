@@ -4,7 +4,7 @@
 
 
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams, Navigate } from "react-router-dom";
 import AuthInput from "../../components/auth/AuthInput";
 import OtpInput from "../../components/auth/OtpInput";
 import { useAuth } from "../../context/useAuth";
@@ -28,14 +28,20 @@ function SignupPage() {
   );
 
   const navigate = useNavigate();
+  const { role: urlRole } = useParams();
   const { sendOtp, verifyOtp, googleAuth } = useAuth();
+  
+  const selectedRole = urlRole?.toLowerCase();
+  if (selectedRole !== "participant" && selectedRole !== "organizer") {
+    return <Navigate to="/login" replace />;
+  }
+  const role = selectedRole === "organizer" ? "Organizer" : "Participant";
 
   // Local card theme state
   const [isCardDark, setIsCardDark] = useState(false);
 
   // Registration state
   const [step, setStep] = useState(1); // 1 = Details Input | 2 = OTP Verification
-  const [role, setRole] = useState("Participant"); // Participant | Organizer
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -284,7 +290,7 @@ function SignupPage() {
               <span>
                 {generalError.split("Sign In")[0]}
                 <Link
-                  to="/login"
+                  to={`/login/${selectedRole}`}
                   className="font-bold underline transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
                 >
                   Sign In
@@ -357,51 +363,6 @@ function SignupPage() {
             </div>
 
             <form onSubmit={handleSendOtpSubmit} noValidate className="space-y-4">
-              {/* Role Selection Tabs */}
-              <div>
-                <label
-                  className={`mb-1.5 block text-xs font-semibold ${isCardDark ? "text-neutral-300" : "text-neutral-700"
-                    }`}
-                >
-                  I want to join as
-                </label>
-                <div
-                  className={`grid grid-cols-2 rounded-xl border p-1 ${isCardDark
-                    ? "border-neutral-800 bg-neutral-950"
-                    : "border-neutral-200 bg-neutral-100"
-                    }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setRole("Participant")}
-                    className={`rounded-lg py-2 text-xs font-semibold transition-all ${role === "Participant"
-                      ? isCardDark
-                        ? "bg-indigo-600 text-white shadow-xs"
-                        : "bg-white text-neutral-900 shadow-xs"
-                      : isCardDark
-                        ? "text-neutral-400 hover:text-neutral-200"
-                        : "text-neutral-600 hover:text-neutral-900"
-                      }`}
-                  >
-                    Participant
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole("Organizer")}
-                    className={`rounded-lg py-2 text-xs font-semibold transition-all ${role === "Organizer"
-                      ? isCardDark
-                        ? "bg-indigo-600 text-white shadow-xs"
-                        : "bg-white text-neutral-900 shadow-xs"
-                      : isCardDark
-                        ? "text-neutral-400 hover:text-neutral-200"
-                        : "text-neutral-600 hover:text-neutral-900"
-                      }`}
-                  >
-                    Organizer
-                  </button>
-                </div>
-              </div>
-
               <AuthInput
                 id="name"
                 label="Full name"
@@ -578,7 +539,7 @@ function SignupPage() {
           <p className={isCardDark ? "text-neutral-400" : "text-neutral-500"}>
             Already have an account?{" "}
             <Link
-              to="/login"
+              to={`/login/${selectedRole}`}
               className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
             >
               Sign In

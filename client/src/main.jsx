@@ -30,6 +30,7 @@ import EditHackathonPage from "./pages/Organizer/EditHackathonPage.jsx";
 import OrganizerHackathonDetailsPage from "./pages/Organizer/OrganizerHackathonDetailsPage.jsx";
 import OrganizerProfilePage from "./pages/Organizer/OrganizerProfilePage.jsx";
 import AuthLayout from "./components/auth/AuthLayout.jsx";
+import RoleSelectionPage from "./pages/Auth/RoleSelectionPage.jsx";
 import LoginPage from "./pages/Auth/LoginPage.jsx";
 import SignupPage from "./pages/Auth/SignupPage.jsx";
 import ForgotPasswordPage from "./pages/Auth/ForgotPasswordPage.jsx";
@@ -245,10 +246,18 @@ const router = createBrowserRouter([
     children: [
       {
         path: "login",
+        element: <RoleSelectionPage />,
+      },
+      {
+        path: "login/:role",
         element: <LoginPage />,
       },
       {
         path: "signup",
+        element: <Navigate to="/login" replace />,
+      },
+      {
+        path: "signup/:role",
         element: <SignupPage />,
       },
       {
